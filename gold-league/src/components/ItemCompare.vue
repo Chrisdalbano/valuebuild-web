@@ -1,8 +1,23 @@
 <template>
-  <div v-if="items.length === 2" class="compare-container">
+  <div v-if="items.length >= 2" class="compare-container">
     <div class="compare-header">
-      <h2>Item Comparison</h2>
-      <button @click="emit('clear')" class="btn-clear">✕ Clear Comparison</button>
+      <h2>Item Comparison ({{ items.length }} items)</h2>
+      <div class="header-actions">
+        <button @click="viewDetailed(items[0])" class="btn-secondary">View Detailed Breakdown</button>
+        <button @click="emit('clear')" class="btn-clear">Clear Comparison</button>
+      </div>
+    </div>
+
+    <!-- Chart Visualizations -->
+    <div class="charts-section">
+      <div class="chart-card">
+        <h3>Efficiency Comparison</h3>
+        <canvas ref="efficiencyChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Cost vs Value</h3>
+        <canvas ref="costValueChart"></canvas>
+      </div>
     </div>
     
     <div class="comparison-grid">
@@ -59,28 +74,32 @@
     </div>
 
     <div class="comparison-summary">
-      <h3>Summary</h3>
+      <h3>Comparison Summary</h3>
       <div class="summary-stats">
         <div class="summary-item">
-          <span class="label">Efficiency Difference:</span>
-          <span :class="getDifferenceClass(efficiencyDiff)">
-            {{ Math.abs(efficiencyDiff).toFixed(2) }}%
-            {{ efficiencyDiff > 0 ? '(Item 1 higher)' : '(Item 2 higher)' }}
+          <span class="label">Best Efficiency:</span>
+          <span class="value">
+            {{ bestEfficiency?.name }} ({{ bestEfficiency?.goldEfficiency.toFixed(2) }}%)
           </span>
         </div>
         
         <div class="summary-item">
-          <span class="label">Cost Difference:</span>
-          <span class="value gold">{{ Math.abs(costDiff) }}g</span>
+          <span class="label">Average Efficiency:</span>
+          <span class="value">{{ avgEfficiency.toFixed(2) }}%</span>
         </div>
         
         <div class="summary-item">
-          <span class="label">Value Difference:</span>
-          <span class="value gold">{{ Math.abs(valueDiff).toFixed(2) }}g</span>
+          <span class="label">Total Cost:</span>
+          <span class="value gold">{{ totalCost }}g</span>
+        </div>
+        
+        <div class="summary-item">
+          <span class="label">Items Compared:</span>
+          <span class="value">{{ items.length }}</span>
         </div>
         
         <div class="summary-item recommendation">
-          <span class="label">Recommendation:</span>
+          <span class="label">Analysis:</span>
           <span class="value">{{ recommendation }}</span>
         </div>
       </div>
@@ -88,49 +107,199 @@
   </div>
   
   <div v-else class="empty-state">
-    <p>Select exactly 2 items from the table to compare</p>
+    <p>Select 2-6 items from the Items Database to compare their stats and efficiency</p>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick, onMounted } from 'vue'
+import { Chart, registerables } from 'chart.js'
 import { getItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+
+Chart.register(...registerables)
 
 const props = defineProps({
   items: {
     type: Array,
     default: () => []
+  },
+  allItems: {
+    type: Array,
+    default: () => []
   }
 })
 
-const emit = defineEmits(['clear'])
+const efficiencyChart = ref(null)
+const costValueChart = ref(null)
+let efficiencyChartInstance = null
+let costValueChartInstance = null
 
-const efficiencyDiff = computed(() => {
-  if (props.items.length !== 2) return 0
-  return props.items[0].goldEfficiency - props.items[1].goldEfficiency
+const emit = defineEmits(['clear', 'viewDetailed'])
+
+function viewDetailed(item) {
+  emit('viewDetailed', item)
+}
+
+function createEfficiencyChart() {
+  if (!efficiencyChart.value || props.items.length < 2) return
+
+  if (efficiencyChartInstance) {
+    efficiencyChartInstance.destroy()
+  }
+
+  const ctx = efficiencyChart.value.getContext('2d')
+  const labels = props.items.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name)
+  const data = props.items.map(item => item.goldEfficiency)
+  const colors = data.map(eff => {
+    if (eff >= 110) return 'rgba(16, 185, 129, 0.8)'
+    if (eff >= 100) return 'rgba(59, 130, 246, 0.8)'
+    if (eff >= 90) return 'rgba(245, 158, 11, 0.8)'
+    return 'rgba(239, 68, 68, 0.8)'
+  })
+
+  efficiencyChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Gold Efficiency %',
+        data: data,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace('0.8', '1')),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#3f3f46' },
+          ticks: { color: '#a1a1aa' }
+        },
+        x: {
+          grid: { color: '#3f3f46' },
+          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: '#18181b',
+          titleColor: '#e4e4e7',
+          bodyColor: '#a1a1aa',
+          borderColor: '#3f3f46',
+          borderWidth: 1
+        }
+      }
+    }
+  })
+}
+
+function createCostValueChart() {
+  if (!costValueChart.value || props.items.length < 2) return
+
+  if (costValueChartInstance) {
+    costValueChartInstance.destroy()
+  }
+
+  const ctx = costValueChart.value.getContext('2d')
+  const labels = props.items.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name)
+
+  costValueChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Total Cost',
+          data: props.items.map(item => item.cost),
+          borderColor: 'rgba(135, 64, 55, 1)',
+          backgroundColor: 'rgba(135, 64, 55, 0.2)',
+          tension: 0.4,
+          fill: true
+        },
+        {
+          label: 'Gold Value',
+          data: props.items.map(item => item.totalGoldValue),
+          borderColor: 'rgba(240, 168, 41, 1)',
+          backgroundColor: 'rgba(240, 168, 41, 0.2)',
+          tension: 0.4,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: '#3f3f46' },
+          ticks: { color: '#a1a1aa' }
+        },
+        x: {
+          grid: { color: '#3f3f46' },
+          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#e4e4e7' }
+        },
+        tooltip: {
+          backgroundColor: '#18181b',
+          titleColor: '#e4e4e7',
+          bodyColor: '#a1a1aa',
+          borderColor: '#3f3f46',
+          borderWidth: 1
+        }
+      }
+    }
+  })
+}
+
+watch(() => props.items, () => {
+  nextTick(() => {
+    createEfficiencyChart()
+    createCostValueChart()
+  })
+}, { immediate: true, deep: true })
+
+onMounted(() => {
+  createEfficiencyChart()
+  createCostValueChart()
 })
 
-const costDiff = computed(() => {
-  if (props.items.length !== 2) return 0
-  return props.items[0].cost - props.items[1].cost
+const bestEfficiency = computed(() => {
+  if (props.items.length === 0) return null
+  return props.items.reduce((best, item) => 
+    item.goldEfficiency > best.goldEfficiency ? item : best
+  , props.items[0])
 })
 
-const valueDiff = computed(() => {
-  if (props.items.length !== 2) return 0
-  return props.items[0].totalGoldValue - props.items[1].totalGoldValue
+const avgEfficiency = computed(() => {
+  if (props.items.length === 0) return 0
+  return props.items.reduce((sum, item) => sum + item.goldEfficiency, 0) / props.items.length
+})
+
+const totalCost = computed(() => {
+  return props.items.reduce((sum, item) => sum + item.cost, 0)
 })
 
 const recommendation = computed(() => {
-  if (props.items.length !== 2) return ''
+  if (props.items.length < 2) return ''
   
-  const [item1, item2] = props.items
+  const sorted = [...props.items].sort((a, b) => b.goldEfficiency - a.goldEfficiency)
+  const best = sorted[0]
+  const worst = sorted[sorted.length - 1]
   
-  if (Math.abs(efficiencyDiff.value) < 5) {
-    return 'Both items have similar gold efficiency. Choose based on your champion needs.'
-  }
+  const diffPercent = ((best.goldEfficiency - worst.goldEfficiency) / worst.goldEfficiency * 100).toFixed(1)
   
-  const betterItem = efficiencyDiff.value > 0 ? item1 : item2
-  return `${betterItem.name} offers better gold efficiency for pure stat value.`
+  return `${best.name} has ${diffPercent}% higher gold efficiency than ${worst.name}. Consider item passives and synergies with your champion.`
 })
 
 function getImageUrl(itemId) {
@@ -158,13 +327,16 @@ function getEfficiencyRating(eff) {
   return 'Poor'
 }
 
-function getDifferenceClass(diff) {
-  return diff > 0 ? 'eff-good' : 'eff-poor'
-}
-
 function sanitizeHtml(html) {
-  // Basic sanitization - in production use DOMPurify
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+  if (!html) return ''
+  // Enhanced sanitization and formatting
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?[^>]+(>|$)/g, '') // Remove all HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n') // Max 2 line breaks
+    .trim()
 }
 </script>
 
@@ -191,6 +363,36 @@ function sanitizeHtml(html) {
   font-weight: 700;
 }
 
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card {
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.chart-card h3 {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.chart-card canvas {
+  max-height: 300px;
+}
+
 .btn-clear {
   padding: 0.5rem 1rem;
   background: rgba(239, 68, 68, 0.1);
@@ -208,10 +410,27 @@ function sanitizeHtml(html) {
   color: var(--text-primary);
 }
 
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--gold);
+}
+
 .comparison-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.25rem;
   margin-bottom: 1.5rem;
 }
 
@@ -340,9 +559,11 @@ function sanitizeHtml(html) {
 }
 
 .item-description div {
-  color: #ddd;
-  font-size: 14px;
-  line-height: 1.6;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: inherit;
 }
 
 .comparison-summary {

@@ -4,15 +4,34 @@
       <div class="search-bar">
         <input 
           v-model="search" 
-          placeholder="🔍 Search items..." 
+          placeholder="Search items by name..." 
           class="search-input"
         />
       </div>
       
       <div class="filter-group">
-        <label>Filter by efficiency:</label>
-        <select v-model="efficiencyFilter" class="filter-select">
+        <label>Category:</label>
+        <select v-model="itemTypeFilter" class="filter-select">
+          <option v-for="type in itemTypes" :key="type" :value="type">
+            {{ type === 'all' ? 'All Types' : type }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Tier:</label>
+        <select v-model="tierFilter" class="filter-select">
           <option value="all">All Items</option>
+          <option value="component">Components</option>
+          <option value="legendary">Legendary</option>
+          <option value="basic">Basic Items</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Efficiency:</label>
+        <select v-model="efficiencyFilter" class="filter-select">
+          <option value="all">All</option>
           <option value="excellent">Excellent (≥120%)</option>
           <option value="good">Good (≥100%)</option>
           <option value="fair">Fair (≥80%)</option>
@@ -38,12 +57,15 @@
       </div>
 
       <div class="compare-controls">
-        <button @click="emit('compare', selectedItems)" class="btn btn-primary" :disabled="selectedItems.length !== 2">
-          Compare Selected ({{ selectedItems.length }}/2)
+        <button @click="emit('compare', selectedItems)" class="btn btn-primary" :disabled="selectedItems.length < 2">
+          Compare Items ({{ selectedItems.length }})
         </button>
         <button v-if="selectedItems.length > 0" @click="clearSelection" class="btn btn-secondary">
-          Clear Selection
+          Clear ({{ selectedItems.length }})
         </button>
+        <span v-if="selectedItems.length >= 2" class="selection-hint">
+          Select 2-6 items to compare
+        </span>
       </div>
     </div>
 
@@ -78,11 +100,15 @@
               <div class="item-info">
                 <img 
                   :src="getImageUrl(item.id)" 
-                  :alt="item.name"
+                  :alt="item.id"
                   class="item-icon"
                   @error="handleImageError"
                 />
-                <span>{{ item.name }}</span>
+                <div class="item-name-col">
+                  <span class="item-name-text">{{ item.name }}</span>
+                  <span v-if="isComponent(item)" class="item-badge component">Component</span>
+                  <span v-else-if="isLegendary(item)" class="item-badge legendary">Legendary</span>
+                </div>
                 <div v-if="item.description" class="item-tooltip" v-html="sanitizeDescription(item.description)"></div>
               </div>
             </td>
@@ -114,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getItemImageUrl } from '../api/items'
 
 const props = defineProps({
@@ -130,11 +156,24 @@ const search = ref('')
 const sortKey = ref('goldEfficiency')
 const sortDir = ref(-1)
 const efficiencyFilter = ref('all')
+const itemTypeFilter = ref('all')
+const tierFilter = ref('all')
 const minCost = ref(0)
 const maxCost = ref(10000)
 const selectedItems = ref([])
 const currentPage = ref(1)
 const itemsPerPage = ref(25)
+
+// Extract unique item tags/types from items
+const itemTypes = computed(() => {
+  const types = new Set()
+  props.items.forEach(item => {
+    if (item.tags && Array.isArray(item.tags)) {
+      item.tags.forEach(tag => types.add(tag))
+    }
+  })
+  return ['all', ...Array.from(types).sort()]
+})
 
 const filtered = computed(() => {
   let result = props.items.filter(item => {
@@ -152,7 +191,23 @@ const filtered = computed(() => {
       }
     }
     
-    return matchesSearch && matchesCost && matchesEfficiency
+    let matchesType = true
+    if (itemTypeFilter.value !== 'all') {
+      matchesType = item.tags && item.tags.includes(itemTypeFilter.value)
+    }
+    
+    let matchesTier = true
+    if (tierFilter.value !== 'all') {
+      if (tierFilter.value === 'component') {
+        matchesTier = isComponent(item)
+      } else if (tierFilter.value === 'legendary') {
+        matchesTier = isLegendary(item)
+      } else if (tierFilter.value === 'basic') {
+        matchesTier = item.cost < 500
+      }
+    }
+    
+    return matchesSearch && matchesCost && matchesEfficiency && matchesType && matchesTier
   })
 
   return result.sort((a, b) => {
@@ -181,8 +236,13 @@ function sort(key) {
     sortKey.value = key
     sortDir.value = -1
   }
-  currentPage.value = 1
+  currentPage.value = 1 // Reset to first page when sorting
 }
+
+// Watch filters and reset page when they change
+watch([search, efficiencyFilter, itemTypeFilter, tierFilter, minCost, maxCost], () => {
+  currentPage.value = 1
+})
 
 function getSortIcon(key) {
   if (sortKey.value !== key) return '⇅'
@@ -215,14 +275,26 @@ function getImageUrl(itemId) {
 }
 
 function handleImageError(e) {
-  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40"%3E%3Crect fill="%23ddd" width="40" height="40"/%3E%3C/svg%3E'
+  const img = e.target
+  // Try Community Dragon as fallback
+  if (!img.dataset.fallbackTried) {
+    img.dataset.fallbackTried = 'true'
+    const itemId = img.alt || img.src.match(/\/(\d+)\.png/)?.[1]
+    if (itemId) {
+      img.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
+      return
+    }
+  }
+  // Final fallback: placeholder
+  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40"%3E%3Crect fill="%2327272a" width="40" height="40"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23a1a1aa" font-size="12"%3E' + encodeURIComponent('?') + '%3C/text%3E%3C/svg%3E'
 }
 
 function toggleSelect(item) {
   const index = selectedItems.value.findIndex(i => i.id === item.id)
   if (index > -1) {
     selectedItems.value.splice(index, 1)
-  } else if (selectedItems.value.length < 2) {
+  } else if (selectedItems.value.length < 6) {
+    // Allow up to 6 items for comparison
     selectedItems.value.push(item)
   }
 }
@@ -258,6 +330,16 @@ function sanitizeDescription(desc) {
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
     .trim()
+}
+
+function isComponent(item) {
+  // Items that build into other items (have "into" field and cost < 1000)
+  return item.into && item.into.length > 0 && item.cost < 1200
+}
+
+function isLegendary(item) {
+  // Completed items (cost >= 2000, no "into" field or empty)
+  return item.cost >= 2000 && (!item.into || item.into.length === 0)
 }
 </script>
 
@@ -384,6 +466,13 @@ function sanitizeDescription(desc) {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.selection-hint {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  font-style: italic;
 }
 
 .table-wrapper {
@@ -447,6 +536,38 @@ function sanitizeDescription(desc) {
 
 .item-name {
   font-weight: 500;
+}
+
+.item-name-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item-name-text {
+  font-weight: 500;
+}
+
+.item-badge {
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  width: fit-content;
+}
+
+.item-badge.component {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.item-badge.legendary {
+  background: rgba(240, 168, 41, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(240, 168, 41, 0.3);
 }
 
 .item-info {

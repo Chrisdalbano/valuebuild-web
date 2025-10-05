@@ -45,9 +45,18 @@ export const itemsApi = {
 
 /**
  * Get image URL for an item
+ * Try multiple CDN sources for reliability
  */
 export function getItemImageUrl(itemId, version = '14.20.1') {
+  // Primary: Data Dragon
   return `https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${itemId}.png`
+}
+
+/**
+ * Get fallback image URL from Community Dragon
+ */
+export function getItemImageUrlFallback(itemId) {
+  return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
 }
 
 /**

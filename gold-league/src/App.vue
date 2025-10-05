@@ -1,20 +1,29 @@
 <template>
   <div id="app">
-    <header class="app-header">
+    <header class="app-header" :style="{ backgroundImage: `url(${headerBg})` }">
+      <div class="header-overlay"></div>
       <div class="header-content">
-        <h1>⚔️ League Item Efficiency Tracker</h1>
-        <p class="subtitle">Calculate and compare gold efficiency for League of Legends items</p>
+        <div class="logo-section">
+          <img 
+            src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/magicalfootwear/magicalfootwear.png"
+            alt="Gold"
+            class="logo-icon"
+            @error="handleLogoError"
+          />
+          <h1 class="logo-text">ITEMDSIFF.GG</h1>
+        </div>
+        <p class="subtitle">Gold efficiency analytics for items</p>
       </div>
-      <div class="header-actions">
+      <!-- <div class="header-actions">
         <button @click="refreshItems" :disabled="loading" class="btn btn-refresh">
-          {{ loading ? 'Loading...' : '🔄 Refresh Data' }}
+          {{ loading ? 'Loading...' : 'Refresh Data' }}
         </button>
-      </div>
+      </div> -->
     </header>
 
     <main class="app-main">
       <div v-if="error" class="error-banner">
-        <span>⚠️ {{ error }}</span>
+        <span>{{ error }}</span>
         <button @click="retryLoad" class="btn-small">Retry</button>
       </div>
 
@@ -31,11 +40,43 @@
             @click="activeTab = tab.value"
             :class="['tab-btn', { active: activeTab === tab.value }]"
           >
-            {{ tab.icon }} {{ tab.label }}
+            {{ tab.label }}
           </button>
         </nav>
 
         <div class="tab-content">
+          <!-- Random Comparisons Section -->
+          <div v-if="activeTab === 'table' && randomComparisons.length > 0" class="random-comparisons">
+            <h2>Random Item Comparisons</h2>
+            <p class="subtitle-text">Quick analysis of popular legendary items</p>
+            <div class="comparison-cards">
+              <div v-for="(comp, index) in randomComparisons" :key="index" class="comparison-card" @click="loadRandomComparison(comp)">
+                <div class="card-items">
+                  <img v-for="item in comp" :key="item.id" :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" :alt="item.name" class="card-item-icon" />
+                </div>
+                <div class="card-info">
+                  <div class="card-title">{{ comp.map(i => i.name).join(' vs ') }}</div>
+                  <div class="card-stats">
+                    <span>Avg Efficiency: {{ (comp.reduce((sum, i) => sum + i.goldEfficiency, 0) / comp.length).toFixed(1) }}%</span>
+                  </div>
+                </div>
+                <button class="card-btn">Compare →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item Breakdown Modal -->
+          <div v-if="showBreakdown" class="modal-overlay" @click="closeBreakdown">
+            <div class="modal-content" @click.stop>
+              <ItemBreakdown 
+                :item="detailedItem"
+                :allItems="items"
+                @close="closeBreakdown"
+                @select="viewDetailed"
+              />
+            </div>
+          </div>
+
           <ItemTable 
             v-show="activeTab === 'table'" 
             :items="items"
@@ -45,13 +86,30 @@
           <ItemCompare 
             v-show="activeTab === 'compare'" 
             :items="compareItems"
+            :allItems="items"
             @clear="clearComparison"
+            @viewDetailed="viewDetailed"
           />
-          
-          <ItemChart 
-            v-show="activeTab === 'charts'" 
-            :items="items"
-          />
+
+          <div v-show="activeTab === 'builds'" class="builds-section">
+            <h2>Build Optimizer</h2>
+            <div class="info-card">
+              <h3>Coming Soon</h3>
+              <p>
+                This feature will analyze optimal item builds by considering:
+              </p>
+              <ul>
+                <li>Item synergies and passive combinations</li>
+                <li>Champion-specific stat priorities</li>
+                <li>Build path efficiency at different gold thresholds</li>
+                <li>Power spikes and scaling curves</li>
+                <li>Situational item recommendations based on game state</li>
+              </ul>
+              <p class="feature-note">
+                Select items from the database to manually build and analyze custom builds in the meantime.
+              </p>
+            </div>
+          </div>
           
           <div v-show="activeTab === 'about'" class="about-section">
             <h2>About Gold Efficiency</h2>
@@ -147,17 +205,17 @@
     </main>
 
     <footer class="app-footer">
-      <p>League Item Efficiency Tracker | Data from Riot Games API</p>
-      <p class="disclaimer">Not endorsed by Riot Games</p>
+      <p>itemsdiff.gg | Advanced League of Legends item analytics</p>
+      <p class="disclaimer">Data from Riot Games Data Dragon API - Not endorsed by Riot Games</p>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import ItemTable from './components/ItemTable.vue'
 import ItemCompare from './components/ItemCompare.vue'
-import ItemChart from './components/ItemChart.vue'
+import ItemBreakdown from './components/ItemBreakdown.vue'
 import { itemsApi } from './api/items'
 
 const items = ref([])
@@ -165,16 +223,36 @@ const loading = ref(false)
 const error = ref(null)
 const activeTab = ref('table')
 const compareItems = ref([])
+const headerBg = ref('')
+const detailedItem = ref(null)
+const showBreakdown = ref(false)
+const randomComparisons = ref([])
+
+// Popular champions for random splash art
+const champions = [
+  'Jinx', 'Lux', 'Ezreal', 'Yasuo', 'Ahri', 'Akali', 'KaiSa', 'Zed', 
+  'LeeSin', 'Thresh', 'Jhin', 'Ashe', 'MissFortune', 'Katarina', 'Vayne',
+  'Riven', 'Ekko', 'Vi', 'Caitlyn', 'Garen', 'Darius', 'Pyke', 'Senna',
+  'Aphelios', 'Seraphine', 'Yone', 'Viego', 'Gwen', 'Akshan', 'Vex'
+]
+
+// Get random splash art
+const getRandomSplash = () => {
+  const champion = champions[Math.floor(Math.random() * champions.length)]
+  const skinNumber = Math.floor(Math.random() * 3) // 0-2 for base and first couple skins
+  return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion}_${skinNumber}.jpg`
+}
 
 const tabs = [
-  { value: 'table', label: 'Item Table', icon: '📋' },
-  { value: 'compare', label: 'Compare', icon: '⚖️' },
-  { value: 'charts', label: 'Analytics', icon: '📊' },
-  { value: 'about', label: 'About', icon: 'ℹ️' }
+  { value: 'table', label: 'Items Database' },
+  { value: 'compare', label: 'Item Comparison' },
+  { value: 'builds', label: 'Build Analyzer' },
+  { value: 'about', label: 'Documentation' }
 ]
 
 onMounted(() => {
   loadItems()
+  headerBg.value = getRandomSplash()
 })
 
 async function loadItems() {
@@ -184,6 +262,8 @@ async function loadItems() {
   try {
     const data = await itemsApi.getItems()
     items.value = data.items || []
+    // Generate random comparisons after items load
+    generateRandomComparisons()
     
     if (items.value.length === 0) {
       error.value = 'No items found. Please refresh the data.'
@@ -224,6 +304,44 @@ function clearComparison() {
   compareItems.value = []
   activeTab.value = 'table'
 }
+
+function viewDetailed(item) {
+  detailedItem.value = item
+  showBreakdown.value = true
+}
+
+function closeBreakdown() {
+  showBreakdown.value = false
+  detailedItem.value = null
+}
+
+function generateRandomComparisons() {
+  if (items.value.length < 4) return
+  
+  // Get high-efficiency legendary items
+  const legendaryItems = items.value.filter(item => 
+    item.cost >= 2000 && item.goldEfficiency >= 90
+  )
+  
+  if (legendaryItems.length < 3) return
+  
+  // Create 3 random comparison sets
+  randomComparisons.value = []
+  for (let i = 0; i < 3; i++) {
+    const shuffled = [...legendaryItems].sort(() => 0.5 - Math.random())
+    randomComparisons.value.push(shuffled.slice(0, 3))
+  }
+}
+
+function loadRandomComparison(comparisonSet) {
+  compareItems.value = comparisonSet
+  activeTab.value = 'compare'
+}
+
+function handleLogoError(e) {
+  // Fallback to a gold coin emoji as SVG if image fails
+  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"%3E%3Ccircle cx="12" cy="12" r="10" fill="%23F0A829"/%3E%3C/svg%3E'
+}
 </script>
 
 <style scoped>
@@ -235,24 +353,63 @@ function clearComparison() {
 }
 
 .app-header {
+  position: relative;
   background: var(--bg-secondary);
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
   padding: 2rem 1.5rem;
   border-bottom: 1px solid var(--border-primary);
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.header-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(12, 12, 14, 0.92) 0%,
+    rgba(18, 18, 20, 0.88) 50%,
+    rgba(12, 12, 14, 0.92) 100%
+  );
+  backdrop-filter: blur(2px);
+  z-index: 1;
 }
 
 .header-content {
+  position: relative;
   max-width: 1400px;
   margin: 0 auto;
   text-align: center;
+  z-index: 2;
 }
 
-.header-content h1 {
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(240, 168, 41, 0.6));
+}
+
+.logo-text {
   color: var(--gold);
   font-size: 2.5rem;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   font-weight: 700;
   letter-spacing: -0.03em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8),
+               0 4px 24px rgba(0, 0, 0, 0.6);
 }
 
 .subtitle {
@@ -260,14 +417,17 @@ function clearComparison() {
   font-size: 1rem;
   margin: 0;
   font-weight: 400;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .header-actions {
+  position: relative;
   max-width: 1400px;
   margin: 1.25rem auto 0;
   display: flex;
   justify-content: center;
   gap: 0.75rem;
+  z-index: 2;
 }
 
 .btn {
@@ -405,9 +565,19 @@ function clearComparison() {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.about-section {
+.about-section,
+.builds-section {
   padding: 1.5rem;
   color: var(--text-primary);
+}
+
+.feature-note {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius-md);
+  font-style: italic;
 }
 
 .about-section h2 {
@@ -544,6 +714,117 @@ function clearComparison() {
   text-decoration: underline;
 }
 
+.random-comparisons {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-primary);
+}
+
+.random-comparisons h2 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle-text {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.comparison-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.comparison-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comparison-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.card-items {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.card-item-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+}
+
+.card-info {
+  margin-bottom: 1rem;
+}
+
+.card-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-stats {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.card-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-btn:hover {
+  background: var(--rust);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.modal-content {
+  max-width: 1200px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: 0;
+}
+
 .app-footer {
   background: var(--bg-secondary);
   padding: 1.5rem;
@@ -564,8 +845,12 @@ function clearComparison() {
 }
 
 @media (max-width: 768px) {
-  .header-content h1 {
+  .logo-text {
     font-size: 1.875rem;
+  }
+  
+  .app-header {
+    background-position: center center;
   }
   
   .stat-values-grid {
