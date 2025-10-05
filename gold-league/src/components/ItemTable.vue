@@ -6,12 +6,16 @@
         <div class="tray-content">
           <div class="tray-header">
             <h3>
-              <span class="compare-icon">⚔️</span>
+              <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 20V10M12 20V4M6 20v-6"/>
+              </svg>
               Selected for Comparison
               <span class="count-badge">{{ selectedItems.length }}/6</span>
             </h3>
             <button @click="clearSelection" class="btn-clear-inline" title="Clear all">
-              <span>✕</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
             </button>
           </div>
           
@@ -24,7 +28,11 @@
                   {{ item.goldEfficiency }}%
                 </div>
               </div>
-              <button @click.stop="toggleSelect(item)" class="btn-remove-item">✕</button>
+              <button @click.stop="toggleSelect(item)" class="btn-remove-item" title="Remove">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
             </div>
           </div>
           
@@ -34,7 +42,12 @@
               class="btn-compare-now"
               :disabled="selectedItems.length < 2"
             >
-              <span class="btn-icon">📊</span>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+              </svg>
               Compare {{ selectedItems.length }} Items
             </button>
             <div v-if="selectedItems.length < 2" class="help-text">
@@ -52,13 +65,20 @@
     <div class="browser-controls">
       <div class="controls-row">
         <div class="search-box">
-          <span class="search-icon">🔍</span>
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
           <input 
             v-model="search" 
             placeholder="Search items by name..." 
             class="search-input"
           />
-          <button v-if="search" @click="search = ''" class="btn-clear-search">✕</button>
+          <button v-if="search" @click="search = ''" class="btn-clear-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
         
         <div class="view-toggle">
@@ -67,14 +87,23 @@
             :class="['view-btn', { active: viewMode === 'grid' }]"
             title="Grid view"
           >
-            <span class="view-icon">▦</span>
+            <svg class="view-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
           </button>
           <button 
             @click="viewMode = 'table'" 
             :class="['view-btn', { active: viewMode === 'table' }]"
             title="Table view"
           >
-            <span class="view-icon">☰</span>
+            <svg class="view-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -221,39 +250,30 @@
       </table>
     </div>
 
-    <!-- Pagination -->
-    <div class="pagination">
-      <div class="page-info">
-        <span class="results-count">{{ filtered.length }} items</span>
-        <span class="page-current">Page {{ currentPage }} of {{ totalPages }}</span>
+    <!-- Simple Pagination -->
+    <div class="pagination-simple">
+      <div class="pagination-info">
+        <span class="showing-count">
+          Showing <strong>{{ Math.min(itemsPerPage, filtered.length) }}</strong> of <strong>{{ filtered.length }}</strong> items
+        </span>
+        <select v-model.number="itemsPerPage" class="show-select">
+          <option :value="24">Show 24</option>
+          <option :value="48">Show 48</option>
+          <option :value="96">Show 96</option>
+          <option :value="filtered.length">Show All</option>
+        </select>
       </div>
-
-      <div class="page-controls">
-        <button @click="currentPage = 1" :disabled="currentPage === 1" class="page-btn">⟪</button>
-        <button @click="currentPage--" :disabled="currentPage === 1" class="page-btn">‹</button>
-        
-        <div class="page-numbers">
-          <button
-            v-for="page in visiblePages"
-            :key="page"
-            @click="page !== '...' && (currentPage = page)"
-            :class="['page-number', { active: currentPage === page, ellipsis: page === '...' }]"
-            :disabled="page === '...'"
-          >
-            {{ page }}
-          </button>
-        </div>
-        
-        <button @click="currentPage++" :disabled="currentPage === totalPages" class="page-btn">›</button>
-        <button @click="currentPage = totalPages" :disabled="currentPage === totalPages" class="page-btn">⟫</button>
-      </div>
-
-      <select v-model.number="itemsPerPage" class="per-page-select">
-        <option :value="12">12 per page</option>
-        <option :value="24">24 per page</option>
-        <option :value="48">48 per page</option>
-        <option :value="96">96 per page</option>
-      </select>
+      
+      <button 
+        v-if="hasMoreItems && itemsPerPage < filtered.length"
+        @click="itemsPerPage += 24" 
+        class="btn-load-more"
+      >
+        <svg class="load-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+        Load {{ Math.min(24, remainingItems) }} More
+      </button>
     </div>
   </div>
 </template>
@@ -278,7 +298,6 @@ const sortKey = ref('goldEfficiency')
 const sortDir = ref(-1)
 const tierFilter = ref('all')
 const selectedItems = ref([])
-const currentPage = ref(1)
 const itemsPerPage = ref(24)
 const selectingItemId = ref(null)
 const viewMode = ref('grid')
@@ -293,7 +312,11 @@ const tierOptions = [
 // Computed
 const filtered = computed(() => {
   let result = props.items.filter(item => {
+    // CRITICAL: Filter out items with failed images immediately
     if (failedImages.value.has(item.id)) return false
+    
+    // Filter out items without valid IDs or images upfront
+    if (!item.id || typeof item.id !== 'string') return false
     
     const matchesSearch = item.name.toLowerCase().includes(search.value.toLowerCase())
     
@@ -324,31 +347,21 @@ const filtered = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.ceil(filtered.value.length / itemsPerPage.value))
-
-const visiblePages = computed(() => {
-  const pages = []
-  const total = totalPages.value
-  const current = currentPage.value
-  
-  if (total <= 7) {
-    for (let i = 1; i <= total; i++) pages.push(i)
-  } else {
-    pages.push(1)
-    if (current > 3) pages.push('...')
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-      pages.push(i)
-    }
-    if (current < total - 2) pages.push('...')
-    pages.push(total)
-  }
-  
-  return pages
+const displayedItems = computed(() => {
+  // Simple: just show first N items
+  return filtered.value.slice(0, itemsPerPage.value)
 })
 
 const paginatedItems = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  return filtered.value.slice(start, start + itemsPerPage.value)
+  return displayedItems.value
+})
+
+const hasMoreItems = computed(() => {
+  return filtered.value.length > itemsPerPage.value
+})
+
+const remainingItems = computed(() => {
+  return filtered.value.length - itemsPerPage.value
 })
 
 // Methods
@@ -359,7 +372,8 @@ function sort(key) {
     sortKey.value = key
     sortDir.value = -1
   }
-  currentPage.value = 1
+  // Reset display to initial items when sorting
+  itemsPerPage.value = 24
 }
 
 function getSortIcon(key) {
@@ -410,20 +424,35 @@ function handleImageError(e) {
   const img = e.target
   const itemId = img.alt
   
+  // Immediately hide the parent card to prevent flash of broken image
+  const card = img.closest('.item-card') || img.closest('tr')
+  if (card) {
+    card.style.display = 'none'
+  }
+  
+  // Try Community Dragon as fallback
   if (!img.dataset.fallbackTried) {
     img.dataset.fallbackTried = 'true'
     if (itemId) {
       img.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
+      
+      // If fallback succeeds, show the card again
+      img.onload = () => {
+        if (card) card.style.display = ''
+      }
       return
     }
   }
   
+  // If both sources failed, permanently mark this item as deprecated
   if (img.dataset.fallbackTried && itemId) {
-    failedImages.value.add(itemId)
-    failedImages.value = new Set(failedImages.value)
+    if (!failedImages.value.has(itemId)) {
+      failedImages.value.add(itemId)
+      // Force reactivity update to trigger re-filter
+      failedImages.value = new Set(failedImages.value)
+      console.log(`[Filtered] Item ${itemId} - deprecated/not found`)
+    }
   }
-  
-  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%2327272a" width="64" height="64"/%3E%3C/svg%3E'
 }
 
 function toggleSelect(item) {
@@ -456,13 +485,14 @@ function sanitizeDescription(desc) {
 
 // Watchers
 watch([search, tierFilter], () => {
-  currentPage.value = 1
+  // Reset to show initial items when filters change
+  itemsPerPage.value = 24
 })
 
 watch(itemsPerPage, () => {
-  const maxPage = Math.ceil(filtered.value.length / itemsPerPage.value)
-  if (currentPage.value > maxPage) {
-    currentPage.value = maxPage || 1
+  // Ensure we don't show more than available
+  if (itemsPerPage.value > filtered.value.length) {
+    itemsPerPage.value = filtered.value.length
   }
 })
 </script>
@@ -471,7 +501,7 @@ watch(itemsPerPage, () => {
 .item-browser {
   width: 100%;
   position: relative;
-  padding-bottom: 120px; /* Space for floating tray */
+  padding-bottom: 90px; /* Space for floating tray */
 }
 
 /* Floating Comparison Tray */
@@ -480,12 +510,12 @@ watch(itemsPerPage, () => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, rgba(240, 168, 41, 0.95) 0%, rgba(135, 64, 55, 0.95) 100%);
+  background: var(--bg-secondary);
   backdrop-filter: blur(10px);
-  border-top: 3px solid var(--gold);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+  border-top: 2px solid var(--gold);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3), 0 -1px 0 rgba(240, 168, 41, 0.2);
   z-index: 100;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
 .tray-content {
@@ -497,13 +527,13 @@ watch(itemsPerPage, () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.625rem;
 }
 
 .tray-header h3 {
-  color: var(--bg-primary);
-  font-size: 1.25rem;
-  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -511,123 +541,177 @@ watch(itemsPerPage, () => {
 }
 
 .compare-icon {
-  font-size: 1.5rem;
+  width: 18px;
+  height: 18px;
+  color: var(--gold);
+  flex-shrink: 0;
 }
 
 .count-badge {
-  background: var(--bg-primary);
-  color: var(--gold);
-  padding: 0.25rem 0.75rem;
-  border-radius: 2rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  background: var(--gold);
+  color: var(--bg-primary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .btn-clear-inline {
-  background: rgba(0, 0, 0, 0.3);
-  border: none;
-  color: white;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-clear-inline svg {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-clear-inline:hover {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
   transform: rotate(90deg);
 }
 
 .tray-items {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   overflow-x: auto;
-  padding: 0.5rem 0;
-  margin-bottom: 1rem;
+  padding: 0.25rem 0;
+  margin-bottom: 0.5rem;
+  scrollbar-width: thin;
+}
+
+.tray-items::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tray-items::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.tray-items::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+.tray-items::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
 }
 
 .tray-item {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: var(--radius-lg);
-  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  min-width: 200px;
+  gap: 0.625rem;
+  min-width: 180px;
   position: relative;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s;
+}
+
+.tray-item:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
 }
 
 .tray-item-img {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-md);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
 }
 
 .tray-item-info {
   flex: 1;
+  min-width: 0;
 }
 
 .tray-item-name {
-  color: white;
+  color: var(--text-primary);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tray-item-eff {
   font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 .btn-remove-item {
-  background: rgba(239, 68, 68, 0.8);
-  border: none;
-  color: white;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-tertiary);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1rem;
   transition: all 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-remove-item svg {
+  width: 12px;
+  height: 12px;
 }
 
 .btn-remove-item:hover {
-  background: rgb(239, 68, 68);
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
   transform: scale(1.1);
 }
 
 .tray-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .btn-compare-now {
-  background: var(--bg-primary);
-  color: var(--gold);
-  border: 2px solid var(--bg-primary);
-  padding: 0.75rem 2rem;
-  border-radius: var(--radius-lg);
-  font-weight: 700;
-  font-size: 1rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: 1px solid var(--gold);
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .btn-compare-now:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  background: rgb(220, 148, 21);
+  border-color: rgb(220, 148, 21);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
 }
 
 .btn-compare-now:disabled {
@@ -636,12 +720,14 @@ watch(itemsPerPage, () => {
 }
 
 .btn-icon {
-  font-size: 1.25rem;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .help-text {
-  color: rgba(0, 0, 0, 0.7);
-  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
@@ -688,8 +774,11 @@ watch(itemsPerPage, () => {
 }
 
 .search-icon {
-  font-size: 1.25rem;
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
   margin-right: 0.75rem;
+  flex-shrink: 0;
 }
 
 .search-input {
@@ -711,13 +800,23 @@ watch(itemsPerPage, () => {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  font-size: 1.25rem;
   padding: 0.25rem;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-clear-search svg {
+  width: 16px;
+  height: 16px;
 }
 
 .btn-clear-search:hover {
   color: var(--text-primary);
+}
+
+.btn-clear-search:hover svg {
   transform: rotate(90deg);
 }
 
@@ -738,7 +837,14 @@ watch(itemsPerPage, () => {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .view-btn:hover {
@@ -870,17 +976,18 @@ watch(itemsPerPage, () => {
 .card-header {
   position: relative;
   aspect-ratio: 1;
-  background: var(--bg-tertiary);
+  background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
   transition: transform 0.3s;
 }
 
@@ -1168,88 +1275,37 @@ watch(itemsPerPage, () => {
   font-family: 'Monaco', 'Courier New', monospace;
 }
 
-/* Pagination */
-.pagination {
+/* Simple Pagination */
+.pagination-simple {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-primary);
   flex-wrap: wrap;
 }
 
-.page-info {
+.pagination-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.results-count {
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.page-current {
+.showing-count {
   color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
-.page-controls {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.page-btn, .page-number {
-  background: var(--bg-tertiary);
-  border: 2px solid var(--border-primary);
+.showing-count strong {
   color: var(--text-primary);
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s;
   font-weight: 600;
-  min-width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.page-btn:hover:not(:disabled),
-.page-number:hover:not(.ellipsis):not(:disabled) {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--bg-primary);
-}
-
-.page-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.page-number.active {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--bg-primary);
-}
-
-.page-number.ellipsis {
-  border: none;
-  background: transparent;
-  cursor: default;
-  pointer-events: none;
-}
-
-.page-numbers {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.per-page-select {
+.show-select {
   background: var(--bg-tertiary);
   border: 2px solid var(--border-primary);
   color: var(--text-primary);
@@ -1257,18 +1313,52 @@ watch(itemsPerPage, () => {
   border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
   transition: all 0.2s;
 }
 
-.per-page-select:focus {
+.show-select:hover {
+  border-color: var(--gold);
+}
+
+.show-select:focus {
   outline: none;
   border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(240, 168, 41, 0.1);
+}
+
+.btn-load-more {
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: 1px solid var(--gold);
+  padding: 0.625rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.btn-load-more:hover {
+  background: rgb(220, 148, 21);
+  border-color: rgb(220, 148, 21);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.load-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .items-grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 1rem;
   }
   
@@ -1294,6 +1384,21 @@ watch(itemsPerPage, () => {
   
   .search-box {
     width: 100%;
+  }
+  
+  .pagination-simple {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pagination-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-load-more {
+    width: 100%;
+    justify-content: center;
   }
 }
 </style>

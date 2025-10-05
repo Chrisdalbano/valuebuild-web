@@ -5,14 +5,14 @@
       <div class="header-content">
         <div class="logo-section">
           <img 
-            src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/magicalfootwear/magicalfootwear.png"
+            src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png"
             alt="Gold"
             class="logo-icon"
             @error="handleLogoError"
           />
-          <h1 class="logo-text">ITEMDSIFF.GG</h1>
+          <h1 class="logo-text">VALUEBUILD.GG</h1>
         </div>
-        <p class="subtitle">Gold efficiency analytics for items</p>
+        <p class="subtitle">Efficient gold value analytics for League of Legends items</p>
       </div>
       <div class="header-actions">
         <button @click="refreshItems" :disabled="loading" class="btn btn-refresh">
@@ -81,8 +81,7 @@
                 </div>
                 
                 <button class="insight-btn">
-                  <span class="btn-icon">📊</span>
-                  Compare Now
+                  Compare Items
                   <span class="btn-arrow">→</span>
                 </button>
               </div>
@@ -1116,14 +1115,9 @@ function formatStatValue(statKey, value) {
   box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
 }
 
-.insight-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
-}
 
-.btn-icon {
-  font-size: 1.125rem;
-}
+
+
 
 .btn-arrow {
   font-size: 1.25rem;
