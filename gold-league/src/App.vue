@@ -14,11 +14,11 @@
         </div>
         <p class="subtitle">Gold efficiency analytics for items</p>
       </div>
-      <!-- <div class="header-actions">
+      <div class="header-actions">
         <button @click="refreshItems" :disabled="loading" class="btn btn-refresh">
           {{ loading ? 'Loading...' : 'Refresh Data' }}
         </button>
-      </div> -->
+      </div>
     </header>
 
     <main class="app-main">
@@ -45,22 +45,46 @@
         </nav>
 
         <div class="tab-content">
-          <!-- Random Comparisons Section -->
-          <div v-if="activeTab === 'table' && randomComparisons.length > 0" class="random-comparisons">
-            <h2>Random Item Comparisons</h2>
-            <p class="subtitle-text">Quick analysis of popular legendary items</p>
-            <div class="comparison-cards">
-              <div v-for="(comp, index) in randomComparisons" :key="index" class="comparison-card" @click="loadRandomComparison(comp)">
-                <div class="card-items">
-                  <img v-for="item in comp" :key="item.id" :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" :alt="item.name" class="card-item-icon" />
-                </div>
-                <div class="card-info">
-                  <div class="card-title">{{ comp.map(i => i.name).join(' vs ') }}</div>
-                  <div class="card-stats">
-                    <span>Avg Efficiency: {{ (comp.reduce((sum, i) => sum + i.goldEfficiency, 0) / comp.length).toFixed(1) }}%</span>
+          <!-- Quick Insights Section -->
+          <div v-if="activeTab === 'table' && randomComparisons.length > 0" class="quick-insights">
+            <div class="insights-header">
+              <div>
+                <h2>⚡ Quick Comparisons</h2>
+                <p class="insights-subtitle">Popular item matchups analyzed instantly</p>
+              </div>
+              <button @click="generateRandomComparisons" class="btn-shuffle" title="Shuffle comparisons">
+                🔄 Shuffle
+              </button>
+            </div>
+            
+            <div class="insights-grid">
+              <div v-for="(comp, index) in randomComparisons" :key="index" class="insight-card" @click="loadRandomComparison(comp)">
+                <div class="insight-header">
+                  <div class="insight-badge">Quick Compare</div>
+                  <div class="insight-avg" :class="getEfficiencyClass((comp.reduce((sum, i) => sum + i.goldEfficiency, 0) / comp.length))">
+                    {{ (comp.reduce((sum, i) => sum + i.goldEfficiency, 0) / comp.length).toFixed(1) }}%
                   </div>
                 </div>
-                <button class="card-btn">Compare →</button>
+                
+                <div class="insight-items">
+                  <div v-for="(item, idx) in comp" :key="item.id" class="insight-item">
+                    <img :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" :alt="item.name" class="insight-item-img" />
+                    <div class="insight-item-details">
+                      <div class="insight-item-name">{{ item.name }}</div>
+                      <div class="insight-item-stats">
+                        <span class="insight-eff" :class="getEfficiencyClass(item.goldEfficiency)">{{ item.goldEfficiency }}%</span>
+                        <span class="insight-cost">{{ item.cost }}g</span>
+                      </div>
+                    </div>
+                    <div v-if="idx < comp.length - 1" class="insight-vs">VS</div>
+                  </div>
+                </div>
+                
+                <button class="insight-btn">
+                  <span class="btn-icon">📊</span>
+                  Compare Now
+                  <span class="btn-arrow">→</span>
+                </button>
               </div>
             </div>
           </div>
@@ -92,22 +116,80 @@
           />
 
           <div v-show="activeTab === 'builds'" class="builds-section">
-            <h2>Build Optimizer</h2>
-            <div class="info-card">
-              <h3>Coming Soon</h3>
-              <p>
-                This feature will analyze optimal item builds by considering:
-              </p>
-              <ul>
-                <li>Item synergies and passive combinations</li>
-                <li>Champion-specific stat priorities</li>
-                <li>Build path efficiency at different gold thresholds</li>
-                <li>Power spikes and scaling curves</li>
-                <li>Situational item recommendations based on game state</li>
-              </ul>
-              <p class="feature-note">
-                Select items from the database to manually build and analyze custom builds in the meantime.
-              </p>
+            <h2>Build Analyzer</h2>
+            
+            <div class="build-controls">
+              <button @click="addToBuild" class="btn-add" :disabled="compareItems.length === 0">
+                Add Compared Items to Build ({{ compareItems.length }})
+              </button>
+              <button @click="clearBuild" class="btn-clear" v-if="currentBuild.length > 0">
+                Clear Build
+              </button>
+            </div>
+
+            <div v-if="currentBuild.length > 0" class="build-analysis">
+              <div class="build-items">
+                <h3>Current Build ({{ currentBuild.length }}/6 items)</h3>
+                <div class="build-grid">
+                  <div v-for="(item, index) in currentBuild" :key="item.id" class="build-item-card">
+                    <button @click="removeFromBuild(index)" class="remove-btn">×</button>
+                    <img 
+                      :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" 
+                      :alt="item.name"
+                      class="build-item-icon"
+                    />
+                    <div class="build-item-name">{{ item.name }}</div>
+                    <div class="build-item-cost gold">{{ item.cost }}g</div>
+                    <div class="build-item-eff" :class="getEfficiencyClass(item.goldEfficiency)">
+                      {{ item.goldEfficiency }}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="build-stats">
+                <h3>Build Statistics</h3>
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-label">Total Cost</div>
+                    <div class="stat-value gold">{{ buildTotalCost }}g</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-label">Total Gold Value</div>
+                    <div class="stat-value gold">{{ buildTotalValue }}g</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-label">Average Efficiency</div>
+                    <div class="stat-value" :class="getEfficiencyClass(buildAvgEfficiency)">
+                      {{ buildAvgEfficiency }}%
+                    </div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-label">Total Stats Value</div>
+                    <div class="stat-value">{{ (buildTotalValue - buildTotalCost) }}g</div>
+                  </div>
+                </div>
+
+                <div class="combined-stats">
+                  <h4>Combined Stats</h4>
+                  <div class="stats-list">
+                    <div v-for="(value, stat) in buildCombinedStats" :key="stat" class="stat-row">
+                      <span class="stat-name">{{ formatStatName(stat) }}</span>
+                      <span class="stat-value">{{ formatStatValue(stat, value) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="build-recommendation">
+                  <h4>Analysis</h4>
+                  <p>{{ buildRecommendation }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div v-else class="empty-build-state">
+              <p>Add items from comparison to start building. Select items from the Items Database, then come back here to add them to your build.</p>
+              <button @click="activeTab = 'table'" class="btn-primary">Go to Items Database</button>
             </div>
           </div>
           
@@ -227,6 +309,7 @@ const headerBg = ref('')
 const detailedItem = ref(null)
 const showBreakdown = ref(false)
 const randomComparisons = ref([])
+const currentBuild = ref([])
 
 // Popular champions for random splash art
 const champions = [
@@ -341,6 +424,109 @@ function loadRandomComparison(comparisonSet) {
 function handleLogoError(e) {
   // Fallback to a gold coin emoji as SVG if image fails
   e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"%3E%3Ccircle cx="12" cy="12" r="10" fill="%23F0A829"/%3E%3C/svg%3E'
+}
+
+// Build Analyzer functions
+function addToBuild() {
+  compareItems.value.forEach(item => {
+    if (!currentBuild.value.find(i => i.id === item.id) && currentBuild.value.length < 6) {
+      currentBuild.value.push(item)
+    }
+  })
+}
+
+function removeFromBuild(index) {
+  currentBuild.value.splice(index, 1)
+}
+
+function clearBuild() {
+  currentBuild.value = []
+}
+
+const buildTotalCost = computed(() => {
+  return currentBuild.value.reduce((sum, item) => sum + (item.cost || 0), 0)
+})
+
+const buildTotalValue = computed(() => {
+  return currentBuild.value.reduce((sum, item) => sum + (item.totalGoldValue || 0), 0)
+})
+
+const buildAvgEfficiency = computed(() => {
+  if (currentBuild.value.length === 0) return 0
+  const total = currentBuild.value.reduce((sum, item) => sum + (item.goldEfficiency || 0), 0)
+  return (total / currentBuild.value.length).toFixed(2)
+})
+
+const buildCombinedStats = computed(() => {
+  const stats = {}
+  currentBuild.value.forEach(item => {
+    if (item.stats) {
+      Object.entries(item.stats).forEach(([key, value]) => {
+        stats[key] = (stats[key] || 0) + value
+      })
+    }
+  })
+  return stats
+})
+
+const buildRecommendation = computed(() => {
+  if (currentBuild.value.length === 0) return ''
+  
+  const avgEff = parseFloat(buildAvgEfficiency.value)
+  const totalCost = buildTotalCost.value
+  
+  let recommendation = ''
+  
+  if (avgEff >= 110) {
+    recommendation = 'Excellent build! High gold efficiency across all items. '
+  } else if (avgEff >= 100) {
+    recommendation = 'Solid build with good stat value for the cost. '
+  } else if (avgEff >= 90) {
+    recommendation = 'Decent build, but consider swapping lower efficiency items. '
+  } else {
+    recommendation = 'This build has low gold efficiency. Look for more cost-effective alternatives. '
+  }
+  
+  if (totalCost > 15000) {
+    recommendation += 'This is a very expensive full build.'
+  } else if (totalCost > 10000) {
+    recommendation += 'Mid-late game build path.'
+  } else {
+    recommendation += 'Early-mid game build path.'
+  }
+  
+  return recommendation
+})
+
+function getEfficiencyClass(efficiency) {
+  if (efficiency >= 110) return 'excellent'
+  if (efficiency >= 100) return 'good'
+  if (efficiency >= 90) return 'fair'
+  return 'poor'
+}
+
+function formatStatName(statKey) {
+  const names = {
+    FlatPhysicalDamageMod: 'Attack Damage',
+    FlatMagicDamageMod: 'Ability Power',
+    FlatArmorMod: 'Armor',
+    FlatSpellBlockMod: 'Magic Resist',
+    FlatHPPoolMod: 'Health',
+    FlatMPPoolMod: 'Mana',
+    PercentCritChanceMod: 'Crit Chance',
+    PercentAttackSpeedMod: 'Attack Speed',
+    FlatMovementSpeedMod: 'Movement Speed',
+    PercentLifeStealMod: 'Life Steal'
+  }
+  return names[statKey] || statKey
+}
+
+function formatStatValue(statKey, value) {
+  const percentageStats = ['PercentCritChanceMod', 'PercentAttackSpeedMod', 'PercentLifeStealMod']
+  if (percentageStats.includes(statKey)) {
+    return `${(value * 100).toFixed(1)}%`
+  }
+  return value.toFixed(1)
 }
 </script>
 
@@ -714,90 +900,239 @@ function handleLogoError(e) {
   text-decoration: underline;
 }
 
-.random-comparisons {
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
+.quick-insights {
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.05), rgba(135, 64, 55, 0.05));
+  border-radius: var(--radius-xl);
   padding: 2rem;
   margin-bottom: 2rem;
-  border: 1px solid var(--border-primary);
+  border: 2px solid var(--border-primary);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
 }
 
-.random-comparisons h2 {
-  color: var(--text-primary);
-  font-size: 1.5rem;
+.insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.quick-insights h2 {
+  color: var(--gold);
+  font-size: 1.75rem;
   margin-bottom: 0.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.subtitle-text {
+.insights-subtitle {
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  margin: 0;
 }
 
-.comparison-cards {
+.btn-shuffle {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-shuffle:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  transform: rotate(180deg);
+}
+
+.insights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
-.comparison-card {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+.insight-card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.insight-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(240, 168, 41, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.insight-card:hover::before {
+  left: 100%;
+}
+
+.insight-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(240, 168, 41, 0.2);
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.insight-badge {
+  background: rgba(240, 168, 41, 0.15);
+  color: var(--gold);
+  padding: 0.375rem 0.875rem;
+  border-radius: 2rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(240, 168, 41, 0.3);
+}
+
+.insight-avg {
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+}
+
+.insight-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.insight-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: var(--bg-tertiary);
+  padding: 0.875rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  position: relative;
   transition: all 0.2s;
 }
 
-.comparison-card:hover {
-  border-color: var(--gold);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+.insight-item:hover {
+  border-color: var(--border-secondary);
+  background: var(--bg-hover);
 }
 
-.card-items {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  justify-content: center;
-}
-
-.card-item-icon {
-  width: 48px;
-  height: 48px;
+.insight-item-img {
+  width: 56px;
+  height: 56px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-secondary);
+  border: 2px solid var(--border-secondary);
+  flex-shrink: 0;
 }
 
-.card-info {
-  margin-bottom: 1rem;
+.insight-item-details {
+  flex: 1;
 }
 
-.card-title {
+.insight-item-name {
   color: var(--text-primary);
   font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 0.375rem;
+}
+
+.insight-item-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.insight-eff {
+  font-weight: 700;
   font-size: 0.875rem;
-  margin-bottom: 0.5rem;
 }
 
-.card-stats {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
+.insight-cost {
+  color: var(--gold);
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+  font-size: 0.875rem;
 }
 
-.card-btn {
-  width: 100%;
-  padding: 0.5rem;
+.insight-vs {
+  position: absolute;
+  bottom: -0.875rem;
+  left: 50%;
+  transform: translateX(-50%);
   background: var(--gold);
   color: var(--bg-primary);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  padding: 0.25rem 0.625rem;
+  border-radius: 2rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1;
 }
 
-.card-btn:hover {
-  background: var(--rust);
+.insight-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--gold), var(--rust));
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.insight-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
+}
+
+.btn-icon {
+  font-size: 1.125rem;
+}
+
+.btn-arrow {
+  font-size: 1.25rem;
+  font-weight: bold;
+  transition: transform 0.3s;
+}
+
+.insight-card:hover .btn-arrow {
+  transform: translateX(4px);
 }
 
 .modal-overlay {
@@ -856,5 +1191,201 @@ function handleLogoError(e) {
   .stat-values-grid {
     grid-template-columns: 1fr;
   }
+
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insights-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .btn-shuffle {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.builds-section {
+  padding: 2rem;
+}
+
+.builds-section h2 {
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+}
+
+.build-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn-add {
+  padding: 0.75rem 1.5rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add:hover:not(:disabled) {
+  background: var(--rust);
+  transform: translateY(-1px);
+}
+
+.btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: var(--rust);
+}
+
+.build-analysis {
+  display: grid;
+  gap: 2rem;
+}
+
+.build-items, .build-stats {
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.build-items h3, .build-stats h3 {
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+}
+
+.build-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.build-item-card {
+  position: relative;
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.build-item-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.build-item-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+}
+
+.build-item-name {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.build-item-cost, .build-item-eff {
+  font-size: 0.75rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.combined-stats {
+  margin-bottom: 2rem;
+}
+
+.combined-stats h4 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.stats-list {
+  background: var(--bg-tertiary);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.build-recommendation {
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.build-recommendation h4 {
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+}
+
+.build-recommendation p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.empty-build-state {
+  background: var(--bg-secondary);
+  padding: 3rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  text-align: center;
+}
+
+.empty-build-state p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
 }
 </style>

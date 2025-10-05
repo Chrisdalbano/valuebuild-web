@@ -48,11 +48,26 @@ def should_include_item(item):
     # - Consumables without stats
     # - Trinkets
     # - Special event items
+    # - Arena mode duplicates (IDs starting with 32, 22, 44, etc.)
     
     name = item.get("name", "")
     gold = item.get("gold", {})
     maps_data = item.get("maps", {})
     stats = item.get("stats", {})
+    item_id = str(item.get("id", ""))
+    
+    # Exclude Arena mode items (they have special ID prefixes)
+    # Arena items typically have IDs like 323110 (instead of 3110)
+    # These are duplicates with modified stats for Arena mode
+    # Also exclude old/outdated versions (5+ digit IDs that aren't in current meta)
+    if len(item_id) >= 5 and (
+        item_id.startswith("22") or 
+        item_id.startswith("32") or 
+        item_id.startswith("44") or
+        item_id.startswith("88") or
+        item_id.startswith("99")
+    ):
+        return False
     
     # Must be available on Summoner's Rift (map ID "11")
     if not maps_data.get("11", False):
