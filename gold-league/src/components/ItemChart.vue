@@ -349,90 +349,95 @@ function createCategoryChart(ctx) {
 
 <style scoped>
 .chart-container {
-  padding: 20px;
-  background: #1a1a2e;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .chart-container h2 {
-  color: #e94560;
-  margin-bottom: 20px;
-  font-size: 28px;
+  color: var(--gold);
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
   text-align: center;
+  font-weight: 700;
 }
 
 .chart-controls {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
 .chart-btn {
-  padding: 10px 20px;
-  border: 2px solid #0f3460;
-  border-radius: 8px;
-  background: #16213e;
-  color: #fff;
-  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
 }
 
 .chart-btn:hover {
-  background: #0f3460;
-  border-color: #e94560;
+  background: var(--bg-hover);
+  border-color: var(--border-secondary);
 }
 
 .chart-btn.active {
-  background: linear-gradient(135deg, #e94560 0%, #0f3460 100%);
-  border-color: #e94560;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border-color: var(--gold);
 }
 
 .chart-wrapper {
-  background: #16213e;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  background: var(--bg-tertiary);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
   min-height: 400px;
   max-height: 600px;
+  border: 1px solid var(--border-primary);
 }
 
 .chart-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
+  gap: 1rem;
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid #0f3460;
+  background: var(--bg-tertiary);
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
   text-align: center;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: #e94560;
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(233, 69, 96, 0.3);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-label {
-  color: #a0a0a0;
-  font-size: 14px;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
   font-weight: 500;
-  margin-bottom: 10px;
+  margin-bottom: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.05em;
 }
 
 .stat-value {
-  color: #e94560;
-  font-size: 24px;
+  color: var(--gold);
+  font-size: 1.5rem;
   font-weight: 700;
 }
 </style>
