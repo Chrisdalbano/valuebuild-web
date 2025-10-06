@@ -46,9 +46,10 @@ export const itemsApi = {
 /**
  * Get image URL for an item
  * Try multiple CDN sources for reliability
+ * Note: Items from backend already include validated imageUrl with correct patch
  */
-export function getItemImageUrl(itemId, version = '14.20.1') {
-  // Primary: Data Dragon
+export function getItemImageUrl(itemId, version = '15.19.1') {
+  // Primary: Data Dragon (updated to current patch)
   return `https://ddragon.leagueoflegends.com/cdn/${version}/img/item/${itemId}.png`
 }
 
@@ -57,6 +58,19 @@ export function getItemImageUrl(itemId, version = '14.20.1') {
  */
 export function getItemImageUrlFallback(itemId) {
   return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
+}
+
+/**
+ * Get item image URL - prefers backend-validated URL, falls back to constructing URL
+ * This ensures we always use images that were validated during ETL
+ */
+export function getValidatedItemImageUrl(item) {
+  // Backend provides pre-validated imageUrl with correct patch version
+  if (item && item.imageUrl) {
+    return item.imageUrl
+  }
+  // Fallback: construct URL with current patch (for backwards compatibility)
+  return getItemImageUrl(item?.id || item)
 }
 
 /**
