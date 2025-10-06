@@ -2,11 +2,14 @@
   <nav class="main-navigation" :class="{ 'scrolled': isScrolled, 'menu-open': isMobileMenuOpen }">
     <div class="nav-container">
       <!-- Logo/Brand -->
-      <div class="nav-brand">
-        <img src="/gold.svg" alt="Gold League" class="brand-icon" />
-        <h1 class="brand-title">ValueBuild</h1>
-        <span class="brand-subtitle">League Item Optimizer</span>
-      </div>
+      <router-link to="/" class="nav-brand">
+        <img 
+          src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png"
+          alt="BuildValue Logo" 
+          class="brand-icon" 
+        />
+        <h1 class="brand-title">BuildValue</h1>
+      </router-link>
 
       <!-- Hamburger Menu Button (Mobile) -->
       <button 
@@ -22,27 +25,17 @@
 
       <!-- Navigation Links -->
       <div class="nav-links" :class="{ 'mobile-open': isMobileMenuOpen }">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          @click="selectTab(tab.id)"
-          :class="['nav-link', { 'active': activeTab === tab.id }]"
+        <router-link 
+          v-for="route in routes" 
+          :key="route.path"
+          :to="route.path"
+          @click="closeMobileMenu"
+          :class="['nav-link']"
+          active-class="active"
         >
-          <span class="nav-icon">{{ tab.icon }}</span>
-          <span class="nav-label">{{ tab.label }}</span>
-          <span v-if="tab.badge" class="nav-badge">{{ tab.badge }}</span>
-        </button>
-
-        <!-- Refresh Button -->
-        <button 
-          @click="handleRefresh"
-          class="nav-link refresh-btn"
-          :disabled="loading"
-          title="Refresh item data from API"
-        >
-          <span class="nav-icon" :class="{ 'spinning': loading }">🔄</span>
-          <span class="nav-label">Refresh</span>
-        </button>
+          <span class="nav-label">{{ route.name }}</span>
+          <span v-if="getBadge(route.name)" class="nav-badge">{{ getBadge(route.name) }}</span>
+        </router-link>
       </div>
 
       <!-- Stats Bar (Desktop) -->
@@ -68,17 +61,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
-  activeTab: {
-    type: String,
-    required: true
-  },
-  itemCount: {
-    type: Number,
-    default: 0
-  },
   compareCount: {
     type: Number,
     default: 0
@@ -87,61 +73,35 @@ const props = defineProps({
     type: Number,
     default: 0
   },
-  loading: {
-    type: Boolean,
-    default: false
+  itemCount: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['change-tab', 'refresh'])
+const router = useRouter()
 
 // State
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
 
-// Tab configuration
-const tabs = computed(() => [
-  { 
-    id: 'table', 
-    label: 'Items', 
-    icon: '📊',
-    badge: null
-  },
-  { 
-    id: 'compare', 
-    label: 'Compare', 
-    icon: '⚖️',
-    badge: props.compareCount > 0 ? props.compareCount : null
-  },
-  { 
-    id: 'builds', 
-    label: 'Build', 
-    icon: '🛠️',
-    badge: props.buildCount > 0 ? props.buildCount : null
-  },
-  { 
-    id: 'charts', 
-    label: 'Charts', 
-    icon: '📈',
-    badge: null
-  },
-  { 
-    id: 'about', 
-    label: 'About', 
-    icon: 'ℹ️',
-    badge: null
-  }
-])
+// Routes configuration
+const routes = [
+  { path: '/', name: 'Items' },
+  { path: '/compare', name: 'Compare' },
+  { path: '/builds', name: 'Builds' },
+  { path: '/about', name: 'About' }
+]
 
 // Methods
-function selectTab(tabId) {
-  emit('change-tab', tabId)
-  closeMobileMenu()
-}
-
-function handleRefresh() {
-  emit('refresh')
-  closeMobileMenu()
+function getBadge(routeName) {
+  if (routeName === 'Compare' && props.compareCount > 0) {
+    return props.compareCount
+  }
+  if (routeName === 'Builds' && props.buildCount > 0) {
+    return props.buildCount
+  }
+  return null
 }
 
 function toggleMobileMenu() {
@@ -210,6 +170,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .brand-icon {
@@ -234,12 +196,6 @@ onUnmounted(() => {
   letter-spacing: -0.5px;
 }
 
-.brand-subtitle {
-  display: none;
-  font-size: 0.75rem;
-  color: rgba(255, 215, 0, 0.6);
-  font-weight: 500;
-}
 
 /* Hamburger Button */
 .hamburger-btn {
@@ -335,10 +291,6 @@ onUnmounted(() => {
   50% { opacity: 1; }
 }
 
-.nav-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-}
 
 .nav-label {
   font-weight: 600;
@@ -356,29 +308,6 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
 }
 
-.refresh-btn {
-  background: rgba(76, 209, 55, 0.1);
-  border-color: rgba(76, 209, 55, 0.3);
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: rgba(76, 209, 55, 0.2);
-  border-color: rgba(76, 209, 55, 0.5);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 /* Stats Bar */
 .nav-stats {
@@ -453,7 +382,7 @@ onUnmounted(() => {
   .nav-links {
     position: fixed;
     top: 60px;
-    right: 0;
+    right: -100%;
     width: 280px;
     max-width: 85vw;
     height: calc(100vh - 60px);
@@ -463,14 +392,14 @@ onUnmounted(() => {
     align-items: stretch;
     gap: 0.5rem;
     padding: 1.5rem;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
+    transition: right 0.3s ease;
     overflow-y: auto;
     box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+    z-index: 1001;
   }
 
   .nav-links.mobile-open {
-    transform: translateX(0);
+    right: 0;
   }
 
   .nav-link {
@@ -511,14 +440,9 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .brand-subtitle {
-    display: none;
-  }
-  
   .nav-links {
     width: 100%;
     max-width: 100vw;
-    top: 60px;
     border-left: none;
     border-top: 2px solid rgba(255, 215, 0, 0.3);
   }

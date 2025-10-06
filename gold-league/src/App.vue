@@ -115,10 +115,12 @@ import AboutSection from './components/AboutSection.vue'
 import { itemsApi } from './api/items'
 import { isItemDeprecated, filterDeprecatedItems } from './utils/deprecatedItems'
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const items = ref([])
 const loading = ref(false)
 const error = ref(null)
-const activeTab = ref('table')
 const compareItems = ref([])
 const headerBg = ref('')
 const detailedItem = ref(null)
@@ -142,7 +144,7 @@ const getRandomSplash = () => {
   return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion}_${skinNumber}.jpg`
 }
 
-// Tabs configuration moved to Navigation component
+// Tabs removed - now using Vue Router
 
 onMounted(() => {
   loadItems()
@@ -198,7 +200,7 @@ function retryLoad() {
 
 function handleCompare(selectedItems) {
   compareItems.value = selectedItems
-  activeTab.value = 'compare'
+  router.push('/compare')
 }
 
 function handleAddToBuild(selectedItems) {
@@ -207,12 +209,12 @@ function handleAddToBuild(selectedItems) {
       currentBuild.value.push(item)
     }
   })
-  activeTab.value = 'builds'
+  router.push('/builds')
 }
 
 function clearComparison() {
   compareItems.value = []
-  activeTab.value = 'table'
+  router.push('/')
 }
 
 function removeFromComparison(item) {
@@ -221,12 +223,12 @@ function removeFromComparison(item) {
     compareItems.value.splice(index, 1)
   }
   if (compareItems.value.length === 0) {
-    activeTab.value = 'table'
+    router.push('/')
   }
 }
 
-function addMoreItems() {
-  activeTab.value = 'table'
+function goToItems() {
+  router.push('/')
 }
 
 function viewDetailed(item) {
