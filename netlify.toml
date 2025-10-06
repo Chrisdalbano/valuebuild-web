@@ -4,8 +4,8 @@
   # Directory where frontend code is located
   base = "gold-league/"
   
-  # Build command
-  command = "npm run build"
+  # Build command (install deps first, then build)
+  command = "npm ci && npm run build"
   
   # Output directory (Vite default)
   publish = "dist"
