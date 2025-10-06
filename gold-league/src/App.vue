@@ -1,25 +1,11 @@
 <template>
   <div id="app">
-    <header class="app-header" :style="{ backgroundImage: `url(${headerBg})` }">
-      <div class="header-overlay"></div>
-      <div class="header-content">
-        <div class="logo-section">
-          <img 
-            src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png"
-            alt="Gold"
-            class="logo-icon"
-            @error="handleLogoError"
-          />
-          <h1 class="logo-text">BuildValue</h1>
-        </div>
-        <p class="subtitle">Get efficient gold value analytics for your builds and items</p>
-      </div>
-      <div class="header-actions">
-        <button @click="refreshItems" :disabled="loading" class="btn btn-refresh">
-          {{ loading ? 'Loading...' : 'Refresh Data' }}
-        </button>
-      </div>
-    </header>
+    <!-- Navigation Component -->
+    <Navigation 
+      :item-count="items.length"
+      :compare-count="compareItems.length"
+      :build-count="currentBuild.length"
+    />
 
     <main class="app-main">
       <div v-if="error" class="error-banner">
@@ -33,71 +19,57 @@
       </div>
 
       <template v-else-if="items.length > 0">
-        <nav class="tab-nav">
-          <button 
-            v-for="tab in tabs" 
-            :key="tab.value"
-            @click="activeTab = tab.value"
-            :class="['tab-btn', { active: activeTab === tab.value }]"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
+        <!-- Quick Insights -->
+        <QuickInsights
+          v-if="$route.path === '/' && randomComparisons.length > 0"
+          :comparisons="randomComparisons"
+          :gold-icon-url="goldIconUrl"
+          @shuffle="generateRandomComparisons"
+          @load-comparison="loadRandomComparison"
+        />
 
-        <div class="tab-content">
-          <!-- Quick Insights -->
-          <QuickInsights
-            v-if="activeTab === 'table' && randomComparisons.length > 0"
-            :comparisons="randomComparisons"
-            :gold-icon-url="goldIconUrl"
-            @shuffle="generateRandomComparisons"
-            @load-comparison="loadRandomComparison"
-          />
-
-          <!-- Item Breakdown Modal -->
-          <div v-if="showBreakdown" class="modal-overlay" @click="closeBreakdown">
-            <div class="modal-content" @click.stop>
-              <ItemBreakdown 
-                :item="detailedItem"
-                :allItems="items"
-                @close="closeBreakdown"
-                @select="viewDetailed"
-              />
-            </div>
+        <!-- Item Breakdown Modal -->
+        <div v-if="showBreakdown" class="modal-overlay" @click="closeBreakdown">
+          <div class="modal-content" @click.stop>
+            <ItemBreakdown 
+              :item="detailedItem"
+              :allItems="items"
+              @close="closeBreakdown"
+              @select="viewDetailed"
+            />
           </div>
-
-          <!-- Item Table -->
-          <ItemTable 
-            v-show="activeTab === 'table'" 
-            :items="items"
-            @compare="handleCompare"
-            @addToBuild="handleAddToBuild"
-          />
-          
-          <!-- Item Comparison -->
-          <ItemCompare 
-            v-show="activeTab === 'compare'" 
-            :items="compareItems"
-            :allItems="items"
-            @clear="clearComparison"
-            @viewDetailed="viewDetailed"
-            @removeItem="removeFromComparison"
-            @addMore="addMoreItems"
-          />
-
-          <!-- Build Optimizer -->
-          <BuildOptimizer
-            v-show="activeTab === 'builds'"
-            v-model:current-build="currentBuild"
-            :items="items"
-            :compare-items="compareItems"
-            :gold-icon-url="goldIconUrl"
-            @browse-items="activeTab = 'table'"
-          />
-
-          <!-- About Section -->
-          <AboutSection v-show="activeTab === 'about'" />
         </div>
+
+        <!-- Router View for Pages -->
+        <router-view 
+          v-slot="{ Component }"
+          :items="items"
+          :compare-items="compareItems"
+          :current-build="currentBuild"
+          :all-items="items"
+          :gold-icon-url="goldIconUrl"
+        >
+          <component 
+            :is="Component"
+            :items="$route.name === 'Compare' ? compareItems : items"
+            :compare-items="compareItems"
+            :current-build="currentBuild"
+            :all-items="items"
+            :gold-icon-url="goldIconUrl"
+            @compare="handleCompare"
+            @add-to-build="handleAddToBuild"
+            @addToBuild="handleAddToBuild"
+            @clear="clearComparison"
+            @view-detailed="viewDetailed"
+            @viewDetailed="viewDetailed"
+            @remove-item="removeFromComparison"
+            @removeItem="removeFromComparison"
+            @add-more="goToItems"
+            @addMore="goToItems"
+            @browse-items="goToItems"
+            v-model:current-build="currentBuild"
+          />
+        </router-view>
       </template>
     </main>
     
@@ -125,6 +97,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import Navigation from './components/Navigation.vue'
 import ItemTable from './components/ItemTable.vue'
 import ItemCompare from './components/ItemCompare.vue'
 import ItemBreakdown from './components/ItemBreakdown.vue'
@@ -134,10 +107,12 @@ import AboutSection from './components/AboutSection.vue'
 import { itemsApi } from './api/items'
 import { isItemDeprecated, filterDeprecatedItems } from './utils/deprecatedItems'
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const items = ref([])
 const loading = ref(false)
 const error = ref(null)
-const activeTab = ref('table')
 const compareItems = ref([])
 const headerBg = ref('')
 const detailedItem = ref(null)
@@ -161,12 +136,7 @@ const getRandomSplash = () => {
   return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion}_${skinNumber}.jpg`
 }
 
-const tabs = [
-  { value: 'table', label: 'Items Database' },
-  { value: 'compare', label: 'Item Comparison' },
-  { value: 'builds', label: 'Build Analyzer' },
-  { value: 'about', label: 'Documentation' }
-]
+// Tabs removed - now using Vue Router
 
 onMounted(() => {
   loadItems()
@@ -222,7 +192,7 @@ function retryLoad() {
 
 function handleCompare(selectedItems) {
   compareItems.value = selectedItems
-  activeTab.value = 'compare'
+  router.push('/compare')
 }
 
 function handleAddToBuild(selectedItems) {
@@ -231,12 +201,12 @@ function handleAddToBuild(selectedItems) {
       currentBuild.value.push(item)
     }
   })
-  activeTab.value = 'builds'
+  router.push('/builds')
 }
 
 function clearComparison() {
   compareItems.value = []
-  activeTab.value = 'table'
+  router.push('/')
 }
 
 function removeFromComparison(item) {
@@ -245,12 +215,12 @@ function removeFromComparison(item) {
     compareItems.value.splice(index, 1)
   }
   if (compareItems.value.length === 0) {
-    activeTab.value = 'table'
+    router.push('/')
   }
 }
 
-function addMoreItems() {
-  activeTab.value = 'table'
+function goToItems() {
+  router.push('/')
 }
 
 function viewDetailed(item) {
@@ -450,6 +420,15 @@ function scrollToTop() {
   width: 100%;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  padding-top: calc(64px + 2rem); /* Navbar height + spacing */
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding-top: calc(56px + 1.5rem); /* Mobile navbar height + spacing */
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .error-banner {
