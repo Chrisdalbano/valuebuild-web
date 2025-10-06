@@ -357,7 +357,7 @@
 <script setup>
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { getItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
 
 Chart.register(...registerables)
 

@@ -379,7 +379,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { getItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
 
 const props = defineProps({
   items: {

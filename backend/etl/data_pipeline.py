@@ -47,16 +47,47 @@ class DDragonETL:
     
     async def validate_image(self, item_id: str, patch: str) -> bool:
         """
-        Validate that image exists and is accessible
-        This prevents frontend from trying to load missing images
+        STRICT image validation - ensures image exists and is valid
+        This prevents frontend from showing broken images
         """
         image_url = f"{self.ddragon_base}/cdn/{patch}/img/item/{item_id}.png"
         try:
-            response = requests.head(image_url, timeout=5)
-            is_valid = response.status_code == 200
-            if not is_valid:
-                print(f"⚠️  Image validation failed for item {item_id}: {response.status_code}")
-            return is_valid
+            # First try HEAD request
+            response = requests.head(image_url, timeout=5, allow_redirects=True)
+            
+            if response.status_code != 200:
+                print(f"⚠️  Image validation failed for item {item_id}: HTTP {response.status_code}")
+                return False
+            
+            # Check content-type to ensure it's actually an image
+            content_type = response.headers.get('Content-Type', '')
+            if not content_type.startswith('image/'):
+                print(f"⚠️  Image validation failed for item {item_id}: Invalid content-type '{content_type}'")
+                return False
+            
+            # If HEAD doesn't provide enough info, do a GET request to verify
+            # Check file size - valid images should be > 500 bytes
+            content_length = response.headers.get('Content-Length')
+            if content_length:
+                size = int(content_length)
+                if size < 500:  # Too small to be a real item image
+                    print(f"⚠️  Image validation failed for item {item_id}: File too small ({size} bytes)")
+                    return False
+            else:
+                # No content-length header, do a partial GET to verify
+                get_response = requests.get(image_url, timeout=5, stream=True)
+                if get_response.status_code != 200:
+                    print(f"⚠️  Image validation failed for item {item_id}: GET request failed")
+                    return False
+                
+                # Read first 1KB to verify it's a valid PNG
+                chunk = next(get_response.iter_content(1024))
+                if not chunk.startswith(b'\x89PNG'):
+                    print(f"⚠️  Image validation failed for item {item_id}: Not a valid PNG file")
+                    return False
+            
+            return True
+            
         except Exception as e:
             print(f"⚠️  Image validation error for item {item_id}: {e}")
             return False
