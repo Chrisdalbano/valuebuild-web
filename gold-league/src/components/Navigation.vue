@@ -267,9 +267,9 @@ onUnmounted(() => {
   padding: 0 0.375rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--bg-primary);
-  background: var(--gold);
-  border-radius: 0.625rem;
+  color: var(--gold);
+  background: var(--bg-secondary);
+  border-radius: 4px;
   line-height: 1;
 }
 
