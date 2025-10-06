@@ -40,6 +40,32 @@ def fetch_items():
         print(f"Error fetching items: {e}")
         return []
 
+# Known deprecated items that should never be included (Mythics, removed items, etc.)
+DEPRECATED_ITEMS = {
+    # Mythic items (removed in Season 2024)
+    '3152',  # Hextech Rocketbelt
+    '4633',  # Riftmaker
+    '4636',  # Night Harvester
+    '6653',  # Liandry's Anguish (old Mythic version)
+    '3001',  # Evenshroud (old Mythic)
+    '4005',  # Imperial Mandate
+    '2065',  # Shurelya's Battlesong (old Mythic)
+    '3190',  # Locket of the Iron Solari (old Mythic)
+    '6617',  # Moonstone Renewer (old Mythic)
+    '6630',  # Goredrinker
+    '6631',  # Stridebreaker
+    '6632',  # Divine Sunderer
+    '6691',  # Duskblade of Draktharr (old Mythic)
+    '6692',  # Eclipse (old Mythic)
+    '6693',  # Prowler's Claw
+    '3068',  # Sunfire Aegis (old Mythic)
+    '6664',  # Turbo Chemtank
+    '4644',  # Crown of the Shattered Queen
+    '3152',  # Hextech Gunblade (removed)
+    '3146',  # Hextech Gunblade
+    # Add more as discovered
+}
+
 def should_include_item(item):
     """Determine if an item should be included in the analysis"""
     # Exclude items that are:
@@ -49,12 +75,29 @@ def should_include_item(item):
     # - Trinkets
     # - Special event items
     # - Arena mode duplicates (IDs starting with 32, 22, 44, etc.)
+    # - Known deprecated/mythic items
     
     name = item.get("name", "")
     gold = item.get("gold", {})
     maps_data = item.get("maps", {})
     stats = item.get("stats", {})
     item_id = str(item.get("id", ""))
+    description = item.get("description", "")
+    tags = item.get("tags", [])
+    
+    # Check against deprecated items blacklist
+    if item_id in DEPRECATED_ITEMS:
+        return False
+    
+    # Exclude items with "mythic" in description or tags
+    if "mythic" in description.lower():
+        return False
+    
+    # Exclude items with specific keywords indicating deprecated status
+    deprecated_keywords = ["removed", "mythic", "deprecated", "old", "legacy"]
+    name_lower = name.lower()
+    if any(keyword in name_lower for keyword in deprecated_keywords):
+        return False
     
     # Exclude Arena mode items (they have special ID prefixes)
     # Arena items typically have IDs like 323110 (instead of 3110)
@@ -83,7 +126,6 @@ def should_include_item(item):
     
     # Include if it has any stats OR effects (description)
     # This ensures items like Sheen (effect-based) are included
-    description = item.get("description", "")
     if stats or (description and len(description) > 20):
         return True
     

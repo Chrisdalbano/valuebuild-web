@@ -491,6 +491,21 @@
         </div>
       </template>
     </main>
+    
+    <!-- Scroll to Top Button -->
+    <transition name="fade-slide">
+      <button 
+        v-if="showScrollTop"
+        @click="scrollToTop"
+        class="scroll-to-top"
+        title="Scroll to top"
+        aria-label="Scroll to top"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 15l-6-6-6 6"/>
+        </svg>
+      </button>
+    </transition>
 
     <footer class="app-footer">
       <p>valuebuild.gg | Advanced League of Legends item analytics</p>
@@ -500,11 +515,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import ItemTable from './components/ItemTable.vue'
 import ItemCompare from './components/ItemCompare.vue'
 import ItemBreakdown from './components/ItemBreakdown.vue'
 import { itemsApi } from './api/items'
+import { isItemDeprecated, filterDeprecatedItems } from './utils/deprecatedItems'
 
 const items = ref([])
 const loading = ref(false)
@@ -518,6 +534,7 @@ const randomComparisons = ref([])
 const currentBuild = ref([])
 const selectedRole = ref('all')
 const goldIconUrl = 'https://ddragon.leagueoflegends.com/cdn/14.20.1/img/ui/gold.png'
+const showScrollTop = ref(false)
 
 // Build Analyzer data
 const roles = [
@@ -589,6 +606,7 @@ const tabs = [
 onMounted(() => {
   loadItems()
   headerBg.value = getRandomSplash()
+  window.addEventListener('scroll', handleScroll)
 })
 
 async function loadItems() {
@@ -597,7 +615,11 @@ async function loadItems() {
   
   try {
     const data = await itemsApi.getItems()
-    items.value = data.items || []
+    // CRITICAL: Filter out deprecated items immediately after loading
+    const rawItems = data.items || []
+    items.value = filterDeprecatedItems(rawItems)
+    console.log(`Loaded ${items.value.length} items (filtered ${rawItems.length - items.value.length} deprecated)`)
+    
     // Generate random comparisons after items load
     generateRandomComparisons()
     
@@ -682,18 +704,14 @@ function generateRandomComparisons() {
   
   // Get high-efficiency legendary items, excluding deprecated/legacy items
   const legendaryItems = items.value.filter(item => {
+    // CRITICAL: Double-check deprecated items
+    if (isItemDeprecated(item)) return false
+    
     // Basic filters
     if (item.cost < 2000 || item.goldEfficiency < 90) return false
     
     // Exclude items with invalid IDs (non-numeric or special characters)
     if (!item.id || !/^\d+$/.test(item.id.toString())) return false
-    
-    // Exclude known deprecated/removed items by checking their properties
-    // Deprecated items often have "removed" in their description or are from old patches
-    if (item.description && item.description.toLowerCase().includes('removed')) return false
-    
-    // Exclude mythic items (they were removed in Season 2024)
-    if (item.description && item.description.toLowerCase().includes('mythic')) return false
     
     // Include items with stats OR effects/description (like Sheen, which has effects but minimal stats)
     const hasStats = item.statBreakdown && Object.keys(item.statBreakdown).length > 0
@@ -839,6 +857,9 @@ const smartSuggestions = computed(() => {
   
   // Filter items based on selected role
   let filtered = items.value.filter(item => {
+    // CRITICAL: Exclude deprecated items
+    if (isItemDeprecated(item)) return false
+    
     // Only legendary items
     if (item.cost < 2000 || item.goldEfficiency < 85) return false
     
@@ -947,6 +968,9 @@ const metaBuilds = computed(() => {
   return metaBuildsTemplate.map(template => {
     // Filter items based on role
     const roleItems = items.value.filter(item => {
+      // CRITICAL: Exclude deprecated items
+      if (isItemDeprecated(item)) return false
+      
       if (item.cost < 2000 || item.goldEfficiency < 85) return false
       if (!item.id || !/^\d+$/.test(item.id.toString())) return false
       
@@ -1009,6 +1033,22 @@ function formatStatValue(statKey, value) {
   }
   return value.toFixed(1)
 }
+
+// Scroll-to-top functionality
+function handleScroll() {
+  showScrollTop.value = window.scrollY > 300
+}
+
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  })
+}
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped>
@@ -1653,6 +1693,81 @@ function formatStatValue(statKey, value) {
   font-size: 0.75rem;
   font-style: italic;
   color: var(--text-tertiary);
+}
+
+/* Scroll to Top Button */
+.scroll-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 999999;
+  backdrop-filter: blur(10px);
+}
+
+.scroll-to-top:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(240, 168, 41, 0.4);
+}
+
+.scroll-to-top:active {
+  transform: translateY(-2px);
+}
+
+.scroll-to-top svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.3s ease;
+}
+
+.scroll-to-top:hover svg {
+  transform: translateY(-2px);
+}
+
+/* Fade-slide transition for scroll button */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(16px) scale(0.8);
+}
+
+.fade-slide-enter-to,
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+  }
+  
+  .scroll-to-top svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 @media (max-width: 768px) {
