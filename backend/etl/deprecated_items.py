@@ -31,6 +31,9 @@ DEPRECATED_ITEM_IDS = {
     '3069',  # Abyssal Mask (old version)
 }
 
+# Arena mode item ID prefixes (these are special game mode items, not for Summoner's Rift)
+ARENA_MODE_PREFIXES = ['663', '664', '665', '666', '667', '668']
+
 DEPRECATED_KEYWORDS = [
     'mythic',
     'removed',
@@ -53,8 +56,14 @@ def is_item_deprecated(item):
     if not item or 'id' not in item:
         return True
     
+    item_id = str(item['id'])
+    
+    # Check if it's an Arena mode item (IDs starting with 663, 664, etc.)
+    if any(item_id.startswith(prefix) for prefix in ARENA_MODE_PREFIXES):
+        return True
+    
     # Check ID against blacklist
-    if str(item['id']) in DEPRECATED_ITEM_IDS:
+    if item_id in DEPRECATED_ITEM_IDS:
         return True
     
     # Check description for deprecated keywords

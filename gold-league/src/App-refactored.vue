@@ -145,7 +145,7 @@ const detailedItem = ref(null)
 const showBreakdown = ref(false)
 const randomComparisons = ref([])
 const currentBuild = ref([])
-const goldIconUrl = 'https://ddragon.leagueoflegends.com/cdn/14.20.1/img/ui/gold.png'
+const goldIconUrl = 'https://ddragon.leagueoflegends.com/cdn/15.19.1/img/ui/gold.png'
 const showScrollTop = ref(false)
 
 // Popular champions for random splash art
