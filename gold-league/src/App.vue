@@ -420,6 +420,15 @@ function scrollToTop() {
   width: 100%;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  padding-top: calc(64px + 2rem); /* Navbar height + spacing */
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding-top: calc(56px + 1.5rem); /* Mobile navbar height + spacing */
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .error-banner {
