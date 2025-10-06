@@ -167,6 +167,23 @@
           {{ sortDir === 1 ? '↑' : '↓' }}
         </button>
       </div>
+      
+      <!-- Role Filters -->
+      <div class="role-filters-row">
+        <div class="role-filter-label">Filter by Role:</div>
+        <div class="role-filter-buttons">
+          <button 
+            v-for="role in roleOptions" 
+            :key="role.value"
+            @click="roleFilter = role.value"
+            :class="['role-filter-btn', { active: roleFilter === role.value }]"
+            :title="role.label"
+          >
+            <img :src="role.icon" :alt="role.label" class="role-filter-icon" @error="(e) => e.target.style.display = 'none'" />
+            <span class="role-filter-label-text">{{ role.label }}</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Grid View -->
@@ -361,7 +378,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { getItemImageUrl, formatStatName, formatStatValue } from '../api/items'
 
 const props = defineProps({
@@ -379,17 +396,29 @@ const search = ref('')
 const sortKey = ref('goldEfficiency')
 const sortDir = ref(-1)
 const tierFilter = ref('all')
+const roleFilter = ref('all')
 const selectedItems = ref([])
 const itemsPerPage = ref(24)
 const selectingItemId = ref(null)
 const viewMode = ref('grid')
 const showSearchSuggestions = ref(false)
+const isLoadingMore = ref(false)
 
 const tierOptions = [
   { value: 'legendary', label: 'Legendary' },
   { value: 'epic', label: 'Epic' },
   { value: 'component', label: 'Components' },
   { value: 'basic', label: 'Basic' }
+]
+
+const roleOptions = [
+  { value: 'all', label: 'All', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-all.png' },
+  { value: 'marksman', label: 'Marksman', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-marksman.png' },
+  { value: 'mage', label: 'Mage', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-mage.png' },
+  { value: 'tank', label: 'Tank', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-tank.png' },
+  { value: 'fighter', label: 'Fighter', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-fighter.png' },
+  { value: 'assassin', label: 'Assassin', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-assassin.png' },
+  { value: 'support', label: 'Support', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-support.png' }
 ]
 
 // Computed
@@ -416,7 +445,35 @@ const filtered = computed(() => {
       }
     }
     
-    return matchesSearch && matchesTier
+    // Role filtering based on stats
+    let matchesRole = true
+    if (roleFilter.value !== 'all' && item.statBreakdown) {
+      const stats = item.statBreakdown
+      switch (roleFilter.value) {
+        case 'marksman':
+          matchesRole = stats.FlatPhysicalDamageMod || stats.FlatCritChanceMod || stats.PercentAttackSpeedMod
+          break
+        case 'mage':
+          matchesRole = stats.FlatMagicDamageMod || stats.FlatMPPoolMod
+          break
+        case 'tank':
+          matchesRole = stats.FlatHPPoolMod || stats.FlatArmorMod || stats.FlatSpellBlockMod
+          break
+        case 'fighter':
+          matchesRole = (stats.FlatPhysicalDamageMod || stats.PercentAttackSpeedMod) && (stats.FlatHPPoolMod || stats.FlatArmorMod)
+          break
+        case 'assassin':
+          matchesRole = stats.FlatPhysicalDamageMod || stats.FlatMagicDamageMod
+          break
+        case 'support':
+          matchesRole = stats.FlatHPPoolMod || stats.FlatMPPoolMod || stats.AbilityHaste
+          break
+        default:
+          matchesRole = true
+      }
+    }
+    
+    return matchesSearch && matchesTier && matchesRole
   })
 
   return result.sort((a, b) => {
@@ -632,6 +689,38 @@ function isSelected(item) {
 function clearSelection() {
   selectedItems.value = []
 }
+
+// Infinite scroll handler
+function handleScroll() {
+  if (isLoadingMore.value) return
+  
+  const scrollPosition = window.scrollY + window.innerHeight
+  const documentHeight = document.documentElement.scrollHeight
+  const threshold = 300 // pixels from bottom to trigger load
+  
+  if (scrollPosition >= documentHeight - threshold && hasMoreItems.value) {
+    isLoadingMore.value = true
+    // Load 24 more items
+    setTimeout(() => {
+      itemsPerPage.value += 24
+      isLoadingMore.value = false
+    }, 100)
+  }
+}
+
+// Set up infinite scroll
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// Reset pagination when filters change
+watch([search, tierFilter, roleFilter, sortKey], () => {
+  itemsPerPage.value = 24
+})
 
 function sanitizeDescription(desc) {
   return desc
@@ -1212,6 +1301,83 @@ watch(itemsPerPage, () => {
   background: var(--gold);
   color: var(--bg-primary);
   transform: rotate(180deg);
+}
+
+/* Role Filters */
+.role-filters-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+
+.role-filter-label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.role-filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.role-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  color: var(--text-secondary);
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.role-filter-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.7;
+}
+
+.role-filter-btn:hover {
+  border-color: var(--gold);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.role-filter-btn:hover .role-filter-icon {
+  opacity: 1;
+}
+
+.role-filter-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  font-weight: 600;
+}
+
+.role-filter-btn.active .role-filter-icon {
+  filter: brightness(0) invert(0);
+  opacity: 1;
+}
+
+.role-filter-label-text {
+  white-space: nowrap;
 }
 
 /* Grid View */
