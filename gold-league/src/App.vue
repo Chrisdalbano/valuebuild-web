@@ -1,25 +1,15 @@
 <template>
   <div id="app">
-    <header class="app-header" :style="{ backgroundImage: `url(${headerBg})` }">
-      <div class="header-overlay"></div>
-      <div class="header-content">
-        <div class="logo-section">
-          <img 
-            src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png"
-            alt="Gold"
-            class="logo-icon"
-            @error="handleLogoError"
-          />
-          <h1 class="logo-text">BuildValue</h1>
-        </div>
-        <p class="subtitle">Get efficient gold value analytics for your builds and items</p>
-      </div>
-      <div class="header-actions">
-        <button @click="refreshItems" :disabled="loading" class="btn btn-refresh">
-          {{ loading ? 'Loading...' : 'Refresh Data' }}
-        </button>
-      </div>
-    </header>
+    <!-- Navigation Component -->
+    <Navigation 
+      :active-tab="activeTab"
+      :item-count="items.length"
+      :compare-count="compareItems.length"
+      :build-count="currentBuild.length"
+      :loading="loading"
+      @change-tab="activeTab = $event"
+      @refresh="refreshItems"
+    />
 
     <main class="app-main">
       <div v-if="error" class="error-banner">
@@ -33,16 +23,6 @@
       </div>
 
       <template v-else-if="items.length > 0">
-        <nav class="tab-nav">
-          <button 
-            v-for="tab in tabs" 
-            :key="tab.value"
-            @click="activeTab = tab.value"
-            :class="['tab-btn', { active: activeTab === tab.value }]"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
 
         <div class="tab-content">
           <!-- Quick Insights -->
@@ -125,6 +105,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import Navigation from './components/Navigation.vue'
 import ItemTable from './components/ItemTable.vue'
 import ItemCompare from './components/ItemCompare.vue'
 import ItemBreakdown from './components/ItemBreakdown.vue'
@@ -161,12 +142,7 @@ const getRandomSplash = () => {
   return `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion}_${skinNumber}.jpg`
 }
 
-const tabs = [
-  { value: 'table', label: 'Items Database' },
-  { value: 'compare', label: 'Item Comparison' },
-  { value: 'builds', label: 'Build Analyzer' },
-  { value: 'about', label: 'Documentation' }
-]
+// Tabs configuration moved to Navigation component
 
 onMounted(() => {
   loadItems()
