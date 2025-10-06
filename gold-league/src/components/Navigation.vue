@@ -1,62 +1,81 @@
 <template>
-  <nav class="main-navigation" :class="{ 'scrolled': isScrolled, 'menu-open': isMobileMenuOpen }">
-    <div class="nav-container">
-      <!-- Logo/Brand -->
-      <router-link to="/" class="nav-brand">
+  <nav class="navbar" :class="{ 'scrolled': isScrolled }">
+    <div class="navbar-container">
+      <!-- Brand -->
+      <router-link to="/" class="navbar-brand" @click="closeMobileMenu">
         <img 
           src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png"
-          alt="BuildValue Logo" 
-          class="brand-icon" 
+          alt="BuildValue" 
+          class="brand-logo" 
         />
-        <h1 class="brand-title">BuildValue</h1>
+        <span class="brand-name">BuildValue</span>
       </router-link>
 
-      <!-- Hamburger Menu Button (Mobile) -->
-      <button 
-        class="hamburger-btn" 
-        @click="toggleMobileMenu"
-        :class="{ 'active': isMobileMenuOpen }"
-        aria-label="Toggle navigation menu"
-      >
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-        <span class="hamburger-line"></span>
-      </button>
+      <!-- Desktop Navigation -->
+      <div class="navbar-nav">
+        <router-link 
+          v-for="route in routes" 
+          :key="route.path"
+          :to="route.path"
+          class="nav-item"
+          active-class="active"
+        >
+          {{ route.name }}
+          <span v-if="getBadge(route.name)" class="badge">{{ getBadge(route.name) }}</span>
+        </router-link>
+      </div>
 
-      <!-- Navigation Links -->
-      <div class="nav-links" :class="{ 'mobile-open': isMobileMenuOpen }">
+      <!-- Right Section -->
+      <div class="navbar-right">
+        <!-- Item Count Badge -->
+        <div class="item-count" v-if="itemCount > 0">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span class="count">{{ itemCount }}</span>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button 
+          class="mobile-menu-btn" 
+          @click="toggleMobileMenu"
+          :class="{ 'active': isMobileMenuOpen }"
+          aria-label="Toggle menu"
+        >
+          <span class="line"></span>
+          <span class="line"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <transition name="slide-down">
+      <div v-if="isMobileMenuOpen" class="mobile-menu">
         <router-link 
           v-for="route in routes" 
           :key="route.path"
           :to="route.path"
           @click="closeMobileMenu"
-          :class="['nav-link']"
+          class="mobile-nav-item"
           active-class="active"
         >
-          <span class="nav-label">{{ route.name }}</span>
-          <span v-if="getBadge(route.name)" class="nav-badge">{{ getBadge(route.name) }}</span>
+          <span>{{ route.name }}</span>
+          <span v-if="getBadge(route.name)" class="badge">{{ getBadge(route.name) }}</span>
         </router-link>
       </div>
+    </transition>
 
-      <!-- Stats Bar (Desktop) -->
-      <div class="nav-stats">
-        <div class="stat-item">
-          <span class="stat-label">Items</span>
-          <span class="stat-value">{{ itemCount }}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Patch</span>
-          <span class="stat-value">15.19</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mobile Overlay -->
-    <div 
-      v-if="isMobileMenuOpen" 
-      class="mobile-overlay"
-      @click="closeMobileMenu"
-    ></div>
+    <!-- Mobile Backdrop -->
+    <transition name="fade">
+      <div 
+        v-if="isMobileMenuOpen" 
+        class="backdrop"
+        @click="closeMobileMenu"
+      ></div>
+    </transition>
   </nav>
 </template>
 
@@ -137,314 +156,294 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.main-navigation {
-  position: sticky;
+/* Navbar */
+.navbar {
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: rgba(12, 12, 14, 0.8);
+  border-bottom: 1px solid var(--border-primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.main-navigation.scrolled {
-  background: rgba(26, 26, 46, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom-color: rgba(255, 215, 0, 0.4);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+.navbar.scrolled {
+  background: rgba(12, 12, 14, 0.95);
+  border-bottom-color: var(--border-secondary);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 }
 
-.nav-container {
+.navbar-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
+  height: 64px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 2rem;
-  min-height: 70px;
 }
 
-/* Brand Section */
-.nav-brand {
+/* Brand */
+.navbar-brand {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
+  gap: 0.625rem;
   text-decoration: none;
-  cursor: pointer;
+  transition: opacity 0.2s;
 }
 
-.brand-icon {
-  width: 40px;
-  height: 40px;
-  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.3));
-  transition: transform 0.3s ease;
+.navbar-brand:hover {
+  opacity: 0.8;
 }
 
-.brand-icon:hover {
-  transform: scale(1.1) rotate(5deg);
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 2px 4px rgba(240, 168, 41, 0.2));
 }
 
-.brand-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-  letter-spacing: -0.5px;
+.brand-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.025em;
 }
 
-
-/* Hamburger Button */
-.hamburger-btn {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  z-index: 1001;
-  transition: transform 0.3s ease;
-}
-
-.hamburger-btn:hover {
-  transform: scale(1.1);
-}
-
-.hamburger-line {
-  width: 25px;
-  height: 3px;
-  background: #ffd700;
-  border-radius: 2px;
-  transition: all 0.3s ease;
-}
-
-.hamburger-btn.active .hamburger-line:nth-child(1) {
-  transform: rotate(45deg) translate(8px, 8px);
-}
-
-.hamburger-btn.active .hamburger-line:nth-child(2) {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-
-.hamburger-btn.active .hamburger-line:nth-child(3) {
-  transform: rotate(-45deg) translate(7px, -7px);
-}
-
-/* Navigation Links */
-.nav-links {
+/* Desktop Navigation */
+.navbar-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   flex: 1;
 }
 
-.nav-link {
+.nav-item {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 215, 0, 0.2);
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
-.nav-link:hover {
-  background: rgba(255, 215, 0, 0.1);
-  border-color: rgba(255, 215, 0, 0.4);
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+.nav-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
-.nav-link.active {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 237, 78, 0.15) 100%);
-  border-color: #ffd700;
-  color: #ffd700;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+.nav-item.active {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
-.nav-link.active::before {
+.nav-item.active::after {
   content: '';
   position: absolute;
-  bottom: -2px;
+  bottom: 0;
+  left: 0.875rem;
+  right: 0.875rem;
+  height: 2px;
+  background: var(--gold);
+  border-radius: 2px;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--bg-primary);
+  background: var(--gold);
+  border-radius: 0.625rem;
+  line-height: 1;
+}
+
+/* Right Section */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.item-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.item-count .icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+}
+
+.item-count .count {
+  color: var(--gold);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  background: var(--bg-tertiary);
+}
+
+.mobile-menu-btn .line {
+  width: 20px;
+  height: 2px;
+  margin: 0 auto;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-menu-btn.active .line:first-child {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mobile-menu-btn.active .line:last-child {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  position: fixed;
+  top: 65px;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #ffd700, transparent);
-  animation: shimmer 2s infinite;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  padding: 0.5rem;
+  z-index: 999;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-@keyframes shimmer {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
-
-.nav-label {
-  font-weight: 600;
-}
-
-.nav-badge {
-  background: #ff4757;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.15rem 0.5rem;
-  border-radius: 10px;
-  min-width: 20px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
-}
-
-
-/* Stats Bar */
-.nav-stats {
+.mobile-nav-item {
   display: flex;
-  gap: 1.5rem;
-  padding-left: 1.5rem;
-  border-left: 1px solid rgba(255, 215, 0, 0.2);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all 0.15s;
 }
 
-.stat-label {
-  font-size: 0.7rem;
-  color: rgba(255, 215, 0, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
+.mobile-nav-item:hover,
+.mobile-nav-item.active {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
-.stat-value {
-  font-size: 1.1rem;
-  color: #ffd700;
-  font-weight: 700;
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
 }
 
-/* Mobile Overlay */
-.mobile-overlay {
-  display: none;
+/* Transitions */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .nav-label {
-    display: none;
-  }
-  
-  .nav-link {
-    padding: 0.75rem;
-  }
-  
-  .nav-stats {
-    padding-left: 1rem;
-    gap: 1rem;
-  }
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .nav-container {
-    padding: 0.75rem 1rem;
-    min-height: 60px;
+  .navbar-container {
+    padding: 0 1rem;
+    height: 56px;
   }
 
-  .brand-title {
-    font-size: 1.25rem;
-  }
-
-  .brand-icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .hamburger-btn {
-    display: flex;
-    margin-left: auto;
-  }
-
-  .nav-links {
-    position: fixed;
-    top: 60px;
-    right: -100%;
-    width: 280px;
-    max-width: 85vw;
-    height: calc(100vh - 60px);
-    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-    border-left: 2px solid rgba(255, 215, 0, 0.3);
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    padding: 1.5rem;
-    transition: right 0.3s ease;
-    overflow-y: auto;
-    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
-    z-index: 1001;
-  }
-
-  .nav-links.mobile-open {
-    right: 0;
-  }
-
-  .nav-link {
-    width: 100%;
-    justify-content: flex-start;
-    padding: 1rem 1.25rem;
-  }
-
-  .nav-link .nav-label {
-    display: block;
-  }
-
-  .nav-badge {
-    margin-left: auto;
-  }
-
-  .nav-stats {
+  .navbar-nav {
     display: none;
   }
 
-  .mobile-overlay {
-    display: block;
-    position: fixed;
-    top: 60px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    z-index: 999;
-    animation: fadeIn 0.3s ease;
+  .mobile-menu-btn {
+    display: flex;
   }
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  .item-count {
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .brand-name {
+    font-size: 1rem;
   }
 }
 
 @media (max-width: 480px) {
-  .nav-links {
-    width: 100%;
-    max-width: 100vw;
-    border-left: none;
-    border-top: 2px solid rgba(255, 215, 0, 0.3);
+  .navbar-right {
+    gap: 0.5rem;
+  }
+
+  .item-count .icon {
+    display: none;
   }
 }
 
@@ -455,12 +454,4 @@ onUnmounted(() => {
     transition: none !important;
   }
 }
-
-/* Dark mode optimization */
-@media (prefers-color-scheme: dark) {
-  .main-navigation {
-    background: linear-gradient(135deg, #0f0f1e 0%, #0a0a1a 100%);
-  }
-}
 </style>
-
