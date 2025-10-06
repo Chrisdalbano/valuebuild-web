@@ -10,7 +10,7 @@
             class="logo-icon"
             @error="handleLogoError"
           />
-          <h1 class="logo-text">VALUEBUILD.GG</h1>
+          <h1 class="logo-text">BUILDVALUE.GG</h1>
         </div>
         <p class="subtitle">Efficient gold value analytics for League of Legends items</p>
       </div>
@@ -286,7 +286,7 @@
     </main>
 
     <footer class="app-footer">
-      <p>itemsdiff.gg | Advanced League of Legends item analytics</p>
+      <p>valuebuild.gg | Advanced League of Legends item analytics</p>
       <p class="disclaimer">Data from Riot Games Data Dragon API - Not endorsed by Riot Games</p>
     </footer>
   </div>

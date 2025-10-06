@@ -186,9 +186,49 @@
           </div>
         </div>
 
-        <!-- Hover Tooltip -->
-        <div class="card-tooltip" v-if="item.description">
-          <div class="tooltip-content" v-html="sanitizeDescription(item.description)"></div>
+        <!-- Enhanced Hover Tooltip -->
+        <div class="item-hover-tooltip">
+          <div class="tooltip-header">
+            <img :src="getImageUrl(item.id)" :alt="item.name" class="tooltip-icon" @error="handleImageError" />
+            <div class="tooltip-title">
+              <h4>{{ item.name }}</h4>
+              <span class="tooltip-tier">{{ getItemTierLabel(item) }}</span>
+            </div>
+          </div>
+          
+          <div class="tooltip-stats-grid">
+            <div class="tooltip-stat">
+              <span class="tooltip-label">Gold Efficiency</span>
+              <span class="tooltip-value" :class="getEfficiencyClass(item.goldEfficiency)">{{ item.goldEfficiency }}%</span>
+            </div>
+            <div class="tooltip-stat">
+              <span class="tooltip-label">Cost</span>
+              <span class="tooltip-value gold">{{ item.cost }}g</span>
+            </div>
+            <div class="tooltip-stat">
+              <span class="tooltip-label">Total Value</span>
+              <span class="tooltip-value gold">{{ item.totalGoldValue }}g</span>
+            </div>
+            <div class="tooltip-stat">
+              <span class="tooltip-label">Rating</span>
+              <span class="tooltip-value" :class="getRatingClass(item.goldEfficiency)">{{ getEfficiencyRating(item.goldEfficiency) }}</span>
+            </div>
+          </div>
+
+          <div v-if="item.statBreakdown && Object.keys(item.statBreakdown).length > 0" class="tooltip-breakdown">
+            <div class="tooltip-section-title">Stats Provided</div>
+            <div class="tooltip-stats-list">
+              <div v-for="(stat, key) in item.statBreakdown" :key="key" class="tooltip-stat-item">
+                <span class="stat-name">{{ formatStatName(key) }}</span>
+                <span class="stat-amount">{{ formatStatValue(key, stat.amount) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="item.description" class="tooltip-description">
+            <div class="tooltip-section-title">Effects</div>
+            <div class="tooltip-desc-text">{{ sanitizeDescription(item.description) }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -280,7 +320,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { getItemImageUrl } from '../api/items'
+import { getItemImageUrl, formatStatName, formatStatValue } from '../api/items'
 
 const props = defineProps({
   items: {
@@ -1126,7 +1166,7 @@ watch(itemsPerPage, () => {
   letter-spacing: 0.05em;
 }
 
-.card-tooltip {
+.item-hover-tooltip {
   position: absolute;
   top: 100%;
   left: 50%;
@@ -1134,25 +1174,159 @@ watch(itemsPerPage, () => {
   background: var(--bg-primary);
   border: 2px solid var(--gold);
   border-radius: var(--radius-lg);
-  padding: 1rem;
-  width: 300px;
+  padding: 1.25rem;
+  width: 340px;
   max-width: 90vw;
-  z-index: 50;
+  z-index: 100;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
-  margin-top: 0.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  margin-top: 0.75rem;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(240, 168, 41, 0.2);
+  transform: translateX(-50%) translateY(-4px);
 }
 
-.item-card:hover .card-tooltip {
+.item-card:hover .item-hover-tooltip {
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
-.tooltip-content {
+.tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.tooltip-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--gold);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.tooltip-title {
+  flex: 1;
+}
+
+.tooltip-title h4 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+.tooltip-tier {
+  color: var(--gold);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tooltip-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.tooltip-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tooltip-label {
+  color: var(--text-tertiary);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tooltip-value {
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.tooltip-breakdown {
+  margin-bottom: 1rem;
+}
+
+.tooltip-section-title {
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.625rem;
+}
+
+.tooltip-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: var(--bg-secondary);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.tooltip-stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.tooltip-stat-item .stat-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.tooltip-stat-item .stat-amount {
+  color: var(--gold);
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.tooltip-description {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-primary);
+}
+
+.tooltip-desc-text {
   color: var(--text-secondary);
   font-size: 0.8125rem;
-  line-height: 1.5;
+  line-height: 1.6;
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.tooltip-desc-text::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tooltip-desc-text::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+}
+
+.tooltip-desc-text::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 2px;
+}
+
+.tooltip-desc-text::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
 }
 
 /* Table View */

@@ -1,112 +1,343 @@
 <template>
   <div v-if="items.length >= 2" class="compare-container">
+    <!-- Header -->
     <div class="compare-header">
-      <h2>Item Comparison ({{ items.length }} items)</h2>
-      <div class="header-actions">
-        <button @click="viewDetailed(items[0])" class="btn-secondary">View Detailed Breakdown</button>
-        <button @click="emit('clear')" class="btn-clear">Clear Comparison</button>
+      <div class="header-left">
+        <h2>
+          <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Item Comparison
+        </h2>
+        <span class="item-count">{{ items.length }} items selected</span>
+      </div>
+      <button @click="emit('clear')" class="btn-clear">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+        Clear
+      </button>
+    </div>
+
+    <!-- Enhanced Quick Insights -->
+    <div class="insights-section">
+      <div class="insights-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        Quick Insights
+      </div>
+      
+      <div class="insights-grid">
+        <!-- Winner Card -->
+        <div class="insight-card winner">
+          <div class="insight-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+            </svg>
+            <span>Most Efficient</span>
+          </div>
+          <div class="insight-winner">
+            <img :src="getImageUrl(bestEfficiency?.id)" :alt="bestEfficiency?.name" class="winner-icon" @error="handleImageError" />
+            <div class="winner-info">
+              <div class="winner-name">{{ bestEfficiency?.name }}</div>
+              <div class="winner-eff" :class="getEfficiencyClass(bestEfficiency?.goldEfficiency)">
+                {{ bestEfficiency?.goldEfficiency.toFixed(1) }}% Efficient
+              </div>
+              <div class="winner-stats">
+                <span class="winner-stat">{{ bestEfficiency?.cost }}g cost</span>
+                <span class="winner-stat">{{ bestEfficiency?.totalGoldValue }}g value</span>
+              </div>
+            </div>
+          </div>
+          <div class="insight-comparison">
+            <span class="comparison-label">Beats next best by:</span>
+            <span class="comparison-value" :class="getEfficiencyClass(efficiencyGap)">
+              +{{ efficiencyGap.toFixed(1) }}%
+            </span>
+          </div>
+        </div>
+
+        <!-- Component Efficiency Card -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span>Component Efficiency</span>
+          </div>
+          <div class="component-comparison">
+            <div v-for="item in items" :key="item.id" class="component-item">
+              <div class="component-name">{{ item.name.substring(0, 15) }}{{ item.name.length > 15 ? '...' : '' }}</div>
+              <div class="component-bar">
+                <div class="component-fill" :style="{ width: getComponentEfficiency(item) + '%' }"></div>
+                <span class="component-value">{{ item.goldEfficiency.toFixed(0) }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gold Analysis Card -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            <span>Gold Analysis</span>
+          </div>
+          <div class="gold-analysis">
+            <div class="analysis-row">
+              <span class="analysis-label">Total Investment</span>
+              <span class="analysis-value gold">{{ totalCost }}g</span>
+            </div>
+            <div class="analysis-row">
+              <span class="analysis-label">Total Stat Value</span>
+              <span class="analysis-value gold">{{ totalValue }}g</span>
+            </div>
+            <div class="analysis-row highlight">
+              <span class="analysis-label">Net Value Gain</span>
+              <span class="analysis-value" :class="netGain >= 0 ? 'positive' : 'negative'">
+                {{ netGain >= 0 ? '+' : '' }}{{ netGain }}g
+              </span>
+            </div>
+            <div class="analysis-row">
+              <span class="analysis-label">Average Cost/Item</span>
+              <span class="analysis-value gold">{{ avgCost }}g</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Build Path Summary -->
+        <div class="insight-card">
+          <div class="insight-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span>Build Complexity</span>
+          </div>
+          <div class="complexity-stats">
+            <div class="complexity-item">
+              <div class="complexity-number">{{ itemsWithComponents.length }}</div>
+              <div class="complexity-label">Items with Components</div>
+            </div>
+            <div class="complexity-item">
+              <div class="complexity-number">{{ totalComponents }}</div>
+              <div class="complexity-label">Total Components</div>
+            </div>
+            <div class="complexity-item">
+              <div class="complexity-number">{{ avgBuildCost }}g</div>
+              <div class="complexity-label">Avg Build Cost</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Chart Visualizations -->
+    <!-- Charts Section -->
     <div class="charts-section">
       <div class="chart-card">
-        <h3>Efficiency Comparison</h3>
+        <div class="chart-header">
+          <h3>Gold Efficiency Comparison</h3>
+          <span class="chart-subtitle">Higher percentage = better value</span>
+        </div>
         <canvas ref="efficiencyChart"></canvas>
       </div>
+      
       <div class="chart-card">
-        <h3>Cost vs Value</h3>
+        <div class="chart-header">
+          <h3>Cost vs Value Analysis</h3>
+          <span class="chart-subtitle">Green = value exceeds cost</span>
+        </div>
         <canvas ref="costValueChart"></canvas>
       </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Component Cost Breakdown</h3>
+          <span class="chart-subtitle">How items build up in cost</span>
+        </div>
+        <canvas ref="componentChart"></canvas>
+      </div>
     </div>
-    
-    <div class="comparison-grid">
-      <div v-for="item in items" :key="item.id" class="item-card">
-        <div class="item-header">
+
+    <!-- Detailed Item Cards with Recipe -->
+    <div class="items-grid">
+      <div v-for="item in items" :key="item.id" class="detail-card">
+        <!-- Recipe/Build Path -->
+        <div v-if="getComponents(item).length > 0" class="recipe-section">
+          <div class="recipe-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+            Recipe
+          </div>
+          <div class="recipe-components">
+            <div v-for="comp in getComponents(item)" :key="comp.id" class="recipe-component">
+              <img :src="getImageUrl(comp.id)" :alt="comp.name" class="recipe-comp-icon" @error="handleImageError" />
+              <div class="recipe-comp-info">
+                <div class="recipe-comp-name">{{ comp.name }}</div>
+                <div class="recipe-comp-cost gold">{{ comp.cost }}g</div>
+              </div>
+            </div>
+            <div class="recipe-arrow">→</div>
+            <div class="recipe-final">
+              <img :src="getImageUrl(item.id)" :alt="item.name" class="recipe-final-icon" @error="handleImageError" />
+              <div class="recipe-final-info">
+                <div class="recipe-final-name">{{ item.name }}</div>
+                <div class="recipe-final-cost gold">{{ item.cost }}g</div>
+              </div>
+            </div>
+          </div>
+          <div class="recipe-cost-summary">
+            <div class="cost-line">
+              <span>Components Total:</span>
+              <span class="gold">{{ getComponentsCost(item) }}g</span>
+            </div>
+            <div class="cost-line">
+              <span>Combine Cost:</span>
+              <span class="gold">{{ getCombineCost(item) }}g</span>
+            </div>
+            <div class="cost-line total">
+              <span>Final Cost:</span>
+              <span class="gold">{{ item.cost }}g</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-header">
           <img 
             :src="getImageUrl(item.id)" 
             :alt="item.name"
-            class="item-icon-large"
+            class="detail-icon"
+            @error="handleImageError"
           />
-          <h3>{{ item.name }}</h3>
+          <div class="detail-title">
+            <h4>{{ item.name }}</h4>
+            <span class="detail-tier">{{ getItemTier(item) }}</span>
+          </div>
+          <div class="detail-efficiency" :class="getEfficiencyClass(item.goldEfficiency)">
+            {{ item.goldEfficiency }}%
+          </div>
         </div>
-        
-        <div class="item-stats">
-          <div class="stat-row main-stat">
-            <span class="label">Gold Efficiency:</span>
-            <span :class="getEfficiencyClass(item.goldEfficiency)">
-              {{ item.goldEfficiency }}%
-            </span>
+
+        <div class="detail-stats-grid">
+          <div class="detail-stat">
+            <span class="stat-label">Cost</span>
+            <span class="stat-value gold">{{ item.cost }}g</span>
           </div>
-          
-          <div class="stat-row">
-            <span class="label">Total Cost:</span>
-            <span class="value gold">{{ item.cost }}g</span>
+          <div class="detail-stat">
+            <span class="stat-label">Value</span>
+            <span class="stat-value gold">{{ item.totalGoldValue }}g</span>
           </div>
-          
-          <div class="stat-row">
-            <span class="label">Gold Value:</span>
-            <span class="value gold">{{ item.totalGoldValue }}g</span>
-          </div>
-          
-          <div class="stat-row">
-            <span class="label">Rating:</span>
-            <span :class="getRatingClass(item.goldEfficiency)">
+          <div class="detail-stat">
+            <span class="stat-label">Rating</span>
+            <span class="stat-value" :class="getRatingClass(item.goldEfficiency)">
               {{ getEfficiencyRating(item.goldEfficiency) }}
             </span>
           </div>
-        </div>
-
-        <div v-if="item.statBreakdown" class="stat-breakdown">
-          <h4>Stat Breakdown</h4>
-          <div v-for="(stat, key) in item.statBreakdown" :key="key" class="breakdown-row">
-            <span class="stat-name">{{ formatStatName(key) }}</span>
-            <span class="stat-amount">{{ formatStatValue(key, stat.amount) }}</span>
-            <span class="stat-value gold">{{ stat.goldValue }}g</span>
+          <div class="detail-stat">
+            <span class="stat-label">Gain</span>
+            <span class="stat-value" :class="item.totalGoldValue > item.cost ? 'positive' : 'negative'">
+              {{ item.totalGoldValue > item.cost ? '+' : '' }}{{ (item.totalGoldValue - item.cost).toFixed(0) }}g
+            </span>
           </div>
         </div>
 
-        <div class="item-description" v-if="item.description">
-          <h4>Description</h4>
-          <div v-html="sanitizeHtml(item.description)"></div>
+        <div v-if="item.statBreakdown && Object.keys(item.statBreakdown).length > 0" class="stat-breakdown-visual">
+          <div class="breakdown-header">
+            <span class="breakdown-title">Stat Breakdown</span>
+            <span class="breakdown-total">{{ item.totalGoldValue }}g total</span>
+          </div>
+          <div class="breakdown-bars">
+            <div 
+              v-for="(stat, key) in item.statBreakdown" 
+              :key="key" 
+              class="breakdown-bar-item"
+            >
+              <div class="bar-label">
+                <span class="bar-stat-name">{{ formatStatName(key) }}</span>
+                <span class="bar-stat-value">{{ formatStatValue(key, stat.amount) }}</span>
+              </div>
+              <div class="bar-wrapper">
+                <div 
+                  class="bar-fill" 
+                  :style="{ width: getStatPercent(stat.goldValue, item.totalGoldValue) + '%' }"
+                ></div>
+              </div>
+              <span class="bar-gold">{{ stat.goldValue }}g</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="item.description" class="detail-description">
+          <div class="desc-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            Item Effects
+          </div>
+          <div class="desc-text">{{ sanitizeHtml(item.description) }}</div>
         </div>
       </div>
     </div>
 
-    <div class="comparison-summary">
-      <h3>Comparison Summary</h3>
-      <div class="summary-stats">
-        <div class="summary-item">
-          <span class="label">Best Efficiency:</span>
-          <span class="value">
-            {{ bestEfficiency?.name }} ({{ bestEfficiency?.goldEfficiency.toFixed(2) }}%)
-          </span>
-        </div>
+    <!-- Analysis Section -->
+    <div class="analysis-panel">
+      <div class="analysis-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+        </svg>
+        Comparison Analysis
+      </div>
+      <div class="analysis-content">
+        <p class="analysis-text">{{ recommendation }}</p>
         
-        <div class="summary-item">
-          <span class="label">Average Efficiency:</span>
-          <span class="value">{{ avgEfficiency.toFixed(2) }}%</span>
-        </div>
-        
-        <div class="summary-item">
-          <span class="label">Total Cost:</span>
-          <span class="value gold">{{ totalCost }}g</span>
-        </div>
-        
-        <div class="summary-item">
-          <span class="label">Items Compared:</span>
-          <span class="value">{{ items.length }}</span>
-        </div>
-        
-        <div class="summary-item recommendation">
-          <span class="label">Analysis:</span>
-          <span class="value">{{ recommendation }}</span>
+        <div class="analysis-stats">
+          <div class="analysis-stat">
+            <span class="analysis-label">Efficiency Range</span>
+            <span class="analysis-value">
+              {{ minEfficiency.toFixed(1) }}% - {{ maxEfficiency.toFixed(1) }}%
+              <span class="analysis-diff">({{ (maxEfficiency - minEfficiency).toFixed(1) }}% difference)</span>
+            </span>
+          </div>
+          <div class="analysis-stat">
+            <span class="analysis-label">Cost Range</span>
+            <span class="analysis-value gold">
+              {{ minCost }}g - {{ maxCost }}g
+              <span class="analysis-diff">({{ maxCost - minCost }}g difference)</span>
+            </span>
+          </div>
+          <div class="analysis-stat">
+            <span class="analysis-label">Average Cost Per Item</span>
+            <span class="analysis-value gold">{{ (totalCost / items.length).toFixed(0) }}g</span>
+          </div>
         </div>
       </div>
     </div>
   </div>
   
   <div v-else class="empty-state">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+    </svg>
+    <h3>No Items Selected</h3>
     <p>Select 2-6 items from the Items Database to compare their stats and efficiency</p>
   </div>
 </template>
@@ -131,14 +362,12 @@ const props = defineProps({
 
 const efficiencyChart = ref(null)
 const costValueChart = ref(null)
+const componentChart = ref(null)
 let efficiencyChartInstance = null
 let costValueChartInstance = null
+let componentChartInstance = null
 
 const emit = defineEmits(['clear', 'viewDetailed'])
-
-function viewDetailed(item) {
-  emit('viewDetailed', item)
-}
 
 function createEfficiencyChart() {
   if (!efficiencyChart.value || props.items.length < 2) return
@@ -151,9 +380,9 @@ function createEfficiencyChart() {
   const labels = props.items.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name)
   const data = props.items.map(item => item.goldEfficiency)
   const colors = data.map(eff => {
-    if (eff >= 110) return 'rgba(16, 185, 129, 0.8)'
+    if (eff >= 120) return 'rgba(34, 197, 94, 0.8)'
     if (eff >= 100) return 'rgba(59, 130, 246, 0.8)'
-    if (eff >= 90) return 'rgba(245, 158, 11, 0.8)'
+    if (eff >= 80) return 'rgba(245, 158, 11, 0.8)'
     return 'rgba(239, 68, 68, 0.8)'
   })
 
@@ -166,7 +395,8 @@ function createEfficiencyChart() {
         data: data,
         backgroundColor: colors,
         borderColor: colors.map(c => c.replace('0.8', '1')),
-        borderWidth: 2
+        borderWidth: 2,
+        borderRadius: 6
       }]
     },
     options: {
@@ -175,24 +405,24 @@ function createEfficiencyChart() {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: '#3f3f46' },
-          ticks: { color: '#a1a1aa' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#a1a1aa', font: { size: 11 } }
         },
         x: {
-          grid: { color: '#3f3f46' },
-          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 }
+          grid: { display: false },
+          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 0, font: { size: 11 } }
         }
       },
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           backgroundColor: '#18181b',
           titleColor: '#e4e4e7',
           bodyColor: '#a1a1aa',
           borderColor: '#3f3f46',
-          borderWidth: 1
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false
         }
       }
     }
@@ -215,20 +445,96 @@ function createCostValueChart() {
       labels: labels,
       datasets: [
         {
-          label: 'Total Cost',
+          label: 'Item Cost',
           data: props.items.map(item => item.cost),
           borderColor: 'rgba(135, 64, 55, 1)',
-          backgroundColor: 'rgba(135, 64, 55, 0.2)',
-          tension: 0.4,
-          fill: true
+          backgroundColor: 'rgba(135, 64, 55, 0.1)',
+          tension: 0.3,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(135, 64, 55, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
         },
         {
-          label: 'Gold Value',
+          label: 'Stat Value',
           data: props.items.map(item => item.totalGoldValue),
           borderColor: 'rgba(240, 168, 41, 1)',
-          backgroundColor: 'rgba(240, 168, 41, 0.2)',
-          tension: 0.4,
-          fill: true
+          backgroundColor: 'rgba(240, 168, 41, 0.1)',
+          tension: 0.3,
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(240, 168, 41, 1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#a1a1aa', font: { size: 11 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 0, font: { size: 11 } }
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#e4e4e7', padding: 15, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: '#18181b',
+          titleColor: '#e4e4e7',
+          bodyColor: '#a1a1aa',
+          borderColor: '#3f3f46',
+          borderWidth: 1,
+          padding: 12
+        }
+      }
+    }
+  })
+}
+
+function createComponentChart() {
+  if (!componentChart.value || props.items.length < 2) return
+
+  if (componentChartInstance) {
+    componentChartInstance.destroy()
+  }
+
+  const ctx = componentChart.value.getContext('2d')
+  const labels = props.items.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name)
+
+  componentChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Components Cost',
+          data: props.items.map(item => getComponentsCostValue(item)),
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 2
+        },
+        {
+          label: 'Combine Cost',
+          data: props.items.map(item => getCombineCostValue(item)),
+          backgroundColor: 'rgba(245, 158, 11, 0.7)',
+          borderColor: 'rgba(245, 158, 11, 1)',
+          borderWidth: 2
         }
       ]
     },
@@ -236,26 +542,35 @@ function createCostValueChart() {
       responsive: true,
       maintainAspectRatio: true,
       scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: '#3f3f46' },
-          ticks: { color: '#a1a1aa' }
-        },
         x: {
-          grid: { color: '#3f3f46' },
-          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 45 }
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: '#a1a1aa', maxRotation: 45, minRotation: 0, font: { size: 11 } }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#a1a1aa', font: { size: 11 } }
         }
       },
       plugins: {
         legend: {
-          labels: { color: '#e4e4e7' }
+          labels: { color: '#e4e4e7', padding: 15, usePointStyle: true }
         },
         tooltip: {
           backgroundColor: '#18181b',
           titleColor: '#e4e4e7',
           bodyColor: '#a1a1aa',
           borderColor: '#3f3f46',
-          borderWidth: 1
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            footer: (tooltipItems) => {
+              const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0)
+              return `Total: ${total}g`
+            }
+          }
         }
       }
     }
@@ -266,12 +581,14 @@ watch(() => props.items, () => {
   nextTick(() => {
     createEfficiencyChart()
     createCostValueChart()
+    createComponentChart()
   })
 }, { immediate: true, deep: true })
 
 onMounted(() => {
   createEfficiencyChart()
   createCostValueChart()
+  createComponentChart()
 })
 
 const bestEfficiency = computed(() => {
@@ -290,6 +607,66 @@ const totalCost = computed(() => {
   return props.items.reduce((sum, item) => sum + item.cost, 0)
 })
 
+const totalValue = computed(() => {
+  return props.items.reduce((sum, item) => sum + item.totalGoldValue, 0)
+})
+
+const minEfficiency = computed(() => {
+  if (props.items.length === 0) return 0
+  return Math.min(...props.items.map(i => i.goldEfficiency))
+})
+
+const maxEfficiency = computed(() => {
+  if (props.items.length === 0) return 0
+  return Math.max(...props.items.map(i => i.goldEfficiency))
+})
+
+const minCost = computed(() => {
+  if (props.items.length === 0) return 0
+  return Math.min(...props.items.map(i => i.cost))
+})
+
+const maxCost = computed(() => {
+  if (props.items.length === 0) return 0
+  return Math.max(...props.items.map(i => i.cost))
+})
+
+const secondBestEfficiency = computed(() => {
+  if (props.items.length < 2) return null
+  const sorted = [...props.items].sort((a, b) => b.goldEfficiency - a.goldEfficiency)
+  return sorted[1]
+})
+
+const efficiencyGap = computed(() => {
+  if (!bestEfficiency.value || !secondBestEfficiency.value) return 0
+  return bestEfficiency.value.goldEfficiency - secondBestEfficiency.value.goldEfficiency
+})
+
+const netGain = computed(() => {
+  return Math.round(totalValue.value - totalCost.value)
+})
+
+const avgCost = computed(() => {
+  if (props.items.length === 0) return 0
+  return Math.round(totalCost.value / props.items.length)
+})
+
+const itemsWithComponents = computed(() => {
+  return props.items.filter(item => item.from && item.from.length > 0)
+})
+
+const totalComponents = computed(() => {
+  return itemsWithComponents.value.reduce((sum, item) => {
+    return sum + (item.from ? item.from.length : 0)
+  }, 0)
+})
+
+const avgBuildCost = computed(() => {
+  if (itemsWithComponents.value.length === 0) return 0
+  const totalBuildCost = itemsWithComponents.value.reduce((sum, item) => sum + item.cost, 0)
+  return Math.round(totalBuildCost / itemsWithComponents.value.length)
+})
+
 const recommendation = computed(() => {
   if (props.items.length < 2) return ''
   
@@ -299,11 +676,53 @@ const recommendation = computed(() => {
   
   const diffPercent = ((best.goldEfficiency - worst.goldEfficiency) / worst.goldEfficiency * 100).toFixed(1)
   
-  return `${best.name} has ${diffPercent}% higher gold efficiency than ${worst.name}. Consider item passives and synergies with your champion.`
+  return `${best.name} offers the best gold efficiency at ${best.goldEfficiency.toFixed(1)}%, which is ${diffPercent}% better than ${worst.name}. However, remember that item passives, active effects, and champion synergies are equally important factors. Consider your champion's playstyle and team composition when making final decisions.`
 })
+
+function getComponents(item) {
+  if (!item.from || !props.allItems) return []
+  return item.from
+    .map(id => props.allItems.find(i => i.id === id))
+    .filter(Boolean)
+}
+
+function getComponentsCost(item) {
+  const components = getComponents(item)
+  return components.reduce((sum, comp) => sum + (comp.cost || 0), 0)
+}
+
+function getComponentsCostValue(item) {
+  return getComponentsCost(item)
+}
+
+function getCombineCost(item) {
+  if (!item.gold) return 0
+  return item.gold.base || 0
+}
+
+function getCombineCostValue(item) {
+  return getCombineCost(item)
+}
+
+function getComponentEfficiency(item) {
+  // Normalize efficiency to 0-100 range for bar display
+  const max = Math.max(...props.items.map(i => i.goldEfficiency))
+  return (item.goldEfficiency / max) * 100
+}
 
 function getImageUrl(itemId) {
   return getItemImageUrl(itemId)
+}
+
+function handleImageError(e) {
+  e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%2327272a" width="64" height="64"/%3E%3C/svg%3E'
+}
+
+function getItemTier(item) {
+  if (item.cost >= 2500) return 'Legendary'
+  if (item.cost >= 1200) return 'Epic'
+  if (item.into && item.into.length > 0) return 'Component'
+  return 'Basic'
 }
 
 function getEfficiencyClass(eff) {
@@ -327,15 +746,19 @@ function getEfficiencyRating(eff) {
   return 'Poor'
 }
 
+function getStatPercent(goldValue, totalValue) {
+  if (!totalValue) return 0
+  return Math.round((goldValue / totalValue) * 100)
+}
+
 function sanitizeHtml(html) {
   if (!html) return ''
-  // Enhanced sanitization and formatting
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/?[^>]+(>|$)/g, '') // Remove all HTML tags
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/?[^>]+(>|$)/g, '')
     .replace(/&nbsp;/g, ' ')
-    .replace(/\n{3,}/g, '\n\n') // Max 2 line breaks
+    .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
 </script>
@@ -346,14 +769,22 @@ function sanitizeHtml(html) {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
 }
 
+/* Header */
 .compare-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .compare-container h2 {
@@ -361,17 +792,404 @@ function sanitizeHtml(html) {
   font-size: 1.75rem;
   margin: 0;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
 }
 
-.header-actions {
+.header-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--gold);
+}
+
+.item-count {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn-clear {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.btn-clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-clear:hover {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
+}
+
+/* Enhanced Insights Section */
+.insights-section {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid var(--border-primary);
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.insights-header svg {
+  width: 24px;
+  height: 24px;
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.insight-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  transition: all 0.2s;
+}
+
+.insight-card:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.insight-card.winner {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.1), rgba(135, 64, 55, 0.05));
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.insight-header svg {
+  width: 16px;
+  height: 16px;
+}
+
+.insight-winner {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.winner-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--gold);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.winner-info {
+  flex: 1;
+}
+
+.winner-name {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 0.375rem;
+}
+
+.winner-eff {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.winner-stats {
   display: flex;
   gap: 1rem;
 }
 
+.winner-stat {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+.insight-comparison {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.comparison-label {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.comparison-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+/* Component Efficiency */
+.component-comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.component-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.component-name {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.component-bar {
+  position: relative;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.component-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--rust));
+  transition: width 0.3s ease;
+}
+
+.component-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+/* Gold Analysis */
+.gold-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.analysis-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.625rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.analysis-row.highlight {
+  background: linear-gradient(90deg, rgba(240, 168, 41, 0.1), rgba(135, 64, 55, 0.05));
+  border: 1px solid var(--border-secondary);
+}
+
+.analysis-label {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.analysis-value {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Build Complexity */
+.complexity-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.complexity-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+}
+
+.complexity-number {
+  color: var(--gold);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.complexity-label {
+  color: var(--text-tertiary);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* Recipe Section */
+.recipe-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.recipe-header svg {
+  width: 14px;
+  height: 14px;
+}
+
+.recipe-components {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.recipe-component, .recipe-final {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.recipe-final {
+  border-color: var(--gold);
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.1), rgba(135, 64, 55, 0.05));
+}
+
+.recipe-comp-icon, .recipe-final-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.recipe-final-icon {
+  border-color: var(--gold);
+}
+
+.recipe-comp-info, .recipe-final-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.recipe-comp-name, .recipe-final-name {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.recipe-comp-cost, .recipe-final-cost {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.recipe-arrow {
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.recipe-cost-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-primary);
+}
+
+.cost-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.cost-line.total {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-primary);
+}
+
+/* Charts */
 .charts-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
@@ -382,72 +1200,48 @@ function sanitizeHtml(html) {
   border: 1px solid var(--border-primary);
 }
 
+.chart-header {
+  margin-bottom: 1.25rem;
+}
+
 .chart-card h3 {
   color: var(--text-primary);
   font-size: 1.125rem;
-  margin-bottom: 1rem;
+  margin: 0 0 0.25rem 0;
   font-weight: 600;
 }
 
+.chart-subtitle {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
 .chart-card canvas {
-  max-height: 300px;
+  max-height: 280px;
 }
 
-.btn-clear {
-  padding: 0.5rem 1rem;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--error);
-  border-radius: var(--radius-md);
-  color: var(--error);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
-}
-
-.btn-clear:hover {
-  background: var(--error);
-  color: var(--text-primary);
-}
-
-.btn-secondary {
-  padding: 0.5rem 1rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.875rem;
-}
-
-.btn-secondary:hover {
-  background: var(--bg-tertiary);
-  border-color: var(--gold);
-}
-
-.comparison-grid {
+/* Items Grid */
+.items-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.item-card {
+.detail-card {
   background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  border: 1px solid var(--border-primary);
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.item-card:hover {
+.detail-card:hover {
   border-color: var(--gold);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.item-header {
+.detail-header {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -456,172 +1250,350 @@ function sanitizeHtml(html) {
   border-bottom: 1px solid var(--border-primary);
 }
 
-.item-icon-large {
+.detail-icon {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-secondary);
+  border: 2px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
 }
 
-.item-header h3 {
+.detail-title {
+  flex: 1;
+}
+
+.detail-title h4 {
   color: var(--text-primary);
-  font-size: 1.25rem;
-  margin: 0;
+  font-size: 1.125rem;
+  margin: 0 0 0.375rem 0;
   font-weight: 600;
 }
 
-.item-stats {
-  margin-bottom: 20px;
+.detail-tier {
+  color: var(--gold);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.stat-row {
+.detail-efficiency {
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 0.5rem 0.875rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.detail-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.stat-label {
+  color: var(--text-tertiary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.stat-value.positive {
+  color: var(--success);
+}
+
+.stat-value.negative {
+  color: var(--error);
+}
+
+/* Stat Breakdown Visual */
+.stat-breakdown-visual {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.breakdown-header {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(15, 52, 96, 0.3);
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-.stat-row.main-stat {
-  font-size: 18px;
+.breakdown-title {
+  color: var(--gold);
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 15px 0;
-  border-bottom: 2px solid #0f3460;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.label {
-  color: var(--text-tertiary);
-  font-weight: 500;
-  font-size: 0.8125rem;
-}
-
-.value {
-  color: var(--text-primary);
-  font-weight: 600;
+.breakdown-total {
+  color: var(--gold);
   font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
 }
+
+.breakdown-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.breakdown-bar-item {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.bar-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.bar-stat-name {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.bar-stat-value {
+  color: var(--gold);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.bar-wrapper {
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--rust));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.bar-gold {
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Monaco', 'Courier New', monospace;
+  text-align: right;
+  min-width: 50px;
+}
+
+/* Description */
+.detail-description {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.desc-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.desc-label svg {
+  width: 14px;
+  height: 14px;
+}
+
+.desc-text {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+/* Analysis Panel */
+.analysis-panel {
+  background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gold);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.analysis-header svg {
+  width: 24px;
+  height: 24px;
+}
+
+.analysis-text {
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+}
+
+.analysis-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.analysis-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+}
+
+.analysis-label {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analysis-value {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.analysis-diff {
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* Efficiency Colors */
+.eff-excellent { color: #22c55e; }
+.eff-good { color: #3b82f6; }
+.eff-fair { color: #f59e0b; }
+.eff-poor { color: #ef4444; }
+
+.rating-excellent { color: #22c55e; }
+.rating-good { color: #3b82f6; }
+.rating-fair { color: #f59e0b; }
+.rating-poor { color: #ef4444; }
 
 .gold {
   color: var(--gold);
   font-family: 'Monaco', 'Courier New', monospace;
 }
 
-.stat-breakdown {
-  background: var(--bg-secondary);
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
-  border: 1px solid var(--border-primary);
-}
-
-.stat-breakdown h4 {
-  color: var(--gold);
-  margin-bottom: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.breakdown-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 0;
-  font-size: 14px;
-  gap: 10px;
-}
-
-.stat-name {
-  color: #fff;
-  flex: 1;
-}
-
-.stat-amount {
-  color: #60a5fa;
-  font-weight: 600;
-  min-width: 50px;
-  text-align: right;
-}
-
-.stat-value {
-  min-width: 70px;
-  text-align: right;
-}
-
-.item-description {
-  background: rgba(233, 69, 96, 0.1);
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 4px solid #e94560;
-}
-
-.item-description h4 {
-  color: #e94560;
-  margin-bottom: 10px;
-  font-size: 16px;
-}
-
-.item-description div {
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  font-family: inherit;
-}
-
-.comparison-summary {
-  background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-  padding: 25px;
-  border-radius: 12px;
-  border: 2px solid #e94560;
-}
-
-.comparison-summary h3 {
-  color: #e94560;
-  margin-bottom: 20px;
-  font-size: 24px;
-  text-align: center;
-}
-
-.summary-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  background: rgba(26, 26, 46, 0.5);
-  border-radius: 8px;
-}
-
-.summary-item.recommendation {
-  grid-column: 1 / -1;
-  background: rgba(233, 69, 96, 0.1);
-  border: 1px solid rgba(233, 69, 96, 0.3);
-}
-
-.eff-excellent { color: var(--success); font-weight: 700; }
-.eff-good { color: var(--info); font-weight: 600; }
-.eff-fair { color: var(--warning); font-weight: 600; }
-.eff-poor { color: var(--error); font-weight: 600; }
-
-.rating-excellent { color: var(--success); font-weight: 700; }
-.rating-good { color: var(--info); font-weight: 600; }
-.rating-fair { color: var(--warning); font-weight: 600; }
-.rating-poor { color: var(--error); font-weight: 600; }
-
+/* Empty State */
 .empty-state {
-  padding: 4rem 1.5rem;
+  padding: 6rem 2rem;
   text-align: center;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  border: 1px dashed var(--border-secondary);
+  border: 2px dashed var(--border-secondary);
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--text-tertiary);
+  margin: 0 auto 1.5rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem 0;
 }
 
 .empty-state p {
   color: var(--text-secondary);
   font-size: 1rem;
   margin: 0;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.stat-value.positive {
+  color: var(--success);
+}
+
+.stat-value.negative {
+  color: var(--error);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .items-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .analysis-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .complexity-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-components {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .recipe-arrow {
+    transform: rotate(90deg);
+  }
 }
 </style>
-
