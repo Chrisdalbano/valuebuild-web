@@ -237,35 +237,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Meta Builds -->
-    <div class="meta-builds">
-      <h3>🏆 Popular Meta Builds</h3>
-      <div class="meta-builds-grid">
-        <div v-for="build in metaBuilds" :key="build.name" class="meta-build-card">
-          <div class="meta-build-header">
-            <h4>{{ build.name }}</h4>
-            <span class="meta-build-role">{{ build.role }}</span>
-          </div>
-          <div class="meta-build-items">
-            <img 
-              v-for="item in build.items" 
-              :key="item.id"
-              :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" 
-              :alt="item.name"
-              :title="item.name"
-              class="meta-item-icon"
-            />
-          </div>
-          <div class="meta-build-stats">
-            <span><img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> {{ build.totalCost }}</span>
-            <span class="meta-eff">{{ build.avgEfficiency }}% avg</span>
-          </div>
-          <button @click="loadMetaBuild(build)" class="btn-load-build">Load Build</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Empty State -->
     <div v-if="currentBuild.length === 0" class="builds-empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="empty-icon">

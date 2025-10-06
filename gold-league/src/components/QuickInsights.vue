@@ -2,7 +2,7 @@
   <div class="quick-insights">
     <div class="insights-header">
       <div>
-        <h2>⚡ Quick Comparisons</h2>
+        <h2><span class="icon-flash"></span> Flash Comparisons</h2>
         <p class="insights-subtitle">Popular item matchups analyzed instantly</p>
       </div>
       <button @click="$emit('shuffle')" class="btn-shuffle" title="Shuffle comparisons">
@@ -135,7 +135,6 @@ function getEfficiencyClass(efficiency) {
   background: var(--gold);
   border-color: var(--gold);
   color: var(--bg-primary);
-  transform: rotate(180deg);
 }
 
 .insights-grid {
@@ -339,6 +338,15 @@ function getEfficiencyClass(efficiency) {
     width: 100%;
     justify-content: center;
   }
+}
+
+.icon-flash {
+  width: 2rem;
+  height: 2rem;
+  background-image: url('https://ddragon.leagueoflegends.com/cdn/15.19.1/img/spell/SummonerFlash.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 </style>
 

@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo League Item Efficiency Tracker
+echo BuildValue
 echo ========================================
 echo.
 echo Starting backend and frontend servers...
