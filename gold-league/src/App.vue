@@ -2,13 +2,9 @@
   <div id="app">
     <!-- Navigation Component -->
     <Navigation 
-      :active-tab="activeTab"
       :item-count="items.length"
       :compare-count="compareItems.length"
       :build-count="currentBuild.length"
-      :loading="loading"
-      @change-tab="activeTab = $event"
-      @refresh="refreshItems"
     />
 
     <main class="app-main">
@@ -23,61 +19,43 @@
       </div>
 
       <template v-else-if="items.length > 0">
+        <!-- Quick Insights -->
+        <QuickInsights
+          v-if="$route.path === '/' && randomComparisons.length > 0"
+          :comparisons="randomComparisons"
+          :gold-icon-url="goldIconUrl"
+          @shuffle="generateRandomComparisons"
+          @load-comparison="loadRandomComparison"
+        />
 
-        <div class="tab-content">
-          <!-- Quick Insights -->
-          <QuickInsights
-            v-if="activeTab === 'table' && randomComparisons.length > 0"
-            :comparisons="randomComparisons"
-            :gold-icon-url="goldIconUrl"
-            @shuffle="generateRandomComparisons"
-            @load-comparison="loadRandomComparison"
-          />
-
-          <!-- Item Breakdown Modal -->
-          <div v-if="showBreakdown" class="modal-overlay" @click="closeBreakdown">
-            <div class="modal-content" @click.stop>
-              <ItemBreakdown 
-                :item="detailedItem"
-                :allItems="items"
-                @close="closeBreakdown"
-                @select="viewDetailed"
-              />
-            </div>
+        <!-- Item Breakdown Modal -->
+        <div v-if="showBreakdown" class="modal-overlay" @click="closeBreakdown">
+          <div class="modal-content" @click.stop>
+            <ItemBreakdown 
+              :item="detailedItem"
+              :allItems="items"
+              @close="closeBreakdown"
+              @select="viewDetailed"
+            />
           </div>
-
-          <!-- Item Table -->
-          <ItemTable 
-            v-show="activeTab === 'table'" 
-            :items="items"
-            @compare="handleCompare"
-            @addToBuild="handleAddToBuild"
-          />
-          
-          <!-- Item Comparison -->
-          <ItemCompare 
-            v-show="activeTab === 'compare'" 
-            :items="compareItems"
-            :allItems="items"
-            @clear="clearComparison"
-            @viewDetailed="viewDetailed"
-            @removeItem="removeFromComparison"
-            @addMore="addMoreItems"
-          />
-
-          <!-- Build Optimizer -->
-          <BuildOptimizer
-            v-show="activeTab === 'builds'"
-            v-model:current-build="currentBuild"
-            :items="items"
-            :compare-items="compareItems"
-            :gold-icon-url="goldIconUrl"
-            @browse-items="activeTab = 'table'"
-          />
-
-          <!-- About Section -->
-          <AboutSection v-show="activeTab === 'about'" />
         </div>
+
+        <!-- Router View for Pages -->
+        <router-view 
+          :items="items"
+          :compare-items="compareItems"
+          :current-build="currentBuild"
+          :all-items="items"
+          :gold-icon-url="goldIconUrl"
+          @compare="handleCompare"
+          @add-to-build="handleAddToBuild"
+          @clear="clearComparison"
+          @view-detailed="viewDetailed"
+          @remove-item="removeFromComparison"
+          @add-more="goToItems"
+          @browse-items="goToItems"
+          v-model:current-build="currentBuild"
+        />
       </template>
     </main>
     
