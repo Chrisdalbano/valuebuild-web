@@ -2,32 +2,32 @@
 // This includes Mythic items (removed Season 2024) and other deprecated items
 
 export const DEPRECATED_ITEM_IDS = new Set([
-  // Mythic Items (Season 2023 and earlier)
-  '3152', // Hextech Rocketbelt
-  '4633', // Riftmaker
-  '4636', // Night Harvester
-  '6653', // Liandry's Anguish (Mythic)
-  '3001', // Evenshroud (Mythic)
-  '4005', // Imperial Mandate
-  '2065', // Shurelya's Battlesong (Mythic)
-  '3190', // Locket of the Iron Solari (Mythic)
-  '6617', // Moonstone Renewer
-  '6630', // Goredrinker
-  '6631', // Stridebreaker
-  '6632', // Divine Sunderer
-  '6691', // Duskblade of Draktharr (Mythic)
-  '6692', // Eclipse (Mythic)
-  '6693', // Prowler's Claw
-  '3068', // Sunfire Aegis (Mythic)
-  '6664', // Turbo Chemtank
-  '4644', // Crown of the Shattered Queen
-  '3146', // Hextech Gunblade (removed)
-  '3030', // Hextech GLP-800 (removed)
-  '3092', // Frost Queen's Claim (removed)
-  '3401', // Face of the Mountain (removed)
+  // Truly deprecated/removed items (NOT available on Summoner's Rift)
+  '4636', // Night Harvester (not on SR)
+  '3001', // Evenshroud (not on SR)
+  '4005', // Imperial Mandate (not on SR)
+  '6632', // Divine Sunderer (not on SR)
+  '6691', // Duskblade of Draktharr (not on SR)
+  '6692', // Eclipse (not on SR)
+  '6693', // Prowler's Claw (not on SR)
+  '6664', // Turbo Chemtank (not on SR)
+  '6630', // Goredrinker (confirmed not on SR)
+  '4644', // Crown of the Shattered Queen (confirmed not on SR)
+  '3146', // Hextech Gunblade (removed from game)
+  '3030', // Hextech GLP-800 (removed from game)
+  '3092', // Frost Queen's Claim (removed from game)
+  '3401', // Face of the Mountain (removed from game)
   '3069', // Abyssal Mask (old version)
   
-  // Add more as discovered
+  // NOTE: The following items ARE available on SR and were removed from this list:
+  // '3152' - Hextech Rocketbelt (available on SR)
+  // '4633' - Riftmaker (available on SR)
+  // '6653' - Liandry's Torment (available on SR)
+  // '2065' - Shurelya's Battlesong (available on SR)
+  // '3190' - Locket of the Iron Solari (available on SR)
+  // '6617' - Moonstone Renewer (available on SR)
+  // '6631' - Stridebreaker (available on SR)
+  // '3068' - Sunfire Aegis (available on SR)
 ])
 
 export const DEPRECATED_KEYWORDS = [

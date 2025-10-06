@@ -160,18 +160,28 @@ class DDragonETL:
         
         start_time = datetime.utcnow()
         
+        # Logging setup
+        log_file = f"etl_run_{start_time.strftime('%Y%m%d_%H%M%S')}.log"
+        
+        def log(message):
+            """Helper to log to both console and file"""
+            print(message)
+            with open(log_file, 'a', encoding='utf-8') as f:
+                f.write(message + '\n')
+        
         try:
             # 1. EXTRACT: Get latest data from DDragon
             patch = await self.fetch_latest_patch()
             url = f"{self.ddragon_base}/cdn/{patch}/data/en_US/item.json"
             
-            print(f"📥 Fetching items from: {url}")
+            log(f"📥 Fetching items from: {url}")
             response = requests.get(url, timeout=30)
             response.raise_for_status()
             raw_data = response.json()
             raw_items = raw_data.get('data', {})
             
-            print(f"✅ Fetched {len(raw_items)} raw items from DDragon\n")
+            log(f"✅ Fetched {len(raw_items)} raw items from DDragon")
+            log(f"📝 Logging to: {log_file}\n")
             
             # 2. TRANSFORM: Filter, validate, and enrich
             valid_items = []
@@ -182,7 +192,7 @@ class DDragonETL:
                 'total': 0
             }
             
-            print("🔍 Processing items...")
+            log("🔍 Processing items...")
             for item_id, item_data in raw_items.items():
                 item_data['id'] = item_id
                 
@@ -193,14 +203,14 @@ class DDragonETL:
                 
                 # Check if deprecated (our custom filter)
                 if is_item_deprecated(item_data):
-                    print(f"  ⛔ Filtered deprecated: {item_data.get('name')} (ID: {item_id})")
+                    log(f"  ⛔ Filtered deprecated: {item_data.get('name')} (ID: {item_id})")
                     filtered_counts['deprecated'] += 1
                     continue
                 
                 # Validate image exists
                 has_image = await self.validate_image(item_id, patch)
                 if not has_image:
-                    print(f"  🖼️  Filtered (no image): {item_data.get('name')} (ID: {item_id})")
+                    log(f"  🖼️  Filtered (no image): {item_data.get('name')} (ID: {item_id})")
                     filtered_counts['no_image'] += 1
                     continue
                 
@@ -232,9 +242,10 @@ class DDragonETL:
                     }
                     
                     valid_items.append(valid_item)
+                    log(f"  ✅ Added: {item_data.get('name')} (ID: {item_id}, Efficiency: {efficiency_result.get('goldEfficiency')}%)")
                     
                 except Exception as e:
-                    print(f"  ⚠️  Error processing {item_data.get('name')}: {e}")
+                    log(f"  ⚠️  Error processing {item_data.get('name')}: {e}")
                     continue
             
             filtered_counts['total'] = (
@@ -243,16 +254,16 @@ class DDragonETL:
                 filtered_counts['riot_filter']
             )
             
-            print(f"\n📊 Processing Summary:")
-            print(f"  ✅ Valid items: {len(valid_items)}")
-            print(f"  ⛔ Filtered (deprecated): {filtered_counts['deprecated']}")
-            print(f"  🖼️  Filtered (no image): {filtered_counts['no_image']}")
-            print(f"  🎮 Filtered (Riot criteria): {filtered_counts['riot_filter']}")
-            print(f"  📉 Total filtered: {filtered_counts['total']}\n")
+            log(f"\n📊 Processing Summary:")
+            log(f"  ✅ Valid items: {len(valid_items)}")
+            log(f"  ⛔ Filtered (deprecated): {filtered_counts['deprecated']}")
+            log(f"  🖼️  Filtered (no image): {filtered_counts['no_image']}")
+            log(f"  🎮 Filtered (Riot criteria): {filtered_counts['riot_filter']}")
+            log(f"  📉 Total filtered: {filtered_counts['total']}\n")
             
             # 3. LOAD: Bulk write to MongoDB
             if valid_items:
-                print(f"💾 Writing {len(valid_items)} items to MongoDB...")
+                log(f"💾 Writing {len(valid_items)} items to MongoDB...")
                 
                 # Use bulk operations for efficiency
                 operations = [
@@ -262,8 +273,8 @@ class DDragonETL:
                 
                 result = await self.items_collection.bulk_write(operations)
                 
-                print(f"  ✅ Upserted: {result.upserted_count}")
-                print(f"  ✅ Modified: {result.modified_count}")
+                log(f"  ✅ Upserted: {result.upserted_count}")
+                log(f"  ✅ Modified: {result.modified_count}")
                 
                 # Update metadata
                 next_update = datetime.utcnow() + timedelta(days=7)
