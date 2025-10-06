@@ -18,7 +18,7 @@
 
 # Environment variables (set these in Netlify UI)
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 # Branch-specific deployments
 [context.production]
