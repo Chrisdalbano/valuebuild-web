@@ -5,16 +5,24 @@ from datetime import datetime
 import uvicorn
 import asyncio
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import ETL pipeline
 from etl.data_pipeline import ETLScheduler, run_etl_now
 
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
+# Environment configuration
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 # CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,6 +87,7 @@ def root():
     return {
         "message": "League Item Efficiency Tracker API - Cached Edition",
         "status": "operational",
+        "environment": ENVIRONMENT,
         "cache": "MongoDB",
         "update_schedule": "Weekly (Mondays 2:00 AM UTC)"
     }

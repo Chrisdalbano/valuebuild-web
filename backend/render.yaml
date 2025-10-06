@@ -1,0 +1,40 @@
+# Render Blueprint - Infrastructure as Code
+# This file defines your Render service configuration
+
+services:
+  # FastAPI Backend Service
+  - type: web
+    name: gold-league-backend
+    env: python
+    region: oregon # Choose: oregon, frankfurt, singapore, ohio
+    plan: free # Options: free, starter ($7/mo), standard ($25/mo)
+    branch: main # Git branch to deploy
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    
+    # Environment variables
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      
+      - key: MONGO_URI
+        sync: false # Set manually in Render dashboard (sensitive)
+      
+      - key: CORS_ORIGINS
+        sync: false # Set manually after deploying frontend
+      
+      - key: PYTHON_VERSION
+        value: 3.11.9
+    
+    # Health check endpoint
+    healthCheckPath: /api/health
+    
+    # Auto-deploy on git push
+    autoDeploy: true
+
+# Optional: MongoDB Atlas connection (configure separately)
+# databases:
+#   - name: gold-league-db
+#     databaseName: gold_league
+#     user: gold_league_admin
+
