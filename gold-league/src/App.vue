@@ -42,20 +42,34 @@
 
         <!-- Router View for Pages -->
         <router-view 
+          v-slot="{ Component }"
           :items="items"
           :compare-items="compareItems"
           :current-build="currentBuild"
           :all-items="items"
           :gold-icon-url="goldIconUrl"
-          @compare="handleCompare"
-          @add-to-build="handleAddToBuild"
-          @clear="clearComparison"
-          @view-detailed="viewDetailed"
-          @remove-item="removeFromComparison"
-          @add-more="goToItems"
-          @browse-items="goToItems"
-          v-model:current-build="currentBuild"
-        />
+        >
+          <component 
+            :is="Component"
+            :items="$route.name === 'Compare' ? compareItems : items"
+            :compare-items="compareItems"
+            :current-build="currentBuild"
+            :all-items="items"
+            :gold-icon-url="goldIconUrl"
+            @compare="handleCompare"
+            @add-to-build="handleAddToBuild"
+            @addToBuild="handleAddToBuild"
+            @clear="clearComparison"
+            @view-detailed="viewDetailed"
+            @viewDetailed="viewDetailed"
+            @remove-item="removeFromComparison"
+            @removeItem="removeFromComparison"
+            @add-more="goToItems"
+            @addMore="goToItems"
+            @browse-items="goToItems"
+            v-model:current-build="currentBuild"
+          />
+        </router-view>
       </template>
     </main>
     

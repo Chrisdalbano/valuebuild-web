@@ -9,25 +9,29 @@ const routes = [
     path: '/',
     name: 'Items',
     component: ItemTable,
-    meta: { title: 'Items Database' }
+    meta: { title: 'Items Database' },
+    props: true
   },
   {
     path: '/compare',
     name: 'Compare',
     component: ItemCompare,
-    meta: { title: 'Item Comparison' }
+    meta: { title: 'Item Comparison' },
+    props: true
   },
   {
     path: '/builds',
     name: 'Builds',
     component: BuildOptimizer,
-    meta: { title: 'Build Optimizer' }
+    meta: { title: 'Build Optimizer' },
+    props: true
   },
   {
     path: '/about',
     name: 'About',
     component: AboutSection,
-    meta: { title: 'About & Documentation' }
+    meta: { title: 'About & Documentation' },
+    props: true
   }
 ]
 
