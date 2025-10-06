@@ -22,6 +22,9 @@ STAT_VALUES = {
     
     # Secondary stats from composite items
     "PercentLifeStealMod": 5355,        # Lifesteal: 53.55g per 1%, API gives decimal, so 5355g per 1.0 (100%)
+    
+    # Ability Haste (introduced in Season 11, replaces CDR)
+    "AbilityHaste": 26.67,              # Ability Haste: ~26.67g per 1 AH (based on Kindlegem)
 }
 
 # Additional stat mappings for Data Dragon API response
@@ -39,6 +42,7 @@ STAT_MAPPING = {
     "FlatMovementSpeedMod": "FlatMovementSpeedMod",
     "PercentLifeStealMod": "PercentLifeStealMod",
     "FlatCritChanceMod": "FlatCritChanceMod",
+    "AbilityHaste": "AbilityHaste",
 }
 
 def calculate_efficiency(item):

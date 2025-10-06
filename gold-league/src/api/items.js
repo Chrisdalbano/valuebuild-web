@@ -76,7 +76,8 @@ export function formatStatName(statKey) {
     'PercentAttackSpeedMod': 'Attack Speed',
     'FlatMovementSpeedMod': 'Movement Speed',
     'FlatCritChanceMod': 'Crit Chance',
-    'PercentLifeStealMod': 'Life Steal'
+    'PercentLifeStealMod': 'Life Steal',
+    'AbilityHaste': 'Ability Haste'
   }
   return statNames[statKey] || statKey
 }

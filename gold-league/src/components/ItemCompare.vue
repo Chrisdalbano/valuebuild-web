@@ -14,12 +14,20 @@
         </h2>
         <span class="item-count">{{ items.length }} items selected</span>
       </div>
-      <button @click="emit('clear')" class="btn-clear">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-        Clear
-      </button>
+      <div class="header-actions">
+        <button @click="emit('addMore')" class="btn-add-more">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add More
+        </button>
+        <button @click="emit('clear')" class="btn-clear">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          </svg>
+          Clear All
+        </button>
+      </div>
     </div>
 
     <!-- Enhanced Quick Insights -->
@@ -231,6 +239,11 @@
           <div class="detail-efficiency" :class="getEfficiencyClass(item.goldEfficiency)">
             {{ item.goldEfficiency }}%
           </div>
+          <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
 
         <div class="detail-stats-grid">
@@ -285,12 +298,11 @@
         <div v-if="item.description" class="detail-description">
           <div class="desc-label">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 16v-4M12 8h.01"/>
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
-            Item Effects
+            Item Effects & Passives
           </div>
-          <div class="desc-text">{{ sanitizeHtml(item.description) }}</div>
+          <div class="desc-text" v-html="formatDescription(item.description)"></div>
         </div>
       </div>
     </div>
@@ -367,7 +379,11 @@ let efficiencyChartInstance = null
 let costValueChartInstance = null
 let componentChartInstance = null
 
-const emit = defineEmits(['clear', 'viewDetailed'])
+const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore'])
+
+function removeItem(item) {
+  emit('removeItem', item)
+}
 
 function createEfficiencyChart() {
   if (!efficiencyChart.value || props.items.length < 2) return
@@ -761,6 +777,24 @@ function sanitizeHtml(html) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
+
+function formatDescription(html) {
+  if (!html) return ''
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Keep some formatting tags but make them safe
+    .replace(/<br\s*\/?>/gi, '<br>')
+    .replace(/<\/?passive>/gi, '')
+    .replace(/<\/?active>/gi, '')
+    .replace(/<\/?unique>/gi, '<span class="unique-tag">')
+    .replace(/<\/?stats>/gi, '<span class="stats-tag">')
+    .replace(/<\/?attention>/gi, '<strong class="attention">')
+    .replace(/<\/?li>/gi, '• ')
+    .replace(/<\/?ul>/gi, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '<br><br>')
+    .trim()
+}
 </script>
 
 <style scoped>
@@ -809,7 +843,12 @@ function sanitizeHtml(html) {
   font-weight: 500;
 }
 
-.btn-clear {
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-clear, .btn-add-more {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -824,15 +863,23 @@ function sanitizeHtml(html) {
   font-size: 0.875rem;
 }
 
-.btn-clear svg {
+.btn-clear svg, .btn-add-more svg {
   width: 16px;
   height: 16px;
+}
+
+.btn-add-more:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  transform: translateY(-1px);
 }
 
 .btn-clear:hover {
   background: var(--error);
   border-color: var(--error);
   color: white;
+  transform: translateY(-1px);
 }
 
 /* Enhanced Insights Section */
@@ -1248,6 +1295,7 @@ function sanitizeHtml(html) {
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-primary);
+  position: relative;
 }
 
 .detail-icon {
@@ -1284,6 +1332,36 @@ function sanitizeHtml(html) {
   padding: 0.5rem 0.875rem;
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
+}
+
+.btn-remove-item {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-remove-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-remove-item:hover {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
+  transform: scale(1.05);
 }
 
 .detail-stats-grid {
@@ -1439,7 +1517,28 @@ function sanitizeHtml(html) {
 .desc-text {
   color: var(--text-secondary);
   font-size: 0.8125rem;
-  line-height: 1.6;
+  line-height: 1.7;
+}
+
+.desc-text strong, .desc-text .attention {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.desc-text .unique-tag {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.desc-text .stats-tag {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.desc-text br {
+  display: block;
+  content: "";
+  margin: 0.5rem 0;
 }
 
 /* Analysis Panel */
@@ -1524,6 +1623,19 @@ function sanitizeHtml(html) {
 .gold {
   color: var(--gold);
   font-family: 'Monaco', 'Courier New', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.gold-icon,
+.gold-icon-inline {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 2px;
 }
 
 /* Empty State */

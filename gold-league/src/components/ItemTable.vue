@@ -38,6 +38,16 @@
           
           <div class="tray-actions">
             <button 
+              @click="emit('addToBuild', selectedItems)" 
+              class="btn-add-to-build"
+              :disabled="selectedItems.length === 0"
+            >
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Add to Build
+            </button>
+            <button 
               @click="emit('compare', selectedItems)" 
               class="btn-compare-now"
               :disabled="selectedItems.length < 2"
@@ -48,14 +58,14 @@
                 <rect x="14" y="14" width="7" height="7"/>
                 <rect x="3" y="14" width="7" height="7"/>
               </svg>
-              Compare {{ selectedItems.length }} Items
+              Compare
             </button>
-            <div v-if="selectedItems.length < 2" class="help-text">
-              Select at least 2 items to compare
-            </div>
-            <div v-else-if="selectedItems.length < 6" class="help-text">
-              You can select up to {{ 6 - selectedItems.length }} more items
-            </div>
+          </div>
+          <div v-if="selectedItems.length < 2" class="help-text">
+            Select items to add to build or compare
+          </div>
+          <div v-else-if="selectedItems.length < 6" class="help-text">
+            You can select up to {{ 6 - selectedItems.length }} more items
           </div>
         </div>
       </div>
@@ -64,21 +74,47 @@
     <!-- Main Controls -->
     <div class="browser-controls">
       <div class="controls-row">
-        <div class="search-box">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input 
-            v-model="search" 
-            placeholder="Search items by name..." 
-            class="search-input"
-          />
-          <button v-if="search" @click="search = ''" class="btn-clear-search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
+        <div class="search-box-container">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
             </svg>
-          </button>
+            <input 
+              v-model="search" 
+              placeholder="Search items by name or stats (e.g., 'AD', 'crit', 'armor')..." 
+              class="search-input"
+              @focus="showSearchSuggestions = true"
+              @blur="() => setTimeout(() => showSearchSuggestions = false, 200)"
+            />
+            <button v-if="search" @click="search = ''" class="btn-clear-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Smart Search Suggestions -->
+          <div v-if="showSearchSuggestions && search.length > 0 && searchSuggestions.length > 0" class="search-suggestions">
+            <div class="suggestions-header">Smart Suggestions</div>
+            <button 
+              v-for="suggestion in searchSuggestions.slice(0, 5)" 
+              :key="suggestion.id"
+              @click="applySearchSuggestion(suggestion)"
+              class="suggestion-item"
+            >
+              <img :src="getImageUrl(suggestion.id)" :alt="suggestion.name" class="suggestion-img" />
+              <div class="suggestion-info">
+                <div class="suggestion-name">{{ suggestion.name }}</div>
+                <div class="suggestion-meta">
+                  <span class="suggestion-eff" :class="getEfficiencyClass(suggestion.goldEfficiency)">
+                    {{ suggestion.goldEfficiency }}%
+                  </span>
+                  <span class="suggestion-stats">{{ getSuggestionStats(suggestion) }}</span>
+                </div>
+              </div>
+            </button>
+          </div>
         </div>
         
         <div class="view-toggle">
@@ -192,31 +228,11 @@
             <img :src="getImageUrl(item.id)" :alt="item.name" class="tooltip-icon" @error="handleImageError" />
             <div class="tooltip-title">
               <h4>{{ item.name }}</h4>
-              <span class="tooltip-tier">{{ getItemTierLabel(item) }}</span>
-            </div>
-          </div>
-          
-          <div class="tooltip-stats-grid">
-            <div class="tooltip-stat">
-              <span class="tooltip-label">Gold Efficiency</span>
-              <span class="tooltip-value" :class="getEfficiencyClass(item.goldEfficiency)">{{ item.goldEfficiency }}%</span>
-            </div>
-            <div class="tooltip-stat">
-              <span class="tooltip-label">Cost</span>
-              <span class="tooltip-value gold">{{ item.cost }}g</span>
-            </div>
-            <div class="tooltip-stat">
-              <span class="tooltip-label">Total Value</span>
-              <span class="tooltip-value gold">{{ item.totalGoldValue }}g</span>
-            </div>
-            <div class="tooltip-stat">
-              <span class="tooltip-label">Rating</span>
-              <span class="tooltip-value" :class="getRatingClass(item.goldEfficiency)">{{ getEfficiencyRating(item.goldEfficiency) }}</span>
             </div>
           </div>
 
           <div v-if="item.statBreakdown && Object.keys(item.statBreakdown).length > 0" class="tooltip-breakdown">
-            <div class="tooltip-section-title">Stats Provided</div>
+            <div class="tooltip-section-title">Stats</div>
             <div class="tooltip-stats-list">
               <div v-for="(stat, key) in item.statBreakdown" :key="key" class="tooltip-stat-item">
                 <span class="stat-name">{{ formatStatName(key) }}</span>
@@ -259,6 +275,7 @@
               selected: isSelected(item),
               selecting: selectingItemId === item.id 
             }"
+            class="table-row-with-tooltip"
           >
             <td class="td-checkbox">
               <input 
@@ -284,6 +301,31 @@
             <td class="td-value gold">{{ item.totalGoldValue }}g</td>
             <td class="td-rating" :class="getRatingClass(item.goldEfficiency)">
               {{ getEfficiencyRating(item.goldEfficiency) }}
+              
+              <!-- Table Row Tooltip -->
+              <div class="table-row-tooltip">
+                <div class="tooltip-header">
+                  <img :src="getImageUrl(item.id)" :alt="item.name" class="tooltip-icon" @error="handleImageError" />
+                  <div class="tooltip-title">
+                    <h4>{{ item.name }}</h4>
+                  </div>
+                </div>
+
+                <div v-if="item.statBreakdown && Object.keys(item.statBreakdown).length > 0" class="tooltip-breakdown">
+                  <div class="tooltip-section-title">Stats</div>
+                  <div class="tooltip-stats-list">
+                    <div v-for="(stat, key) in item.statBreakdown" :key="key" class="tooltip-stat-item">
+                      <span class="stat-name">{{ formatStatName(key) }}</span>
+                      <span class="stat-amount">{{ formatStatValue(key, stat.amount) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="item.description" class="tooltip-description">
+                  <div class="tooltip-section-title">Effects</div>
+                  <div class="tooltip-desc-text">{{ sanitizeDescription(item.description) }}</div>
+                </div>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -329,7 +371,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['compare'])
+const emit = defineEmits(['compare', 'addToBuild'])
 
 // State
 const failedImages = ref(new Set())
@@ -341,6 +383,7 @@ const selectedItems = ref([])
 const itemsPerPage = ref(24)
 const selectingItemId = ref(null)
 const viewMode = ref('grid')
+const showSearchSuggestions = ref(false)
 
 const tierOptions = [
   { value: 'legendary', label: 'Legendary' },
@@ -403,6 +446,81 @@ const hasMoreItems = computed(() => {
 const remainingItems = computed(() => {
   return filtered.value.length - itemsPerPage.value
 })
+
+// Smart search suggestions
+const searchSuggestions = computed(() => {
+  if (!search.value || search.value.length < 2) return []
+  
+  const query = search.value.toLowerCase()
+  const statKeywords = {
+    'ad': 'FlatPhysicalDamageMod',
+    'attack damage': 'FlatPhysicalDamageMod',
+    'damage': 'FlatPhysicalDamageMod',
+    'ap': 'FlatMagicDamageMod',
+    'ability power': 'FlatMagicDamageMod',
+    'magic damage': 'FlatMagicDamageMod',
+    'armor': 'FlatArmorMod',
+    'mr': 'FlatSpellBlockMod',
+    'magic resist': 'FlatSpellBlockMod',
+    'health': 'FlatHPPoolMod',
+    'hp': 'FlatHPPoolMod',
+    'mana': 'FlatMPPoolMod',
+    'crit': 'FlatCritChanceMod',
+    'critical': 'FlatCritChanceMod',
+    'attack speed': 'PercentAttackSpeedMod',
+    'as': 'PercentAttackSpeedMod',
+    'movement speed': 'FlatMovementSpeedMod',
+    'ms': 'FlatMovementSpeedMod',
+    'speed': 'FlatMovementSpeedMod',
+    'lifesteal': 'PercentLifeStealMod',
+    'life steal': 'PercentLifeStealMod'
+  }
+  
+  // Check if query matches a stat keyword
+  let matchingStat = null
+  for (const [keyword, stat] of Object.entries(statKeywords)) {
+    if (query.includes(keyword)) {
+      matchingStat = stat
+      break
+    }
+  }
+  
+  // If searching by stat, find items with that stat
+  if (matchingStat) {
+    return props.items
+      .filter(item => {
+        if (failedImages.value.has(item.id)) return false
+        if (!item.statBreakdown) return false
+        return item.statBreakdown[matchingStat] && item.statBreakdown[matchingStat].amount > 0
+      })
+      .sort((a, b) => {
+        const aAmount = a.statBreakdown[matchingStat]?.amount || 0
+        const bAmount = b.statBreakdown[matchingStat]?.amount || 0
+        return bAmount - aAmount
+      })
+      .slice(0, 10)
+  }
+  
+  // Otherwise, search by name
+  return props.items
+    .filter(item => {
+      if (failedImages.value.has(item.id)) return false
+      return item.name.toLowerCase().includes(query)
+    })
+    .sort((a, b) => b.goldEfficiency - a.goldEfficiency)
+    .slice(0, 10)
+})
+
+function getSuggestionStats(item) {
+  if (!item.statBreakdown) return ''
+  const stats = Object.keys(item.statBreakdown).slice(0, 2)
+  return stats.map(key => formatStatName(key)).join(', ')
+}
+
+function applySearchSuggestion(item) {
+  search.value = item.name
+  showSearchSuggestions.value = false
+}
 
 // Methods
 function sort(key) {
@@ -550,12 +668,13 @@ watch(itemsPerPage, () => {
   bottom: 0;
   left: 0;
   right: 0;
-  background: var(--bg-secondary);
+  background: var(--bg-secondary), 0.99;
   backdrop-filter: blur(10px);
   border-top: 2px solid var(--gold);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3), 0 -1px 0 rgba(240, 168, 41, 0.2);
   z-index: 100;
   padding: 1rem 1.5rem;
+  
 }
 
 .tray-content {
@@ -759,6 +878,35 @@ watch(itemsPerPage, () => {
   cursor: not-allowed;
 }
 
+.btn-add-to-build {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-secondary);
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-add-to-build:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.2);
+}
+
+.btn-add-to-build:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-icon {
   width: 16px;
   height: 16px;
@@ -858,6 +1006,98 @@ watch(itemsPerPage, () => {
 
 .btn-clear-search:hover svg {
   transform: rotate(90deg);
+}
+
+.search-box-container {
+  flex: 1;
+  position: relative;
+}
+
+/* Search Suggestions Dropdown */
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: var(--bg-secondary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.suggestions-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.suggestion-img {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--gold);
+  object-fit: contain;
+  background: var(--bg-tertiary);
+  flex-shrink: 0;
+}
+
+.suggestion-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.suggestion-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.suggestion-eff {
+  font-weight: 600;
+}
+
+.suggestion-stats {
+  color: var(--text-tertiary);
 }
 
 .view-toggle {
@@ -980,13 +1220,14 @@ watch(itemsPerPage, () => {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
+  position: relative;
 }
 
 .item-card {
   background: var(--bg-secondary);
   border: 2px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1022,6 +1263,7 @@ watch(itemsPerPage, () => {
   justify-content: center;
   overflow: hidden;
   border-bottom: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .card-img {
@@ -1168,27 +1410,33 @@ watch(itemsPerPage, () => {
 
 .item-hover-tooltip {
   position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  right: 0;
+  transform: translate(10px, 0);
   background: var(--bg-primary);
   border: 2px solid var(--gold);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  width: 340px;
+  padding: 1rem;
+  width: 320px;
   max-width: 90vw;
-  z-index: 100;
+  z-index: 99999 !important;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  margin-top: 0.75rem;
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(240, 168, 41, 0.2);
-  transform: translateX(-50%) translateY(-4px);
+  transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(240, 168, 41, 0.3);
+  display: block !important;
+}
+
+.item-card {
+  position: relative;
 }
 
 .item-card:hover .item-hover-tooltip {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: opacity 0.15s ease;
+  display: block !important;
 }
 
 .tooltip-header {
@@ -1375,6 +1623,7 @@ watch(itemsPerPage, () => {
   border-bottom: 1px solid var(--border-primary);
   transition: all 0.2s;
   cursor: pointer;
+  position: relative;
 }
 
 .items-table tbody tr:hover {
@@ -1384,6 +1633,39 @@ watch(itemsPerPage, () => {
 .items-table tbody tr.selected {
   background: rgba(240, 168, 41, 0.1);
   border-left: 4px solid var(--gold);
+}
+
+/* Table Row Tooltip */
+.table-row-tooltip {
+  position: absolute;
+  top: -1rem;
+  right: 100%;
+  margin-right: 1rem;
+  transform: translateX(0);
+  background: var(--bg-primary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  width: 320px;
+  max-width: 90vw;
+  z-index: 99999 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(240, 168, 41, 0.3);
+  display: block !important;
+}
+
+.td-rating {
+  position: relative;
+}
+
+.table-row-with-tooltip:hover .table-row-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: opacity 0.15s ease;
+  display: block !important;
 }
 
 .items-table td {
@@ -1447,6 +1729,19 @@ watch(itemsPerPage, () => {
 .gold {
   color: var(--gold);
   font-family: 'Monaco', 'Courier New', monospace;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.gold-icon,
+.gold-icon-inline {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 2px;
 }
 
 /* Simple Pagination */

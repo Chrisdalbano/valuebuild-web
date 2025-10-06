@@ -81,8 +81,10 @@ def should_include_item(item):
     if gold.get("total", 0) <= 0:
         return False
     
-    # Include if it has any stats OR is a completed item with effects
-    if stats or gold.get("total", 0) >= 1000:
+    # Include if it has any stats OR effects (description)
+    # This ensures items like Sheen (effect-based) are included
+    description = item.get("description", "")
+    if stats or (description and len(description) > 20):
         return True
     
     return False
