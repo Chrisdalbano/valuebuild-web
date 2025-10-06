@@ -34,9 +34,11 @@ export const DEPRECATED_KEYWORDS = [
   'mythic',
   'removed',
   'deprecated',
-  'old',
   'legacy'
 ]
+
+// NOTE: Removed 'old' keyword - causes false positives
+// Items like Statikk Shiv have "cooldown" which contains "old"
 
 /**
  * Check if an item is deprecated and should not be displayed

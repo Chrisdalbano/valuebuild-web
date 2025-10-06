@@ -10,16 +10,16 @@ import os
 
 ARENA_MODE_PREFIXES = ['663', '664', '665', '666', '667', '668']
 
-# Additional deprecated items to remove
+# Additional deprecated items to remove (old mythic items from previous seasons)
 DEPRECATED_ITEM_IDS = [
-    '6655',  # Luden's Companion
-    '6657',  # Rod of Ages
-    '6660',  # Bami's Cinder
-    '6662',  # Iceborn Gauntlet
-    '6665',  # Jak'Sho, The Protean
-    '6670',  # Noonquiver
-    '6672',  # Kraken Slayer
-    '6673',  # Immortal Shieldbow
+    '6655',  # Luden's Companion (old mythic)
+    '6657',  # Rod of Ages (old mythic)
+    '6660',  # Bami's Cinder (removed component)
+    '6662',  # Iceborn Gauntlet (old mythic)
+    '6665',  # Jak'Sho, The Protean (old mythic)
+    '6670',  # Noonquiver (removed component)
+    '6673',  # Immortal Shieldbow (old mythic)
+    # NOTE: Kraken Slayer (6672) removed from this list - it's back in the game!
 ]
 
 

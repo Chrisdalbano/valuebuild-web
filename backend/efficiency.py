@@ -17,7 +17,7 @@ STAT_VALUES = {
     
     # Percentage stats (API returns as decimal where 1.0 = 100%)
     "PercentCritChanceMod": 4000,       # Crit: 40g per 1%, API gives decimal, so 4000g per 1.0 (100%)
-    "PercentAttackSpeedMod": 250,       # AS: 25g per 10%, API gives decimal, so 250g per 1.0 (100%)
+    "PercentAttackSpeedMod": 2500,      # AS: 250g per 10%, API gives decimal, so 2500g per 1.0 (100%)
     "FlatCritChanceMod": 4000,          # Same as PercentCritChance (API returns as decimal)
     
     # Secondary stats from composite items

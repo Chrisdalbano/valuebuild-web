@@ -796,10 +796,10 @@ watch(itemsPerPage, () => {
 }
 
 .count-badge {
-  background: var(--gold);
-  color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--gold);
   padding: 0.125rem 0.5rem;
-  border-radius: 1rem;
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
 }

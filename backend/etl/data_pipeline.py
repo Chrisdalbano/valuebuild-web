@@ -113,12 +113,15 @@ class DDragonETL:
             return False
         
         # Exclude items with specific deprecated keywords
-        deprecated_keywords = ["removed", "mythic", "deprecated", "old", "legacy"]
+        # NOTE: Removed "old" keyword - causes false positives (e.g., items with "gold" in description)
+        deprecated_keywords = ["removed", "mythic", "deprecated", "legacy"]
         name_lower = name.lower()
         if any(keyword in name_lower for keyword in deprecated_keywords):
             return False
         
-        # Exclude Arena mode items (special ID prefixes)
+        # Exclude Arena mode items (special ID prefixes for 5+ digit IDs)
+        # Arena items: 223094, 326672, etc. (5+ digits)
+        # Regular items: 3094, 6672, etc. (4 digits or less)
         if len(item_id) >= 5 and (
             item_id.startswith("22") or 
             item_id.startswith("32") or 

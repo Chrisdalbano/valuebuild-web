@@ -66,7 +66,7 @@
         </div>
         <div class="stat-value-item">
           <span class="stat-name">Attack Speed</span>
-          <span class="stat-gold">25g per 10%</span>
+          <span class="stat-gold">250g per 10%</span>
         </div>
         <div class="stat-value-item">
           <span class="stat-name">Crit Chance</span>

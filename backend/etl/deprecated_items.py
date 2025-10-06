@@ -38,9 +38,11 @@ DEPRECATED_KEYWORDS = [
     'mythic',
     'removed',
     'deprecated',
-    'old',
     'legacy'
 ]
+
+# NOTE: Removed 'old' keyword as it causes false positives
+# (e.g., "Gain X gold" contains "gold", items with "old" in flavor text)
 
 
 def is_item_deprecated(item):
@@ -59,7 +61,9 @@ def is_item_deprecated(item):
     item_id = str(item['id'])
     
     # Check if it's an Arena mode item (IDs starting with 663, 664, etc.)
-    if any(item_id.startswith(prefix) for prefix in ARENA_MODE_PREFIXES):
+    # Arena items have 5+ digit IDs, regular items have 4 digits
+    # Example: 663056 (Arena) vs 6630 (Regular item)
+    if len(item_id) >= 5 and any(item_id.startswith(prefix) for prefix in ARENA_MODE_PREFIXES):
         return True
     
     # Check ID against blacklist

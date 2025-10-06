@@ -10,7 +10,7 @@
             class="logo-icon"
             @error="handleLogoError"
           />
-          <h1 class="logo-text">VALUEBUILD</h1>
+          <h1 class="logo-text">BuildValue</h1>
         </div>
         <p class="subtitle">Get efficient gold value analytics for your builds and items</p>
       </div>
@@ -117,7 +117,7 @@
     </transition>
 
     <footer class="app-footer">
-      <p>ValueBuild | Advanced League of Legends item analytics</p>
+      <p>BuildValue | Advanced League of Legends item analytics</p>
       <p class="disclaimer">Data from Riot Games Data Dragon API - Not endorsed by Riot Games</p>
     </footer>
   </div>
@@ -144,7 +144,7 @@ const detailedItem = ref(null)
 const showBreakdown = ref(false)
 const randomComparisons = ref([])
 const currentBuild = ref([])
-const goldIconUrl = 'https://ddragon.leagueoflegends.com/cdn/15.19.1/img/ui/gold.png'
+const goldIconUrl = '/20px-Gold_colored_icon.png' // Local SVG icon in public folder
 const showScrollTop = ref(false)
 
 // Popular champions for random splash art
