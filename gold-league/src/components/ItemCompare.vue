@@ -184,6 +184,13 @@
     <!-- Detailed Item Cards with Recipe -->
     <div class="items-grid">
       <div v-for="item in items" :key="item.id" class="detail-card">
+        <!-- Remove Button - Top Right Corner -->
+        <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+        
         <!-- Recipe/Build Path -->
         <div v-if="getComponents(item).length > 0" class="recipe-section">
           <div class="recipe-header">
@@ -239,11 +246,6 @@
           <div class="detail-efficiency" :class="getEfficiencyClass(item.goldEfficiency)">
             {{ item.goldEfficiency }}%
           </div>
-          <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
         </div>
 
         <div class="detail-stats-grid">
@@ -281,13 +283,17 @@
               class="breakdown-bar-item"
             >
               <div class="bar-label">
+                <img v-if="getStatIcon(key)" :src="getStatIcon(key)" :alt="formatStatName(key)" class="stat-icon" />
                 <span class="bar-stat-name">{{ formatStatName(key) }}</span>
                 <span class="bar-stat-value">{{ formatStatValue(key, stat.amount) }}</span>
               </div>
               <div class="bar-wrapper">
                 <div 
                   class="bar-fill" 
-                  :style="{ width: getStatPercent(stat.goldValue, item.totalGoldValue) + '%' }"
+                  :style="{ 
+                    width: getStatPercent(stat.goldValue, item.totalGoldValue) + '%',
+                    backgroundColor: getStatColor(key)
+                  }"
                 ></div>
               </div>
               <span class="bar-gold">{{ stat.goldValue }}g</span>
@@ -357,7 +363,8 @@
 <script setup>
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+import { getItemImageUrl, getValidatedItemImageUrl, formatStatValue } from '../api/items'
+import { getStatIcon, formatStatName, getStatColor } from '../utils/statIcons.js'
 
 Chart.register(...registerables)
 
@@ -1455,10 +1462,24 @@ function formatDescription(html) {
   gap: 0.125rem;
 }
 
+.stat-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  margin-right: 0.375rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px;
+  align-self: flex-start;
+}
+
 .bar-stat-name {
   color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 .bar-stat-value {
