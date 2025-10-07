@@ -100,7 +100,7 @@
           <span>{{ getRecommendation(comp) }}</span>
         </div>
         
-        <button class="insight-btn" @click="router.push('/compare')">
+        <button class="insight-btn" @click="router.push('/compare') & $emit('load-comparison', comp)">
           View Full Analysis
           <span class="btn-arrow">→</span>
         </button>

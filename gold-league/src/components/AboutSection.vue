@@ -1,37 +1,11 @@
 <template>
   <div class="about-section">
     <div class="hero-section">
-      <img src="/20px-Gold_colored_icon.png" alt="Gold" class="hero-icon" />
+      <img src="https://raw.communitydragon.org/15.8/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/kleptomancy/kleptomancy.png" alt="Gold" class="hero-icon" />
       <h1>BuildValue - League Item Optimizer</h1>
       <p class="tagline">Data-driven item analysis for League of Legends</p>
     </div>
-    
-    <div class="info-card highlight-card">
-      <h3>🎯 What is This Tool?</h3>
-      <p>
-        BuildValue helps you make better item choices by calculating the <strong>gold efficiency</strong> 
-        of every League of Legends item. Compare items, optimize builds, and understand the true 
-        value of your purchases.
-      </p>
-      <div class="feature-grid">
-        <div class="feature-item">
-          <span class="feature-icon">📊</span>
-          <span class="feature-text">Real-time item data from Riot API</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">⚡</span>
-          <span class="feature-text">Compare up to 3 items side-by-side</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">🎮</span>
-          <span class="feature-text">Build optimizer for any role</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">📈</span>
-          <span class="feature-text">Visual efficiency charts</span>
-        </div>
-      </div>
-    </div>
+ 
 
     <div class="info-card">
       <h3>💡 What is Gold Efficiency?</h3>
@@ -48,15 +22,6 @@
       </p>
     </div>
 
-    <div class="info-card">
-      <h3>Rating System</h3>
-      <ul class="rating-list">
-        <li><span class="badge eff-excellent">Excellent</span> ≥120% - Exceptional value</li>
-        <li><span class="badge eff-good">Good</span> ≥100% - Cost efficient</li>
-        <li><span class="badge eff-fair">Fair</span> ≥80% - Moderate value</li>
-        <li><span class="badge eff-poor">Poor</span> &lt;80% - Low stat value (usually has powerful passives)</li>
-      </ul>
-    </div>
 
     <div class="info-card warning-card">
       <h3>⚠️ Important Limitations</h3>
@@ -149,74 +114,9 @@
       </div>
     </div>
 
-    <div class="info-card how-to-card">
-      <h3>🚀 How to Use This Tool</h3>
-      <div class="steps-grid">
-        <div class="step-item">
-          <div class="step-header">
-            <span class="step-number">1</span>
-            <strong>Browse Items</strong>
-          </div>
-          <p>Filter by role, tier, or search by name to find items</p>
-        </div>
-        <div class="step-item">
-          <div class="step-header">
-            <span class="step-number">2</span>
-            <strong>Compare</strong>
-          </div>
-          <p>Select up to 3 items to see side-by-side comparison</p>
-        </div>
-        <div class="step-item">
-          <div class="step-header">
-            <span class="step-number">3</span>
-            <strong>Optimize</strong>
-          </div>
-          <p>Build a full 6-item set and see total stats & efficiency</p>
-        </div>
-        <div class="step-item">
-          <div class="step-header">
-            <span class="step-number">4</span>
-            <strong>Analyze</strong>
-          </div>
-          <p>Review charts and insights to refine your build</p>
-        </div>
-      </div>
-    </div>
 
-    <div class="info-card tech-stack">
-      <h3>⚙️ Technical Details</h3>
-      <div class="tech-details">
-        <div class="tech-item">
-          <strong>Frontend:</strong> Vue 3 + Vite
-        </div>
-        <div class="tech-item">
-          <strong>Backend:</strong> FastAPI + Python
-        </div>
-        <div class="tech-item">
-          <strong>Database:</strong> MongoDB Atlas
-        </div>
-        <div class="tech-item">
-          <strong>Data Source:</strong> Riot Games DDragon API
-        </div>
-        <div class="tech-item">
-          <strong>Hosting:</strong> Netlify + Render
-        </div>
-        <div class="tech-item">
-          <strong>Updates:</strong> Weekly (Mondays 2 AM UTC)
-        </div>
-      </div>
-      <p class="source-link">
-        Formulas & values from 
-        <a href="https://leagueoflegends.fandom.com/wiki/Gold_efficiency" target="_blank" rel="noopener">
-          League of Legends Wiki
-        </a>
-      </p>
-      <p class="disclaimer">
-        BuildValue isn't endorsed by Riot Games and doesn't reflect the views or opinions of 
-        Riot Games or anyone officially involved in producing or managing Riot Games properties. 
-        Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-      </p>
-    </div>
+
+    
   </div>
 </template>
 
@@ -235,15 +135,12 @@
   text-align: center;
   padding: 3rem 1rem;
   margin-bottom: 2rem;
-  background: linear-gradient(135deg, rgba(193, 131, 28, 0.1), rgba(193, 131, 28, 0.05));
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(193, 131, 28, 0.2);
 }
 
 .hero-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1rem;
+  width: 80px;
+  height: 80px;
+  margin-bottom: 0.5rem;
   filter: drop-shadow(0 4px 8px rgba(193, 131, 28, 0.3));
 }
 
