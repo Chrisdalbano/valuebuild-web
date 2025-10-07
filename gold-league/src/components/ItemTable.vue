@@ -1646,11 +1646,14 @@ watch(itemsPerPage, () => {
   position: relative;
 }
 
-.item-card:hover .item-hover-tooltip {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transition: opacity 0.15s ease;
-  display: block !important;
+/* Desktop hover behavior */
+@media (min-width: 769px) {
+  .item-card:hover .item-hover-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transition: opacity 0.15s ease;
+    display: block !important;
+  }
 }
 
 /* Mobile tooltip: show on tap instead of hover */
@@ -2111,10 +2114,16 @@ watch(itemsPerPage, () => {
     backdrop-filter: blur(4px);
   }
   
-  /* Disable hover tooltips on mobile */
+  /* Ensure hover is completely disabled on mobile */
   .item-card:hover .item-hover-tooltip {
     opacity: 0 !important;
     visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  
+  /* Prevent any transition on hover for mobile */
+  .item-card:hover {
+    transform: none !important;
   }
   
   /* Only show on active tap */

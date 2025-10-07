@@ -182,7 +182,30 @@
     </div>
 
     <!-- Detailed Item Cards with Recipe -->
-    <div class="items-grid">
+    <div class="items-grid" ref="itemsCarousel">
+      <!-- Mobile Carousel Navigation -->
+      <button 
+        v-if="isMobile && items.length > 1" 
+        @click="scrollCarousel('left')" 
+        class="carousel-nav carousel-nav-left"
+        :disabled="currentCarouselIndex === 0"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      
+      <button 
+        v-if="isMobile && items.length > 1" 
+        @click="scrollCarousel('right')" 
+        class="carousel-nav carousel-nav-right"
+        :disabled="currentCarouselIndex === items.length - 1"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+      
       <div v-for="item in items" :key="item.id" class="detail-card">
         <!-- Remove Button - Top Right Corner -->
         <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
@@ -384,9 +407,14 @@ const props = defineProps({
 const efficiencyChart = ref(null)
 const costValueChart = ref(null)
 const componentChart = ref(null)
+const itemsCarousel = ref(null)
 let efficiencyChartInstance = null
 let costValueChartInstance = null
 let componentChartInstance = null
+
+// Mobile carousel state
+const isMobile = ref(false)
+const currentCarouselIndex = ref(0)
 
 const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore'])
 
@@ -770,6 +798,43 @@ function getEfficiencyRating(eff) {
   if (eff >= 80) return 'Fair'
   return 'Poor'
 }
+
+// Mobile carousel functions
+function scrollCarousel(direction) {
+  if (!itemsCarousel.value) return
+  
+  const cardWidth = itemsCarousel.value.querySelector('.detail-card')?.offsetWidth || 0
+  const gap = 24 // 1.5rem gap
+  const scrollAmount = cardWidth + gap
+  
+  if (direction === 'left' && currentCarouselIndex.value > 0) {
+    currentCarouselIndex.value--
+    itemsCarousel.value.scrollBy({
+      left: -scrollAmount,
+      behavior: 'smooth'
+    })
+  } else if (direction === 'right' && currentCarouselIndex.value < props.items.length - 1) {
+    currentCarouselIndex.value++
+    itemsCarousel.value.scrollBy({
+      left: scrollAmount,
+      behavior: 'smooth'
+    })
+  }
+}
+
+// Detect mobile on mount
+onMounted(() => {
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768
+  }
+  checkMobile()
+  
+  window.addEventListener('resize', checkMobile)
+  
+  return () => {
+    window.removeEventListener('resize', checkMobile)
+  }
+})
 
 function getStatPercent(goldValue, totalValue) {
   if (!totalValue) return 0
@@ -1699,14 +1764,106 @@ function formatDescription(html) {
   color: var(--error);
 }
 
+/* Mobile Carousel Styles */
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: var(--bg-primary);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav:hover:not(:disabled) {
+  background: var(--gold);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--border-secondary);
+}
+
+.carousel-nav svg {
+  width: 24px;
+  height: 24px;
+  color: var(--gold);
+}
+
+.carousel-nav:hover:not(:disabled) svg {
+  color: var(--bg-primary);
+}
+
+.carousel-nav-left {
+  left: -22px;
+}
+
+.carousel-nav-right {
+  right: -22px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .charts-section {
     grid-template-columns: 1fr;
   }
   
+  /* Mobile carousel for item comparison cards */
   .items-grid {
-    grid-template-columns: 1fr;
+    position: relative;
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: unset !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem !important;
+    padding: 0 0.5rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .items-grid::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .detail-card {
+    flex: 0 0 calc(100vw - 3rem) !important;
+    min-width: calc(100vw - 3rem) !important;
+    max-width: calc(100vw - 3rem) !important;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  
+  .carousel-nav {
+    display: flex;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .carousel-nav-left {
+    left: 8px;
+  }
+  
+  .carousel-nav-right {
+    right: 8px;
+  }
+  
+  .carousel-nav svg {
+    width: 20px;
+    height: 20px;
   }
   
   .insights-grid {
@@ -1722,12 +1879,62 @@ function formatDescription(html) {
   }
 
   .recipe-components {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .recipe-component {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+  
+  .recipe-comp-icon,
+  .recipe-final-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .recipe-comp-name,
+  .recipe-final-name {
+    font-size: 0.75rem;
   }
 
   .recipe-arrow {
-    transform: rotate(90deg);
+    display: none;
+  }
+  
+  .compare-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .btn-add-more,
+  .btn-clear {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-card {
+    flex: 0 0 calc(100vw - 2rem) !important;
+    min-width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .carousel-nav svg {
+    width: 18px;
+    height: 18px;
   }
 }
 </style>
