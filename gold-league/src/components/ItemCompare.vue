@@ -1,5 +1,5 @@
 <template>
-  <div v-if="items.length >= 2" class="compare-container">
+  <div v-if="items.length >= 1" class="compare-container">
     <!-- Header -->
     <div class="compare-header">
       <div class="header-left">
@@ -15,12 +15,6 @@
         <span class="item-count">{{ items.length }} items selected</span>
       </div>
       <div class="header-actions">
-        <button @click="emit('addMore')" class="btn-add-more">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          Add More
-        </button>
         <button @click="emit('clear')" class="btn-clear">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -30,8 +24,26 @@
       </div>
     </div>
 
+    <!-- Single Item View -->
+    <div v-if="items.length === 1" class="single-item-view">
+      <div class="single-item-message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="message-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <h3>Add More Items to Compare</h3>
+        <p>You need at least 2 items to see detailed comparisons, charts, and insights</p>
+        <button @click="openSwapModal()" class="btn-add-first">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add Another Item
+        </button>
+      </div>
+    </div>
+
     <!-- Enhanced Quick Insights -->
-    <div class="insights-section">
+    <div v-else class="insights-section">
       <div class="insights-header">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 11l3 3L22 4"/>
@@ -167,7 +179,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <h3>Cost vs Value Analysis</h3>
-          <span class="chart-subtitle">Green = value exceeds cost</span>
+          <span class="chart-subtitle"></span>
         </div>
         <canvas ref="costValueChart"></canvas>
       </div>
@@ -182,8 +194,45 @@
     </div>
 
     <!-- Detailed Item Cards with Recipe -->
-    <div class="items-grid">
+    <div class="items-grid" ref="itemsCarousel">
+      <!-- Mobile Carousel Navigation -->
+      <button 
+        v-if="isMobile && items.length > 1" 
+        @click="scrollCarousel('left')" 
+        class="carousel-nav carousel-nav-left"
+        :disabled="currentCarouselIndex === 0"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      
+      <button 
+        v-if="isMobile && items.length > 1" 
+        @click="scrollCarousel('right')" 
+        class="carousel-nav carousel-nav-right"
+        :disabled="currentCarouselIndex === items.length - 1"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+      
       <div v-for="item in items" :key="item.id" class="detail-card">
+        <!-- Swap Item Button - Top Left Corner -->
+        <button @click="openSwapModal(item)" class="btn-swap-item" title="Swap this item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+          </svg>
+        </button>
+        
+        <!-- Remove Button - Top Right Corner -->
+        <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+        
         <!-- Recipe/Build Path -->
         <div v-if="getComponents(item).length > 0" class="recipe-section">
           <div class="recipe-header">
@@ -193,11 +242,47 @@
             Recipe
           </div>
           <div class="recipe-components">
-            <div v-for="comp in getComponents(item)" :key="comp.id" class="recipe-component">
+            <div 
+              v-for="comp in getComponents(item)" 
+              :key="comp.id" 
+              class="recipe-component"
+              @mouseenter="showNestedRecipe(comp)"
+              @mouseleave="hideNestedRecipe"
+            >
               <img :src="getImageUrl(comp.id)" :alt="comp.name" class="recipe-comp-icon" @error="handleImageError" />
               <div class="recipe-comp-info">
                 <div class="recipe-comp-name">{{ comp.name }}</div>
                 <div class="recipe-comp-cost gold">{{ comp.cost }}g</div>
+              </div>
+              
+              <!-- Nested Recipe Tooltip (Desktop Only) -->
+              <div 
+                v-if="!isMobile && hoveredComponent?.id === comp.id && getComponents(comp).length > 0"
+                class="nested-recipe-tooltip"
+              >
+                <div class="nested-recipe-header">
+                  <img :src="getImageUrl(comp.id)" :alt="comp.name" class="nested-icon" @error="handleImageError" />
+                  <div>
+                    <div class="nested-name">{{ comp.name }}</div>
+                    <div class="nested-cost gold">{{ comp.cost }}g</div>
+                  </div>
+                </div>
+                <div class="nested-recipe-components">
+                  <div v-for="subComp in getComponents(comp)" :key="subComp.id" class="nested-comp-item">
+                    <img :src="getImageUrl(subComp.id)" :alt="subComp.name" class="nested-comp-icon" @error="handleImageError" />
+                    <div class="nested-comp-info">
+                      <div class="nested-comp-name">{{ subComp.name }}</div>
+                      <div class="nested-comp-cost gold">{{ subComp.cost }}g</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="nested-recipe-summary">
+                  <span>Components:</span>
+                  <span class="gold">{{ getComponentsCost(comp) }}g</span>
+                  <span>+</span>
+                  <span>Combine:</span>
+                  <span class="gold">{{ getCombineCost(comp) }}g</span>
+                </div>
               </div>
             </div>
             <div class="recipe-arrow">→</div>
@@ -239,11 +324,6 @@
           <div class="detail-efficiency" :class="getEfficiencyClass(item.goldEfficiency)">
             {{ item.goldEfficiency }}%
           </div>
-          <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
         </div>
 
         <div class="detail-stats-grid">
@@ -281,13 +361,19 @@
               class="breakdown-bar-item"
             >
               <div class="bar-label">
-                <span class="bar-stat-name">{{ formatStatName(key) }}</span>
+                <div class="bar-stat-name">
+                  <img v-if="getStatIcon(key)" :src="getStatIcon(key)" :alt="formatStatName(key)" class="stat-icon" />
+                  <span>{{ formatStatName(key) }}</span>
+                </div>
                 <span class="bar-stat-value">{{ formatStatValue(key, stat.amount) }}</span>
               </div>
               <div class="bar-wrapper">
                 <div 
                   class="bar-fill" 
-                  :style="{ width: getStatPercent(stat.goldValue, item.totalGoldValue) + '%' }"
+                  :style="{ 
+                    width: getStatPercent(stat.goldValue, item.totalGoldValue) + '%',
+                    backgroundColor: getStatColor(key)
+                  }"
                 ></div>
               </div>
               <span class="bar-gold">{{ stat.goldValue }}g</span>
@@ -303,6 +389,24 @@
             Item Effects & Passives
           </div>
           <div class="desc-text" v-html="formatDescription(item.description)"></div>
+        </div>
+      </div>
+      
+      <!-- Add Item Card (shows when < 6 items and >= 2 items) -->
+      <div 
+        v-if="!isMobile && items.length >= 2 && items.length < 6" 
+        @click="openSwapModal()"
+        class="detail-card add-item-card"
+      >
+        <div class="add-item-content">
+          <div class="add-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <h3>Add Another Item</h3>
+          <p>Compare up to 6 items</p>
+          <div class="add-item-count">{{ items.length }} / 6</div>
         </div>
       </div>
     </div>
@@ -343,21 +447,118 @@
   </div>
   
   <div v-else class="empty-state">
+    <div class="empty-state-content">
+      <div class="empty-icon-wrapper">
     <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <rect x="3" y="3" width="7" height="7"/>
       <rect x="14" y="3" width="7" height="7"/>
       <rect x="14" y="14" width="7" height="7"/>
       <rect x="3" y="14" width="7" height="7"/>
     </svg>
-    <h3>No Items Selected</h3>
-    <p>Select 2-6 items from the Items Database to compare their stats and efficiency</p>
   </div>
+      <h2>Start Comparing Items</h2>
+      <p>Select 2-6 items from the database to analyze their gold efficiency, stats, and build paths side by side</p>
+      <button @click="goToItems" class="btn-browse-items">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Browse Items Database
+      </button>
+      <div class="empty-state-features">
+        <div class="feature-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <span>Quick Insights</span>
+        </div>
+        <div class="feature-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/>
+            <path d="M18 17V9"/>
+            <path d="M13 17V5"/>
+            <path d="M8 17v-3"/>
+          </svg>
+          <span>Visual Charts</span>
+        </div>
+        <div class="feature-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+          </svg>
+          <span>Build Paths</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Item Swap/Add Modal -->
+  <teleport to="body">
+    <transition name="modal">
+      <div v-if="showSwapModal" class="modal-overlay" @click.self="closeSwapModal">
+        <div class="swap-modal">
+          <div class="swap-modal-header">
+            <h3>{{ swapTargetItem ? 'Swap Item' : (items.length === 0 ? 'Select First Item' : 'Add Item to Comparison') }}</h3>
+            <button @click="closeSwapModal" class="btn-modal-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="swap-modal-body">
+            <div class="swap-search-box">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input 
+                v-model="swapSearchQuery"
+                ref="swapSearchInput"
+                placeholder="Search for an item..."
+                class="swap-search-input"
+                @input="filterSwapItems"
+              />
+            </div>
+            
+            <div class="swap-items-list">
+              <div 
+                v-for="swapItem in filteredSwapItems.slice(0, 50)" 
+                :key="swapItem.id"
+                @click="selectSwapItem(swapItem)"
+                class="swap-item"
+                :class="{ 'already-selected': isItemAlreadySelected(swapItem) }"
+              >
+                <img :src="getImageUrl(swapItem.id)" :alt="swapItem.name" class="swap-item-img" @error="handleImageError" />
+                <div class="swap-item-info">
+                  <div class="swap-item-name">{{ swapItem.name }}</div>
+                  <div class="swap-item-stats">
+                    <span class="swap-item-eff" :class="getEfficiencyClass(swapItem.goldEfficiency)">
+                      {{ swapItem.goldEfficiency }}%
+                    </span>
+                    <span class="swap-item-cost gold">{{ swapItem.cost }}g</span>
+                  </div>
+                </div>
+                <span v-if="isItemAlreadySelected(swapItem)" class="already-in-comparison">
+                  ✓ In comparison
+                </span>
+              </div>
+              
+              <div v-if="filteredSwapItems.length === 0" class="no-swap-results">
+                No items found matching "{{ swapSearchQuery }}"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </teleport>
 </template>
 
 <script setup>
 import { computed, ref, watch, nextTick, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+import { getItemImageUrl, getValidatedItemImageUrl, formatStatValue } from '../api/items'
+import { getStatIcon, formatStatName, getStatColor } from '../utils/statIcons.js'
 
 Chart.register(...registerables)
 
@@ -375,14 +576,105 @@ const props = defineProps({
 const efficiencyChart = ref(null)
 const costValueChart = ref(null)
 const componentChart = ref(null)
+const itemsCarousel = ref(null)
 let efficiencyChartInstance = null
 let costValueChartInstance = null
 let componentChartInstance = null
 
-const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore'])
+// Mobile carousel state
+const isMobile = ref(false)
+const currentCarouselIndex = ref(0)
+
+// Nested recipe tooltip state
+const hoveredComponent = ref(null)
+
+// Swap modal state
+const showSwapModal = ref(false)
+const swapTargetItem = ref(null)
+const swapSearchQuery = ref('')
+const swapSearchInput = ref(null)
+const filteredSwapItems = ref([])
+
+const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem', 'addItem'])
 
 function removeItem(item) {
   emit('removeItem', item)
+}
+
+// Nested recipe tooltip functions
+function showNestedRecipe(component) {
+  if (!isMobile.value) {
+    hoveredComponent.value = component
+  }
+}
+
+function hideNestedRecipe() {
+  hoveredComponent.value = null
+}
+
+// Swap modal functions
+function openSwapModal(item = null) {
+  swapTargetItem.value = item
+  showSwapModal.value = true
+  swapSearchQuery.value = ''
+  filteredSwapItems.value = props.allItems.filter(i => 
+    !props.items.some(selected => selected.id === i.id)
+  )
+  
+  nextTick(() => {
+    swapSearchInput.value?.focus()
+  })
+}
+
+function closeSwapModal() {
+  showSwapModal.value = false
+  swapTargetItem.value = null
+  swapSearchQuery.value = ''
+}
+
+function filterSwapItems() {
+  const query = swapSearchQuery.value.toLowerCase().trim()
+  
+  if (!query) {
+    filteredSwapItems.value = props.allItems.filter(i => 
+      !props.items.some(selected => selected.id === i.id)
+    )
+  } else {
+    filteredSwapItems.value = props.allItems.filter(item => {
+      const nameMatch = item.name.toLowerCase().includes(query)
+      const statsMatch = item.statBreakdown && Object.keys(item.statBreakdown).some(stat =>
+        stat.toLowerCase().includes(query) || formatStatName(stat).toLowerCase().includes(query)
+      )
+      return nameMatch || statsMatch
+    })
+  }
+}
+
+function selectSwapItem(newItem) {
+  if (isItemAlreadySelected(newItem)) {
+    return // Don't allow selecting already compared items
+  }
+  
+  if (swapTargetItem.value) {
+    // Swap existing item
+    emit('swapItem', swapTargetItem.value, newItem)
+  } else {
+    // Add new item (if less than 6)
+    if (props.items.length < 6) {
+      emit('addItem', newItem)
+    }
+  }
+  
+  closeSwapModal()
+}
+
+function isItemAlreadySelected(item) {
+  return props.items.some(i => i.id === item.id)
+}
+
+function goToItems() {
+  // Navigate to home page using router
+  window.location.href = '/'
 }
 
 function createEfficiencyChart() {
@@ -761,6 +1053,43 @@ function getEfficiencyRating(eff) {
   if (eff >= 80) return 'Fair'
   return 'Poor'
 }
+
+// Mobile carousel functions
+function scrollCarousel(direction) {
+  if (!itemsCarousel.value) return
+  
+  const cardWidth = itemsCarousel.value.querySelector('.detail-card')?.offsetWidth || 0
+  const gap = 24 // 1.5rem gap
+  const scrollAmount = cardWidth + gap
+  
+  if (direction === 'left' && currentCarouselIndex.value > 0) {
+    currentCarouselIndex.value--
+    itemsCarousel.value.scrollBy({
+      left: -scrollAmount,
+      behavior: 'smooth'
+    })
+  } else if (direction === 'right' && currentCarouselIndex.value < props.items.length - 1) {
+    currentCarouselIndex.value++
+    itemsCarousel.value.scrollBy({
+      left: scrollAmount,
+      behavior: 'smooth'
+    })
+  }
+}
+
+// Detect mobile on mount
+onMounted(() => {
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768
+  }
+  checkMobile()
+  
+  window.addEventListener('resize', checkMobile)
+  
+  return () => {
+    window.removeEventListener('resize', checkMobile)
+  }
+})
 
 function getStatPercent(goldValue, totalValue) {
   if (!totalValue) return 0
@@ -1275,7 +1604,22 @@ function formatDescription(html) {
   margin-bottom: 2rem;
 }
 
+/* Better layout for 3-4 items on desktop */
+@media (min-width: 1200px) {
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* For exactly 3 items: 2 on top, 1 centered below */
+  .items-grid:has(.detail-card:nth-child(3):last-child) .detail-card:nth-child(3) {
+    grid-column: 1 / -1;
+    max-width: 50%;
+    margin: 0 auto;
+  }
+}
+
 .detail-card {
+  position: relative;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
@@ -1336,8 +1680,9 @@ function formatDescription(html) {
 
 .btn-remove-item {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
   width: 32px;
   height: 32px;
   display: flex;
@@ -1457,6 +1802,17 @@ function formatDescription(html) {
   color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: brightness(1.1);
 }
 
 .bar-stat-value {
@@ -1640,33 +1996,265 @@ function formatDescription(html) {
 
 /* Empty State */
 .empty-state {
-  padding: 6rem 2rem;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+}
+
+.empty-state-content {
+  max-width: 600px;
   text-align: center;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--border-secondary);
+}
+
+.empty-icon-wrapper {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 2rem;
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.1), rgba(135, 64, 55, 0.1));
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border-primary);
 }
 
 .empty-icon {
   width: 64px;
   height: 64px;
-  color: var(--text-tertiary);
-  margin: 0 auto 1.5rem;
-  opacity: 0.5;
+  color: var(--gold);
+  opacity: 0.8;
 }
 
-.empty-state h3 {
+.empty-state h2 {
   color: var(--text-primary);
-  font-size: 1.5rem;
-  margin: 0 0 0.75rem 0;
+  font-size: 2rem;
+  margin: 0 0 1rem 0;
+  font-weight: 700;
 }
 
 .empty-state p {
   color: var(--text-secondary);
+  font-size: 1.125rem;
+  margin: 0 0 2.5rem 0;
+  line-height: 1.6;
+}
+
+.btn-browse-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: linear-gradient(135deg, var(--gold), var(--rust));
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
   font-size: 1rem;
-  margin: 0;
-  max-width: 480px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.btn-browse-items svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-browse-items:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
+}
+
+.empty-state-features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-primary);
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feature-item svg {
+  width: 28px;
+  height: 28px;
+  color: var(--gold);
+}
+
+.feature-item span {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Single Item View */
+.single-item-view {
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-secondary);
+  border-radius: var(--radius-xl);
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+}
+
+.single-item-message {
+  text-align: center;
+  max-width: 500px;
   margin: 0 auto;
+}
+
+.message-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--gold);
+  margin: 0 auto 1.5rem;
+  opacity: 0.8;
+}
+
+.single-item-message h3 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem 0;
+  font-weight: 700;
+}
+
+.single-item-message p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+.btn-add-first {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.btn-add-first svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-add-first:hover {
+  background: rgb(220, 148, 21);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
+}
+
+/* Header Add Item Button */
+.btn-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-add-item:hover {
+  background: rgb(220, 148, 21);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+/* Add Item Card */
+.add-item-card {
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.05), rgba(135, 64, 55, 0.05));
+  border: 2px dashed var(--gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.add-item-card:hover {
+  background: linear-gradient(135deg, rgba(240, 168, 41, 0.1), rgba(135, 64, 55, 0.1));
+  border-color: var(--gold);
+  border-style: solid;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(240, 168, 41, 0.3);
+}
+
+.add-item-content {
+  text-align: center;
+  padding: 2rem;
+}
+
+.add-item-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5rem;
+  background: var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.add-item-card:hover .add-item-icon {
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 8px 24px rgba(240, 168, 41, 0.4);
+}
+
+.add-item-icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--bg-primary);
+}
+
+.add-item-content h3 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.add-item-content p {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.add-item-count {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.875rem;
 }
 
 .stat-value.positive {
@@ -1677,14 +2265,106 @@ function formatDescription(html) {
   color: var(--error);
 }
 
+/* Mobile Carousel Styles */
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background: var(--bg-primary);
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav:hover:not(:disabled) {
+  background: var(--gold);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: var(--border-secondary);
+}
+
+.carousel-nav svg {
+  width: 24px;
+  height: 24px;
+  color: var(--gold);
+}
+
+.carousel-nav:hover:not(:disabled) svg {
+  color: var(--bg-primary);
+}
+
+.carousel-nav-left {
+  left: -22px;
+}
+
+.carousel-nav-right {
+  right: -22px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .charts-section {
     grid-template-columns: 1fr;
   }
   
+  /* Mobile carousel for item comparison cards */
   .items-grid {
-    grid-template-columns: 1fr;
+    position: relative;
+    display: flex !important;
+    flex-direction: row !important;
+    grid-template-columns: unset !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem !important;
+    padding: 0 0.5rem;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  
+  .items-grid::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  .detail-card {
+    flex: 0 0 calc(100vw - 3rem) !important;
+    min-width: calc(100vw - 3rem) !important;
+    max-width: calc(100vw - 3rem) !important;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  
+  .carousel-nav {
+    display: flex;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .carousel-nav-left {
+    left: 8px;
+  }
+  
+  .carousel-nav-right {
+    right: 8px;
+  }
+  
+  .carousel-nav svg {
+    width: 20px;
+    height: 20px;
   }
   
   .insights-grid {
@@ -1700,12 +2380,427 @@ function formatDescription(html) {
   }
 
   .recipe-components {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .recipe-component {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+  
+  .recipe-comp-icon,
+  .recipe-final-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .recipe-comp-name,
+  .recipe-final-name {
+    font-size: 0.75rem;
   }
 
   .recipe-arrow {
-    transform: rotate(90deg);
+    display: none;
   }
+  
+  .compare-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .btn-add-more,
+  .btn-clear {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-card {
+    flex: 0 0 calc(100vw - 2rem) !important;
+    min-width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+  
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .carousel-nav svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Swap Item Button */
+.btn-swap-item {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-swap-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-swap-item:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  transform: scale(1.05);
+}
+
+/* Nested Recipe Tooltip */
+.recipe-component {
+  position: relative;
+  cursor: help;
+}
+
+.nested-recipe-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: var(--bg-primary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  width: 280px;
+  z-index: 1000;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(240, 168, 41, 0.3);
+}
+
+.nested-recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.nested-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gold);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.nested-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.nested-cost {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.nested-recipe-components {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.nested-comp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.nested-comp-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.nested-comp-info {
+  flex: 1;
+}
+
+.nested-comp-name {
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.nested-comp-cost {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.nested-recipe-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.625rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  justify-content: center;
+}
+
+/* Swap Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.swap-modal {
+  background: var(--bg-secondary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 96px rgba(0, 0, 0, 0.9);
+}
+
+.swap-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.swap-modal-header h3 {
+  color: var(--gold);
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-close:hover {
+  background: var(--error);
+  color: white;
+}
+
+.btn-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.swap-modal-body {
+  padding: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.swap-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.swap-search-box .search-icon {
+  position: absolute;
+  left: 1rem;
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.swap-search-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.swap-search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(240, 168, 41, 0.1);
+}
+
+.swap-items-list {
+  overflow-y: auto;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.swap-items-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.swap-items-list::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.swap-items-list::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.swap-items-list::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+.swap-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.swap-item:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.swap-item.already-selected {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.swap-item.already-selected:hover {
+  transform: none;
+  border-color: var(--border-primary);
+}
+
+.swap-item-img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.swap-item-info {
+  flex: 1;
+}
+
+.swap-item-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 0.25rem;
+}
+
+.swap-item-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.swap-item-eff {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.swap-item-cost {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.already-in-comparison {
+  color: var(--success);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.no-swap-results {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.9375rem;
+}
+
+/* Modal transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active .swap-modal,
+.modal-leave-active .swap-modal {
+  transition: transform 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .swap-modal,
+.modal-leave-to .swap-modal {
+  transform: scale(0.9);
 }
 </style>

@@ -64,6 +64,10 @@
             @viewDetailed="viewDetailed"
             @remove-item="removeFromComparison"
             @removeItem="removeFromComparison"
+            @swap-item="swapComparisonItem"
+            @swapItem="swapComparisonItem"
+            @add-item="addToComparison"
+            @addItem="addToComparison"
             @add-more="goToItems"
             @addMore="goToItems"
             @browse-items="goToItems"
@@ -89,7 +93,7 @@
     </transition>
 
     <footer class="app-footer">
-      <p>BuildValue | Advanced League of Legends item analytics</p>
+      <p>BuildValue by <a href="https://chrisdalbano.com" target="_blank" style="color: var(--gold); text-decoration: none;">Chrisdalbano</a> | Advanced League of Legends item analytics</p>
       <p class="disclaimer">Data from Riot Games Data Dragon API - Not endorsed by Riot Games</p>
     </footer>
   </div>
@@ -216,6 +220,20 @@ function removeFromComparison(item) {
   }
   if (compareItems.value.length === 0) {
     router.push('/')
+  }
+}
+
+function swapComparisonItem(oldItem, newItem) {
+  const index = compareItems.value.findIndex(i => i.id === oldItem.id)
+  if (index > -1) {
+    compareItems.value[index] = newItem
+  }
+}
+
+function addToComparison(newItem) {
+  // Add item to comparison if not already present and under limit
+  if (compareItems.value.length < 6 && !compareItems.value.some(i => i.id === newItem.id)) {
+    compareItems.value.push(newItem)
   }
 }
 

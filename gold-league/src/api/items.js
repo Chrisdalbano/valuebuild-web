@@ -64,6 +64,9 @@ export function getItemImageUrlFallback(itemId) {
 /**
  * Get item image URL - prefers backend-validated URL, falls back to constructing URL
  * This ensures we always use images that were validated during ETL
+ * 
+ * Note: Browser caching is handled via Cache-Control headers from CDN
+ * Images should be cached for ~1 week to reduce repeated requests
  */
 export function getValidatedItemImageUrl(item) {
   // Backend provides pre-validated imageUrl with correct patch version

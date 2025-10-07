@@ -3,12 +3,10 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - main
-      - production
+      - main  # Only deploy on main branch
   pull_request:
     branches:
-      - main
-      - production
+      - main  # Test PRs before merging
 
 jobs:
   # Backend Tests (Optional - add when you have tests)

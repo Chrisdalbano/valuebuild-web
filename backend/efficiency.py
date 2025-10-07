@@ -11,8 +11,8 @@ STAT_VALUES = {
     "FlatSpellBlockMod": 20,            # MR from Null-Magic Mantle (20g per 1 MR)
     "FlatHPPoolMod": 2.666667,          # HP from Ruby Crystal (2.67g per 1 HP)
     "FlatMPPoolMod": 1,                 # Mana from Sapphire Crystal (1g per 1 Mana)
-    "FlatHPRegenMod": 3,                # HP5 from Rejuvenation Bead (per 100% base)
-    "FlatMPRegenMod": 4,                # MP5 from Faerie Charm (per 50% base)
+    "FlatHPRegenMod": 300,              # HP Regen from Rejuvenation Bead (300g per 100% base, API gives 1.0 = 100%)
+    "FlatMPRegenMod": 600,              # MP Regen from Faerie Charm (300g per 50% base, so 600g per 100%)
     "FlatMovementSpeedMod": 12,         # MS from Boots (12g per 1 MS)
     
     # Percentage stats (API returns as decimal where 1.0 = 100%)
