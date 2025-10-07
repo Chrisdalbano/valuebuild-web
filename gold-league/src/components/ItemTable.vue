@@ -187,14 +187,15 @@
     </div>
 
     <!-- Grid View -->
-    <div v-if="viewMode === 'grid'" class="items-grid">
+    <div v-if="viewMode === 'grid'" class="items-grid" @click.self="closeTooltip">
       <div 
         v-for="item in paginatedItems" 
         :key="item.id"
         @click="toggleSelect(item)"
         :class="['item-card', { 
           selected: isSelected(item),
-          'selecting': selectingItemId === item.id 
+          'selecting': selectingItemId === item.id,
+          'tooltip-active': activeTooltipId === item.id
         }]"
       >
         <div class="card-header">
@@ -240,7 +241,16 @@
         </div>
 
         <!-- Enhanced Hover Tooltip -->
-        <div class="item-hover-tooltip">
+        <div 
+          class="item-hover-tooltip"
+          @click.stop="toggleTooltip(item.id)"
+        >
+          <div class="tooltip-close-btn" v-if="isMobile" @click.stop="closeTooltip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </div>
+          
           <div class="tooltip-header">
             <img :src="getImageUrl(item.id)" :alt="item.name" class="tooltip-icon" @error="handleImageError" />
             <div class="tooltip-title">
@@ -389,6 +399,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['compare', 'addToBuild'])
+
+// Mobile detection and tooltip state
+const isMobile = ref(false)
+const activeTooltipId = ref(null)
 
 // State
 const failedImages = ref(new Set())
@@ -728,6 +742,40 @@ function sanitizeDescription(desc) {
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;/g, ' ')
     .trim()
+}
+
+// Mobile responsive setup
+onMounted(() => {
+  // Detect mobile and set default view
+  const checkMobile = () => {
+    isMobile.value = window.innerWidth <= 768
+  }
+  checkMobile()
+  
+  // Default to table view on mobile for better UX
+  if (isMobile.value) {
+    viewMode.value = 'table'
+  }
+  
+  window.addEventListener('resize', checkMobile)
+  
+  onUnmounted(() => {
+    window.removeEventListener('resize', checkMobile)
+  })
+})
+
+// Toggle tooltip on mobile tap
+const toggleTooltip = (itemId) => {
+  if (isMobile.value) {
+    activeTooltipId.value = activeTooltipId.value === itemId ? null : itemId
+  }
+}
+
+// Close tooltip when clicking outside
+const closeTooltip = () => {
+  if (isMobile.value) {
+    activeTooltipId.value = null
+  }
 }
 
 // Watchers
@@ -1605,6 +1653,45 @@ watch(itemsPerPage, () => {
   display: block !important;
 }
 
+/* Mobile tooltip: show on tap instead of hover */
+.item-card.tooltip-active .item-hover-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: all !important;
+}
+
+.tooltip-close-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.tooltip-close-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+}
+
+.tooltip-close-btn:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.tooltip-close-btn:hover svg {
+  color: var(--bg-primary);
+}
+
 .tooltip-header {
   display: flex;
   align-items: center;
@@ -1997,43 +2084,255 @@ watch(itemsPerPage, () => {
     gap: 1rem;
   }
   
+  /* Mobile tooltip optimizations */
+  .item-hover-tooltip {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translate(-50%, -50%) !important;
+    width: calc(100vw - 2rem) !important;
+    max-width: 380px !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 99999 !important;
+  }
+  
+  /* Backdrop for mobile tooltips */
+  .item-card.tooltip-active::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 99998;
+    backdrop-filter: blur(4px);
+  }
+  
+  /* Disable hover tooltips on mobile */
+  .item-card:hover .item-hover-tooltip {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+  
+  /* Only show on active tap */
+  .item-card.tooltip-active .item-hover-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
   .comparison-tray {
-    padding: 1rem;
+    padding: 0.875rem 1rem;
   }
   
   .tray-items {
     flex-direction: column;
+    gap: 0.625rem;
   }
   
   .tray-item {
     min-width: 100%;
+    padding: 0.625rem;
   }
   
+  .tray-actions {
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  
+  .btn-add-to-build,
+  .btn-compare-now {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Improved browser controls on mobile */
   .browser-controls {
     padding: 1rem;
+    gap: 1rem;
   }
   
   .controls-row {
     flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .search-box-container {
+    width: 100%;
   }
   
   .search-box {
     width: 100%;
   }
   
+  .search-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.875rem 2.75rem 0.875rem 2.75rem;
+  }
+  
+  .view-toggle {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .view-btn {
+    flex: 1;
+    padding: 0.75rem;
+  }
+  
+  /* Improved filters on mobile */
+  .filters-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .filter-chip-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .filter-chip {
+    font-size: 0.8125rem;
+    padding: 0.5rem 0.875rem;
+  }
+  
+  .sort-select {
+    width: 100%;
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 0.75rem 1rem;
+  }
+  
+  .btn-sort-dir {
+    display: none; /* Hide on mobile to save space */
+  }
+  
+  /* Role filters on mobile */
+  .role-filters-row {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.875rem;
+  }
+  
+  .role-filter-buttons {
+    width: 100%;
+  }
+  
+  .role-filter-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+  
+  .role-filter-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .role-filter-label-text {
+    display: none; /* Hide text on very small screens */
+  }
+  
+  /* Table view on mobile */
+  .items-table th,
+  .items-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+  
+  .item-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .item-name {
+    font-size: 0.875rem;
+  }
+  
+  .item-tier-label {
+    font-size: 0.6875rem;
+  }
+  
+  .th-efficiency,
+  .td-efficiency {
+    width: auto;
+  }
+  
+  .th-cost,
+  .td-cost,
+  .th-value,
+  .td-value {
+    display: none; /* Hide on mobile to save space */
+  }
+  
+  .th-rating,
+  .td-rating {
+    width: auto;
+  }
+  
+  /* Pagination on mobile */
   .pagination-simple {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem;
   }
   
   .pagination-info {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.625rem;
+  }
+  
+  .showing-count {
+    text-align: center;
+  }
+  
+  .show-select {
+    width: 100%;
+    font-size: 16px; /* Prevents zoom on iOS */
   }
   
   .btn-load-more {
     width: 100%;
     justify-content: center;
+    padding: 0.875rem 1.5rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .role-filter-label {
+    font-size: 0.75rem;
+  }
+  
+  .filter-chip {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .item-hover-tooltip {
+    width: calc(100vw - 1rem) !important;
+  }
+  
+  .tooltip-header {
+    gap: 0.625rem;
+  }
+  
+  .tooltip-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .tooltip-title h4 {
+    font-size: 0.9375rem;
+  }
+  
+  .tooltip-section-title {
+    font-size: 0.6875rem;
   }
 }
 </style>
