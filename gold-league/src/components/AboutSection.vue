@@ -260,23 +260,27 @@
               <div class="example-stats">
                 <div class="stat-line">
                   <span class="stat-icon">💰</span>
-                  <span>Cost: <strong>3400g</strong></span>
+                  <span>Cost: <strong>3450g</strong></span>
                 </div>
                 <div class="stat-line">
                   <span class="stat-icon">⚔️</span>
-                  <span>Stats: <strong>70 AD + 25% Crit</strong></span>
+                  <span>Stats: <strong>65 AD + 25% Crit</strong></span>
                 </div>
                 <div class="stat-line">
                   <span class="stat-icon">📊</span>
-                  <span>Stat Value: <strong>2450g</strong></span>
+                  <span>Stat Value: <strong>3275g</strong> (2275g AD + 1000g Crit)</span>
                 </div>
                 <div class="stat-line highlight">
                   <span class="stat-icon">✨</span>
-                  <span>Base Efficiency: <strong>72%</strong></span>
+                  <span>Base Efficiency: <strong>94.93%</strong></span>
+                </div>
+                <div class="stat-line">
+                  <span class="stat-icon">📉</span>
+                  <span>Gold Deficit: <strong>-175g</strong></span>
                 </div>
               </div>
               <div class="example-note">
-                The passive amplifies crit damage by 40%, making it essential for ADCs despite the lower base efficiency.
+                The unique passive amplifies crit damage by 40%, making it essential for ADCs despite being slightly below 100% base efficiency. The true value comes from maximizing your critical strike damage output.
               </div>
             </div>
 
@@ -466,6 +470,7 @@ const formatLastUpdate = (timestamp) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 3; /* Override app-level splash */
 }
 
 .hero-splash-bg {
@@ -487,10 +492,10 @@ const formatLastUpdate = (timestamp) => {
   height: 100%;
   background: linear-gradient(
     to bottom,
-    rgba(10, 13, 20, 0.5) 0%,
+    rgba(10, 13, 20, 0.4) 0%,
     rgba(10, 13, 20, 0.7) 30%,
-    rgba(10, 13, 20, 0.85) 60%,
-    rgba(10, 13, 20, 0.95) 80%,
+    rgba(10, 13, 20, 0.95) 60%,
+    rgba(10, 13, 20, 1) 80%,
     var(--bg-primary) 100%
   );
   backdrop-filter: blur(0px) saturate(100%);

@@ -1,9 +1,5 @@
 <template>
   <div class="item-browser">
-    <!-- Champion Splash Background (Same as About page) -->
-    <div class="page-splash-bg" :style="{ backgroundImage: `url(${splash})` }"></div>
-    <div class="page-splash-fade"></div>
-    
     <!-- Floating Comparison Tray -->
     <transition name="slide-up">
       <div v-if="selectedItems.length > 0" class="comparison-tray">
@@ -394,10 +390,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
-import { useChampionSplash } from '../composables/useChampionSplash'
-
-// Get session-persistent splash (same as About page)
-const { splash } = useChampionSplash()
 
 const props = defineProps({
   items: {
@@ -805,37 +797,6 @@ watch(itemsPerPage, () => {
   width: 100%;
   position: relative;
   padding-bottom: 90px; /* Space for floating tray */
-}
-
-/* Champion Splash Background */
-.page-splash-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 400px;
-  background-size: cover;
-  background-position: center top;
-  background-repeat: no-repeat;
-  z-index: -2;
-  pointer-events: none;
-}
-
-.page-splash-fade {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 400px;
-  background: linear-gradient(
-    to bottom,
-    rgba(10, 13, 20, 0.3) 0%,
-    rgba(10, 13, 20, 0.6) 40%,
-    rgba(10, 13, 20, 0.85) 70%,
-    var(--bg-primary) 100%
-  );
-  z-index: -1;
-  pointer-events: none;
 }
 
 /* Floating Comparison Tray */
