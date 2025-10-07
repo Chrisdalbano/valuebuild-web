@@ -207,6 +207,13 @@
       </button>
       
       <div v-for="item in items" :key="item.id" class="detail-card">
+        <!-- Swap Item Button - Top Left Corner -->
+        <button @click="openSwapModal(item)" class="btn-swap-item" title="Swap this item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>
+          </svg>
+        </button>
+        
         <!-- Remove Button - Top Right Corner -->
         <button @click="removeItem(item)" class="btn-remove-item" title="Remove from comparison">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -223,11 +230,47 @@
             Recipe
           </div>
           <div class="recipe-components">
-            <div v-for="comp in getComponents(item)" :key="comp.id" class="recipe-component">
+            <div 
+              v-for="comp in getComponents(item)" 
+              :key="comp.id" 
+              class="recipe-component"
+              @mouseenter="showNestedRecipe(comp)"
+              @mouseleave="hideNestedRecipe"
+            >
               <img :src="getImageUrl(comp.id)" :alt="comp.name" class="recipe-comp-icon" @error="handleImageError" />
               <div class="recipe-comp-info">
                 <div class="recipe-comp-name">{{ comp.name }}</div>
                 <div class="recipe-comp-cost gold">{{ comp.cost }}g</div>
+              </div>
+              
+              <!-- Nested Recipe Tooltip (Desktop Only) -->
+              <div 
+                v-if="!isMobile && hoveredComponent?.id === comp.id && getComponents(comp).length > 0"
+                class="nested-recipe-tooltip"
+              >
+                <div class="nested-recipe-header">
+                  <img :src="getImageUrl(comp.id)" :alt="comp.name" class="nested-icon" @error="handleImageError" />
+                  <div>
+                    <div class="nested-name">{{ comp.name }}</div>
+                    <div class="nested-cost gold">{{ comp.cost }}g</div>
+                  </div>
+                </div>
+                <div class="nested-recipe-components">
+                  <div v-for="subComp in getComponents(comp)" :key="subComp.id" class="nested-comp-item">
+                    <img :src="getImageUrl(subComp.id)" :alt="subComp.name" class="nested-comp-icon" @error="handleImageError" />
+                    <div class="nested-comp-info">
+                      <div class="nested-comp-name">{{ subComp.name }}</div>
+                      <div class="nested-comp-cost gold">{{ subComp.cost }}g</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="nested-recipe-summary">
+                  <span>Components:</span>
+                  <span class="gold">{{ getComponentsCost(comp) }}g</span>
+                  <span>+</span>
+                  <span>Combine:</span>
+                  <span class="gold">{{ getCombineCost(comp) }}g</span>
+                </div>
               </div>
             </div>
             <div class="recipe-arrow">→</div>
@@ -383,6 +426,68 @@
     <h3>No Items Selected</h3>
     <p>Select 2-6 items from the Items Database to compare their stats and efficiency</p>
   </div>
+
+  <!-- Item Swap/Add Modal -->
+  <teleport to="body">
+    <transition name="modal">
+      <div v-if="showSwapModal" class="modal-overlay" @click.self="closeSwapModal">
+        <div class="swap-modal">
+          <div class="swap-modal-header">
+            <h3>{{ swapTargetItem ? 'Swap Item' : 'Add Item to Comparison' }}</h3>
+            <button @click="closeSwapModal" class="btn-modal-close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="swap-modal-body">
+            <div class="swap-search-box">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input 
+                v-model="swapSearchQuery"
+                ref="swapSearchInput"
+                placeholder="Search for an item..."
+                class="swap-search-input"
+                @input="filterSwapItems"
+              />
+            </div>
+            
+            <div class="swap-items-list">
+              <div 
+                v-for="swapItem in filteredSwapItems.slice(0, 50)" 
+                :key="swapItem.id"
+                @click="selectSwapItem(swapItem)"
+                class="swap-item"
+                :class="{ 'already-selected': isItemAlreadySelected(swapItem) }"
+              >
+                <img :src="getImageUrl(swapItem.id)" :alt="swapItem.name" class="swap-item-img" @error="handleImageError" />
+                <div class="swap-item-info">
+                  <div class="swap-item-name">{{ swapItem.name }}</div>
+                  <div class="swap-item-stats">
+                    <span class="swap-item-eff" :class="getEfficiencyClass(swapItem.goldEfficiency)">
+                      {{ swapItem.goldEfficiency }}%
+                    </span>
+                    <span class="swap-item-cost gold">{{ swapItem.cost }}g</span>
+                  </div>
+                </div>
+                <span v-if="isItemAlreadySelected(swapItem)" class="already-in-comparison">
+                  ✓ In comparison
+                </span>
+              </div>
+              
+              <div v-if="filteredSwapItems.length === 0" class="no-swap-results">
+                No items found matching "{{ swapSearchQuery }}"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+  </teleport>
 </template>
 
 <script setup>
@@ -416,10 +521,91 @@ let componentChartInstance = null
 const isMobile = ref(false)
 const currentCarouselIndex = ref(0)
 
-const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore'])
+// Nested recipe tooltip state
+const hoveredComponent = ref(null)
+
+// Swap modal state
+const showSwapModal = ref(false)
+const swapTargetItem = ref(null)
+const swapSearchQuery = ref('')
+const swapSearchInput = ref(null)
+const filteredSwapItems = ref([])
+
+const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem'])
 
 function removeItem(item) {
   emit('removeItem', item)
+}
+
+// Nested recipe tooltip functions
+function showNestedRecipe(component) {
+  if (!isMobile.value) {
+    hoveredComponent.value = component
+  }
+}
+
+function hideNestedRecipe() {
+  hoveredComponent.value = null
+}
+
+// Swap modal functions
+function openSwapModal(item = null) {
+  swapTargetItem.value = item
+  showSwapModal.value = true
+  swapSearchQuery.value = ''
+  filteredSwapItems.value = props.allItems.filter(i => 
+    !props.items.some(selected => selected.id === i.id)
+  )
+  
+  nextTick(() => {
+    swapSearchInput.value?.focus()
+  })
+}
+
+function closeSwapModal() {
+  showSwapModal.value = false
+  swapTargetItem.value = null
+  swapSearchQuery.value = ''
+}
+
+function filterSwapItems() {
+  const query = swapSearchQuery.value.toLowerCase().trim()
+  
+  if (!query) {
+    filteredSwapItems.value = props.allItems.filter(i => 
+      !props.items.some(selected => selected.id === i.id)
+    )
+  } else {
+    filteredSwapItems.value = props.allItems.filter(item => {
+      const nameMatch = item.name.toLowerCase().includes(query)
+      const statsMatch = item.statBreakdown && Object.keys(item.statBreakdown).some(stat =>
+        stat.toLowerCase().includes(query) || formatStatName(stat).toLowerCase().includes(query)
+      )
+      return nameMatch || statsMatch
+    })
+  }
+}
+
+function selectSwapItem(newItem) {
+  if (isItemAlreadySelected(newItem)) {
+    return // Don't allow selecting already compared items
+  }
+  
+  if (swapTargetItem.value) {
+    // Swap existing item
+    emit('swapItem', swapTargetItem.value, newItem)
+  } else {
+    // Add new item (if less than 6)
+    if (props.items.length < 6) {
+      emit('addMore', [newItem])
+    }
+  }
+  
+  closeSwapModal()
+}
+
+function isItemAlreadySelected(item) {
+  return props.items.some(i => i.id === item.id)
 }
 
 function createEfficiencyChart() {
@@ -1950,5 +2136,370 @@ function formatDescription(html) {
     width: 18px;
     height: 18px;
   }
+}
+
+/* Swap Item Button */
+.btn-swap-item {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.btn-swap-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-swap-item:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--bg-primary);
+  transform: scale(1.05);
+}
+
+/* Nested Recipe Tooltip */
+.recipe-component {
+  position: relative;
+  cursor: help;
+}
+
+.nested-recipe-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: var(--bg-primary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  width: 280px;
+  z-index: 1000;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(240, 168, 41, 0.3);
+}
+
+.nested-recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.nested-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gold);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.nested-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.nested-cost {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.nested-recipe-components {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.875rem;
+}
+
+.nested-comp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+}
+
+.nested-comp-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
+}
+
+.nested-comp-info {
+  flex: 1;
+}
+
+.nested-comp-name {
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.nested-comp-cost {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.nested-recipe-summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.625rem;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  justify-content: center;
+}
+
+/* Swap Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.swap-modal {
+  background: var(--bg-secondary);
+  border: 2px solid var(--gold);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 96px rgba(0, 0, 0, 0.9);
+}
+
+.swap-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 2px solid var(--border-primary);
+}
+
+.swap-modal-header h3 {
+  color: var(--gold);
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-close:hover {
+  background: var(--error);
+  color: white;
+}
+
+.btn-modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.swap-modal-body {
+  padding: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.swap-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.swap-search-box .search-icon {
+  position: absolute;
+  left: 1rem;
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.swap-search-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.swap-search-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(240, 168, 41, 0.1);
+}
+
+.swap-items-list {
+  overflow-y: auto;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.swap-items-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.swap-items-list::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+.swap-items-list::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 4px;
+}
+
+.swap-items-list::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+.swap-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.swap-item:hover {
+  border-color: var(--gold);
+  background: var(--bg-hover);
+  transform: translateX(4px);
+}
+
+.swap-item.already-selected {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.swap-item.already-selected:hover {
+  transform: none;
+  border-color: var(--border-primary);
+}
+
+.swap-item-img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-secondary);
+  object-fit: contain;
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.swap-item-info {
+  flex: 1;
+}
+
+.swap-item-name {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  margin-bottom: 0.25rem;
+}
+
+.swap-item-stats {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.swap-item-eff {
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.swap-item-cost {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.already-in-comparison {
+  color: var(--success);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.no-swap-results {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.9375rem;
+}
+
+/* Modal transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-active .swap-modal,
+.modal-leave-active .swap-modal {
+  transition: transform 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .swap-modal,
+.modal-leave-to .swap-modal {
+  transform: scale(0.9);
 }
 </style>

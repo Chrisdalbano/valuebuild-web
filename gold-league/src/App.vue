@@ -64,6 +64,8 @@
             @viewDetailed="viewDetailed"
             @remove-item="removeFromComparison"
             @removeItem="removeFromComparison"
+            @swap-item="swapComparisonItem"
+            @swapItem="swapComparisonItem"
             @add-more="goToItems"
             @addMore="goToItems"
             @browse-items="goToItems"
@@ -216,6 +218,13 @@ function removeFromComparison(item) {
   }
   if (compareItems.value.length === 0) {
     router.push('/')
+  }
+}
+
+function swapComparisonItem(oldItem, newItem) {
+  const index = compareItems.value.findIndex(i => i.id === oldItem.id)
+  if (index > -1) {
+    compareItems.value[index] = newItem
   }
 }
 
