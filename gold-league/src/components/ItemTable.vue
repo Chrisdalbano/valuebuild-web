@@ -240,10 +240,10 @@
           </div>
         </div>
 
-        <!-- Enhanced Hover Tooltip -->
+        <!-- Enhanced Hover Tooltip (Desktop only - hidden on mobile grid view) -->
         <div 
+          v-if="!isMobile"
           class="item-hover-tooltip"
-          @click.stop="toggleTooltip(item.id)"
         >
           <div class="tooltip-close-btn" v-if="isMobile" @click.stop="closeTooltip">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2232,13 +2232,15 @@ watch(itemsPerPage, () => {
   .role-filter-btn {
     flex: 1;
     min-width: 0;
-    padding: 0.625rem 0.75rem;
+    padding: 0.75rem;
     font-size: 0.8125rem;
+    justify-content: center;
   }
   
   .role-filter-icon {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
+    margin: 0;
   }
   
   .role-filter-label-text {

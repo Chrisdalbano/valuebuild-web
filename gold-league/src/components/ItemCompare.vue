@@ -1349,6 +1349,20 @@ function formatDescription(html) {
   margin-bottom: 2rem;
 }
 
+/* Better layout for 3-4 items on desktop */
+@media (min-width: 1200px) {
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* For exactly 3 items: 2 on top, 1 centered below */
+  .items-grid:has(.detail-card:nth-child(3):last-child) .detail-card:nth-child(3) {
+    grid-column: 1 / -1;
+    max-width: 50%;
+    margin: 0 auto;
+  }
+}
+
 .detail-card {
   position: relative;
   background: var(--bg-tertiary);
