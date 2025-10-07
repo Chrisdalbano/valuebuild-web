@@ -1276,6 +1276,7 @@ function formatDescription(html) {
 }
 
 .detail-card {
+  position: relative;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
@@ -1336,8 +1337,9 @@ function formatDescription(html) {
 
 .btn-remove-item {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
   width: 32px;
   height: 32px;
   display: flex;
