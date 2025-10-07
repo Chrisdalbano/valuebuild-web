@@ -1,6 +1,8 @@
 # Gold efficiency calculator based on League of Legends Wiki data
 # Reference: https://leagueoflegends.fandom.com/wiki/Gold_efficiency
 
+import re
+
 # Base stat gold values (from reference items)
 # NOTE: API returns percentages as decimals (0.4 = 40%, 1.0 = 100%)
 STAT_VALUES = {
@@ -45,6 +47,33 @@ STAT_MAPPING = {
     "AbilityHaste": "AbilityHaste",
 }
 
+def parse_stats_from_description(description):
+    """
+    Parse stats from item description when stats field is empty.
+    Handles cases like Rejuvenation Bead where stats are only in description.
+    """
+    stats = {}
+    
+    if not description:
+        return stats
+    
+    # Remove HTML tags
+    clean_desc = re.sub(r'<[^>]+>', ' ', description)
+    
+    # Pattern: "100% Base Health Regen" -> FlatHPRegenMod: 1.0
+    hp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+Base Health Regen', clean_desc, re.IGNORECASE)
+    if hp_regen_match:
+        value = float(hp_regen_match.group(1)) / 100  # Convert percentage to decimal (100% -> 1.0)
+        stats['FlatHPRegenMod'] = value
+    
+    # Pattern: "50% Base Mana Regen" -> FlatMPRegenMod: 0.5
+    mp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+Base Mana Regen', clean_desc, re.IGNORECASE)
+    if mp_regen_match:
+        value = float(mp_regen_match.group(1)) / 100  # Convert percentage to decimal
+        stats['FlatMPRegenMod'] = value
+    
+    return stats
+
 def calculate_efficiency(item):
     """
     Calculate gold efficiency for an item based on its stats.
@@ -54,6 +83,14 @@ def calculate_efficiency(item):
     Where Gold Value is the sum of (stat amount × gold per stat point)
     """
     stats = item.get("stats", {})
+    
+    # If stats are empty, try to parse from description
+    if not stats or len(stats) == 0:
+        description = item.get("description", "")
+        parsed_stats = parse_stats_from_description(description)
+        if parsed_stats:
+            stats = parsed_stats
+    
     gold = item.get("gold", {})
     cost = gold.get("total", 1)
     
