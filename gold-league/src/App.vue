@@ -7,6 +7,10 @@
       :build-count="currentBuild.length"
     />
 
+    <!-- Champion Splash Background Banner (hidden on About page) -->
+    <div v-if="$route.path !== '/about'" class="app-hero-splash" :style="{ backgroundImage: `url(${splash})` }"></div>
+    <div v-if="$route.path !== '/about'" class="app-hero-fade"></div>
+
     <main class="app-main">
       <div v-if="error" class="error-banner">
         <span>{{ error }}</span>
@@ -110,10 +114,14 @@ import BuildOptimizer from './components/BuildOptimizer.vue'
 import AboutSection from './components/AboutSection.vue'
 import { itemsApi } from './api/items'
 import { isItemDeprecated, filterDeprecatedItems } from './utils/deprecatedItems'
+import { useChampionSplash } from './composables/useChampionSplash'
 
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+// Get session-persistent champion splash
+const { splash } = useChampionSplash()
 const items = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -299,6 +307,43 @@ function scrollToTop() {
 <style scoped>
 #app {
   min-height: 100vh;
+  position: relative;
+}
+
+/* Champion Splash Hero Banner */
+.app-hero-splash {
+  position: fixed;
+  top: 60px; /* Below navbar */
+  left: 0;
+  width: 100%;
+  height: 300px;
+  background-size: cover;
+  background-position: center 20%;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.app-hero-fade {
+  position: fixed;
+  top: 60px; /* Below navbar */
+  left: 0;
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 13, 20, 0.4) 0%,
+    rgba(10, 13, 20, 0.7) 50%,
+    rgba(10, 13, 20, 0.9) 80%,
+    var(--bg-primary) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+.app-main {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   background: var(--bg-primary);
