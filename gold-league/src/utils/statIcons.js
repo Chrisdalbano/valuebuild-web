@@ -5,18 +5,19 @@
  */
 
 const STAT_MODS_BASE_URL = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods'
+const STATS_BASE_URL = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/strawberry/'
 
 export const STAT_ICONS = {
   // Offensive Stats - Adaptive Force
-  'FlatPhysicalDamageMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  'FlatPhysicalDamageMod': `${STATS_BASE_URL}/icon_damage.png`,
   'FlatMagicDamageMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
   
   // Attack Speed
   'PercentAttackSpeedMod': `${STAT_MODS_BASE_URL}/statmodsattackspeedicon.png`,
   
   // Crit Chance - Use Adaptive Force (no specific crit icon)
-  'FlatCritChanceMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
-  'PercentCritChanceMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  'FlatCritChanceMod': `${STATS_BASE_URL}/icon_crit.png`,
+  'PercentCritChanceMod': `${STAT_MODS_BASE_URL}/icon_crit.png`,
   
   // Life Steal - Use Adaptive Force (no specific lifesteal icon)
   'PercentLifeStealMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,

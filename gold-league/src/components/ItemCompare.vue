@@ -167,7 +167,7 @@
       <div class="chart-card">
         <div class="chart-header">
           <h3>Cost vs Value Analysis</h3>
-          <span class="chart-subtitle">Green = value exceeds cost</span>
+          <span class="chart-subtitle"></span>
         </div>
         <canvas ref="costValueChart"></canvas>
       </div>
