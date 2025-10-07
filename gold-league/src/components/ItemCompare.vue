@@ -1,5 +1,5 @@
 <template>
-  <div v-if="items.length >= 2" class="compare-container">
+  <div v-if="items.length >= 1" class="compare-container">
     <!-- Header -->
     <div class="compare-header">
       <div class="header-left">
@@ -15,11 +15,15 @@
         <span class="item-count">{{ items.length }} items selected</span>
       </div>
       <div class="header-actions">
-        <button @click="emit('addMore')" class="btn-add-more">
+        <button 
+          v-if="items.length < 6" 
+          @click="openSwapModal()" 
+          class="btn-add-item"
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          Add More
+          Add Item
         </button>
         <button @click="emit('clear')" class="btn-clear">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -30,8 +34,26 @@
       </div>
     </div>
 
+    <!-- Single Item View -->
+    <div v-if="items.length === 1" class="single-item-view">
+      <div class="single-item-message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="message-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <h3>Add More Items to Compare</h3>
+        <p>You need at least 2 items to see detailed comparisons, charts, and insights</p>
+        <button @click="openSwapModal()" class="btn-add-first">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          Add Another Item
+        </button>
+      </div>
+    </div>
+
     <!-- Enhanced Quick Insights -->
-    <div class="insights-section">
+    <div v-else class="insights-section">
       <div class="insights-header">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 11l3 3L22 4"/>
@@ -425,6 +447,12 @@
     </svg>
     <h3>No Items Selected</h3>
     <p>Select 2-6 items from the Items Database to compare their stats and efficiency</p>
+    <button @click="goToItems" class="btn-browse-items">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Browse Items
+    </button>
   </div>
 
   <!-- Item Swap/Add Modal -->
@@ -433,7 +461,7 @@
       <div v-if="showSwapModal" class="modal-overlay" @click.self="closeSwapModal">
         <div class="swap-modal">
           <div class="swap-modal-header">
-            <h3>{{ swapTargetItem ? 'Swap Item' : 'Add Item to Comparison' }}</h3>
+            <h3>{{ swapTargetItem ? 'Swap Item' : (items.length === 0 ? 'Select First Item' : 'Add Item to Comparison') }}</h3>
             <button @click="closeSwapModal" class="btn-modal-close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -606,6 +634,10 @@ function selectSwapItem(newItem) {
 
 function isItemAlreadySelected(item) {
   return props.items.some(i => i.id === item.id)
+}
+
+function goToItems() {
+  emit('addMore')
 }
 
 function createEfficiencyChart() {
@@ -1951,9 +1983,124 @@ function formatDescription(html) {
 .empty-state p {
   color: var(--text-secondary);
   font-size: 1rem;
-  margin: 0;
+  margin: 0 0 2rem 0;
   max-width: 480px;
+}
+
+.btn-browse-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: linear-gradient(135deg, var(--gold), var(--rust));
+  color: white;
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.btn-browse-items svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-browse-items:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
+}
+
+/* Single Item View */
+.single-item-view {
+  background: var(--bg-secondary);
+  border: 2px dashed var(--border-secondary);
+  border-radius: var(--radius-xl);
+  padding: 4rem 2rem;
+  margin: 2rem 0;
+}
+
+.single-item-message {
+  text-align: center;
+  max-width: 500px;
   margin: 0 auto;
+}
+
+.message-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--gold);
+  margin: 0 auto 1.5rem;
+  opacity: 0.8;
+}
+
+.single-item-message h3 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  margin: 0 0 0.75rem 0;
+  font-weight: 700;
+}
+
+.single-item-message p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0 0 2rem 0;
+  line-height: 1.6;
+}
+
+.btn-add-first {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.875rem 2rem;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
+}
+
+.btn-add-first svg {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-add-first:hover {
+  background: rgb(220, 148, 21);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(240, 168, 41, 0.4);
+}
+
+/* Header Add Item Button */
+.btn-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--gold);
+  color: var(--bg-primary);
+  border: none;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-add-item:hover {
+  background: rgb(220, 148, 21);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 168, 41, 0.3);
 }
 
 .stat-value.positive {
