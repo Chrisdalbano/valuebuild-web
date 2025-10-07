@@ -595,7 +595,7 @@ const swapSearchQuery = ref('')
 const swapSearchInput = ref(null)
 const filteredSwapItems = ref([])
 
-const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem'])
+const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem', 'addItem'])
 
 function removeItem(item) {
   emit('removeItem', item)
@@ -661,7 +661,7 @@ function selectSwapItem(newItem) {
   } else {
     // Add new item (if less than 6)
     if (props.items.length < 6) {
-      emit('addMore', [newItem])
+      emit('addItem', newItem)
     }
   }
   

@@ -66,6 +66,8 @@
             @removeItem="removeFromComparison"
             @swap-item="swapComparisonItem"
             @swapItem="swapComparisonItem"
+            @add-item="addToComparison"
+            @addItem="addToComparison"
             @add-more="goToItems"
             @addMore="goToItems"
             @browse-items="goToItems"
@@ -225,6 +227,13 @@ function swapComparisonItem(oldItem, newItem) {
   const index = compareItems.value.findIndex(i => i.id === oldItem.id)
   if (index > -1) {
     compareItems.value[index] = newItem
+  }
+}
+
+function addToComparison(newItem) {
+  // Add item to comparison if not already present and under limit
+  if (compareItems.value.length < 6 && !compareItems.value.some(i => i.id === newItem.id)) {
+    compareItems.value.push(newItem)
   }
 }
 
