@@ -1,0 +1,20 @@
+# CODEOWNERS file
+# These owners will be automatically requested for review when someone opens a PR
+
+# Default owner for everything
+* @Chrisdalbano
+
+# Backend
+/backend/ @Chrisdalbano
+
+# Frontend
+/gold-league/ @Chrisdalbano
+
+# CI/CD and Infrastructure
+/.github/ @Chrisdalbano
+/netlify.toml @Chrisdalbano
+/render.yaml @Chrisdalbano
+
+# Documentation
+*.md @Chrisdalbano
+
