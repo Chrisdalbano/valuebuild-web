@@ -1,315 +1,126 @@
-# 🏆 Gold League - League of Legends Item Efficiency Tracker
+# BuildValue - League of Legends Gold Efficiency Tracker
 
-> **Production-Ready Full-Stack Application**
-> 
-> Track gold efficiency of all League of Legends items with automated weekly updates from Riot's DDragon API.
+A full-stack web application that analyzes gold efficiency for all League of Legends items with automated weekly updates from Riot's DDragon API.
 
----
+Live: https://buildvalue.chrisdalbano.com/
 
-## ⚡ **Quick Start**
+## Quick Start
 
-### 📖 **New Here?**
-**→ Start with: [`START_HERE.md`](START_HERE.md)** (5 minutes)
+**New to the project?** Read [`START_HERE.md`](START_HERE.md)
 
-### 🚀 **Ready to Deploy?**
-**→ Follow: [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md)** (20-30 minutes)
+**Ready to deploy?** Follow [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md)
 
-### ✅ **Want a Checklist?**
-**→ Use: [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md)** (track progress)
+## Tech Stack
 
----
+**Frontend:** Vue 3, Vite, Chart.js, Axios (Netlify)  
+**Backend:** FastAPI, Python 3.11, Uvicorn (Render)  
+**Database:** MongoDB Atlas (Cloud)  
+**ETL:** APScheduler (weekly automated sync)
 
-## 🏗️ **Tech Stack**
+## Features
 
-```
-┌──────────────┐         ┌──────────────┐         ┌──────────────┐
-│  Vue 3       │  HTTPS  │  FastAPI     │  Cloud  │  MongoDB     │
-│  + Vite      │────────▶│  + Python    │────────▶│  Atlas       │
-│  (Netlify)   │   API   │  (Render)    │  Async  │  (Database)  │
-└──────────────┘         └──────────────┘         └──────────────┘
-   Frontend                  Backend                  Storage
-     FREE                  FREE or $7/mo               FREE
-```
+- Real-time gold efficiency calculations for all items
+- Compare up to 6 items side-by-side with detailed breakdowns
+- Build optimizer for 6-item builds
+- Interactive efficiency charts
+- Flash comparisons for quick decisions
+- Automated weekly updates from Riot API
+- Fully responsive (desktop, tablet, mobile)
 
-**Languages & Frameworks:**
-- Frontend: Vue 3, Vite, Chart.js, Axios
-- Backend: FastAPI, Python 3.11, Uvicorn
-- Database: MongoDB (Motor async driver)
-- ETL: APScheduler (weekly cron jobs)
-
----
-
-## 🎯 **Features**
-
-✅ **Real-time Gold Efficiency** - Calculate value of every item
-✅ **Item Comparison** - Compare up to 3 items side-by-side
-✅ **Build Optimizer** - Find most efficient item combinations
-✅ **Interactive Charts** - Visualize efficiency data
-✅ **Quick Insights** - Get instant recommendations
-✅ **Auto-Updates** - Weekly data refresh from Riot API
-✅ **Responsive Design** - Works on desktop and mobile
-✅ **Production Ready** - Deployed and monitored
-
----
-
-## 📊 **Architecture**
+## Architecture
 
 ```
-USER BROWSER
-     │
-     ├─────────────────┐
-     │                 │
-     ▼                 ▼
-NETLIFY CDN       RENDER SERVICE
-(Static Site)     (API Server)
-     │                 │
-Vue 3 App         FastAPI Backend
-     │                 │
-     └────────┬────────┘
-              │ HTTPS
-              ▼
-      MONGODB ATLAS
-      (Cloud Database)
-              │
-              ▼
-        DDRAGON API
-        (Riot Games)
-       Weekly ETL Sync
+Frontend (Vue 3) → Backend (FastAPI) → Database (MongoDB Atlas)
+    Netlify             Render              Cloud
+                                              ↓
+                                        DDragon API
+                                        (Weekly ETL)
 ```
 
----
+## Cost
 
-## 💰 **Cost Breakdown**
+All services run on free tiers:
+- MongoDB Atlas: Free (M0, 512MB)
+- Render: Free or $7/mo (Starter for always-on)
+- Netlify: Free (100GB bandwidth/month)
 
-| Service | Plan | Features | Cost |
-|---------|------|----------|------|
-| **MongoDB Atlas** | M0 Free | 512MB storage | $0 |
-| **Render** | Free | Spins down after 15 min | $0 |
-| **Render** | Starter | Always on, faster | $7/mo |
-| **Netlify** | Free | 100GB bandwidth/mo | $0 |
-| **Total** | | | **FREE or $7/mo** |
+## Deployment
 
-**Recommendation**: Start with **FREE** tier, upgrade Render to Starter ($7/mo) when you get users.
+1. Create MongoDB Atlas cluster (free M0)
+2. Deploy backend to Render (connect GitHub repo)
+3. Deploy frontend to Netlify (connect GitHub repo)
+4. Set environment variables on both platforms
 
----
+See [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) for full instructions.
 
-## 🚀 **Deployment**
+## Documentation
 
-### **Prerequisites**
-- GitHub account
-- MongoDB Atlas account (free)
-- Render account (free)
-- Netlify account (free)
+- [`START_HERE.md`](START_HERE.md) - Project overview
+- [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) - Deployment guide
+- [`QUICK_COMMANDS.md`](QUICK_COMMANDS.md) - Command reference
+- [`ETL_TRIGGER_GUIDE.md`](ETL_TRIGGER_GUIDE.md) - ETL pipeline details
 
-### **Quick Deploy (20 minutes)**
+## Local Development
 
-1. **MongoDB Atlas** (5 min)
-   - Create free M0 cluster
-   - Get connection string
-
-2. **Render Backend** (10 min)
-   - Connect GitHub repo
-   - Set environment variables
-   - Deploy
-
-3. **Netlify Frontend** (5 min)
-   - Connect GitHub repo
-   - Set API URL
-   - Deploy
-
-### **Full Guide**
-See [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) for complete step-by-step instructions.
-
----
-
-## 📚 **Documentation**
-
-### **Essential Reading**
-| Document | Purpose | Time |
-|----------|---------|------|
-| [`📚_READ_ME_FIRST.md`](📚_READ_ME_FIRST.md) | Navigation hub | 2 min |
-| [`START_HERE.md`](START_HERE.md) ⭐ | Project overview | 5 min |
-| [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) | Complete deployment | 30 min |
-| [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md) | Progress tracking | During deploy |
-| [`QUICK_COMMANDS.md`](QUICK_COMMANDS.md) | Command reference | 2 min |
-
-### **Additional Docs**
-- [`DEPLOYMENT_COMPLETE.md`](DEPLOYMENT_COMPLETE.md) - What's been configured
-- [`DEPLOYMENT_FILES_OVERVIEW.md`](DEPLOYMENT_FILES_OVERVIEW.md) - File navigation
-- [`_DEPLOYMENT_SUMMARY.md`](_DEPLOYMENT_SUMMARY.md) - Complete summary
-- [`README_PRODUCTION.md`](README_PRODUCTION.md) - Full project documentation
-
----
-
-## 💻 **Local Development**
-
-### **Backend Setup**
+**Backend:**
 ```bash
 cd backend
 python -m venv venv
 venv\Scripts\activate  # Windows
-source venv/bin/activate  # Mac/Linux
 pip install -r requirements.txt
 python app.py
-# → http://localhost:8000
 ```
 
-### **Frontend Setup**
+**Frontend:**
 ```bash
 cd gold-league
 npm install
 npm run dev
-# → http://localhost:5173
 ```
 
----
-
-## 🗂️ **Project Structure**
+## Project Structure
 
 ```
-gold-league/
-├── backend/              # FastAPI backend
-│   ├── app.py           # Main API application
-│   ├── efficiency.py    # Gold efficiency calculator
-│   ├── etl/             # Data pipeline
-│   │   └── data_pipeline.py  # Weekly DDragon sync
-│   ├── render.yaml      # Render configuration
-│   ├── build.sh         # Build script
-│   └── start.sh         # Start script
-│
-├── gold-league/         # Vue 3 frontend
-│   ├── src/
-│   │   ├── components/  # Vue components
-│   │   ├── api/         # API client
-│   │   └── App.vue      # Root component
-│   └── package.json
-│
-├── netlify.toml         # Netlify configuration
-├── .github/workflows/   # CI/CD pipeline
-└── [docs]/              # 10+ documentation files
+backend/          # FastAPI backend
+  app.py          # Main API
+  efficiency.py   # Gold calculations
+  etl/            # Data pipeline
+gold-league/      # Vue 3 frontend
+  src/
+    components/   # Vue components
+    api/          # API client
 ```
 
----
+## Environment Variables
 
-## 🔐 **Environment Variables**
+**Backend (Render):**
+- `MONGO_URI` - MongoDB connection string
+- `ENVIRONMENT` - production
+- `CORS_ORIGINS` - Frontend URL
 
-### **Backend (Render)**
-```bash
-MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/gold_league
-ENVIRONMENT=production
-CORS_ORIGINS=https://your-site.netlify.app
-PYTHON_VERSION=3.11.9
-```
+**Frontend (Netlify):**
+- `VITE_API_BASE_URL` - Backend URL
+- `VITE_ENVIRONMENT` - production
 
-### **Frontend (Netlify)**
-```bash
-VITE_API_BASE_URL=https://your-backend.onrender.com
-VITE_ENVIRONMENT=production
-```
+## API Endpoints
 
----
+- `GET /api/items` - All items with gold efficiency
+- `GET /api/items/{id}` - Single item details
+- `GET /api/metadata` - ETL status and last update
+- `POST /api/items/refresh` - Manual ETL trigger
 
-## 🔧 **API Endpoints**
+## ETL Pipeline
 
-### **Public Endpoints**
-- `GET /` - API info
-- `GET /api/health` - Health check
-- `GET /api/items` - Get all items with gold efficiency
-- `GET /api/items/{id}` - Get specific item
-- `GET /api/metadata` - ETL pipeline status
-- `POST /api/items/refresh` - Force refresh (background)
+- Runs every Monday at 2:00 AM UTC
+- Fetches from DDragon API
+- Validates images and filters deprecated items
+- Updates database with new efficiency calculations
 
-### **Example Usage**
-```bash
-# Get all items
-curl https://your-backend.onrender.com/api/items
+## License
 
-# Check health
-curl https://your-backend.onrender.com/api/health
+MIT License - see [LICENSE](LICENSE) file
 
-# Force refresh
-curl -X POST https://your-backend.onrender.com/api/items/refresh
-```
+## Disclaimer
 
----
-
-## 🧪 **Data Pipeline**
-
-### **ETL Process**
-1. **Extract**: Fetch latest data from Riot's DDragon API
-2. **Transform**: Calculate gold efficiency, validate images
-3. **Load**: Store in MongoDB with metadata
-
-### **Schedule**
-- **Automatic**: Every Monday at 2:00 AM UTC
-- **Manual**: Via `/api/items/refresh` endpoint
-- **Duration**: ~2-3 minutes for full refresh
-
-### **Data Quality**
-✅ Deprecated items filtered
-✅ Image validation (no broken images)
-✅ Arena items excluded
-✅ Only Summoner's Rift items
-
----
-
-## 📈 **Performance**
-
-- **Backend Response**: < 100ms (cached data)
-- **Frontend Load**: < 2s (Netlify CDN)
-- **Database Queries**: Indexed, optimized
-- **Build Size**: ~500KB gzipped
-
----
-
-## 🤝 **Contributing**
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/my-feature`
-3. Commit changes: `git commit -m "Add feature"`
-4. Push to branch: `git push origin feature/my-feature`
-5. Submit pull request
-
----
-
-## 📝 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 **Acknowledgments**
-
-- **Riot Games** - DDragon API for League data
-- **Community Dragon** - Alternative asset CDN
-- **League of Legends Wiki** - Gold efficiency formulas
-
----
-
-## 📞 **Support**
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/gold-league/issues)
-- **Documentation**: See docs in project root
-- **Deployment Help**: [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md)
-
----
-
-## 🎯 **What's Next?**
-
-1. ✅ **Read**: [`START_HERE.md`](START_HERE.md)
-2. ✅ **Deploy**: [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md)
-3. ✅ **Track**: [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md)
-4. 🚀 **Launch**: Your app in 20-30 minutes!
-
----
-
-**Built with ❤️ for the League of Legends community**
-
-🎮 **Good luck on the Rift!** 🏆
-
----
-
-**Status**: Production Ready ✅  
-**Version**: 1.0.0  
-**Last Updated**: October 2025
+BuildValue is not endorsed by Riot Games. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
 

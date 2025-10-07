@@ -2,7 +2,7 @@
   <div class="builds-section">
     <div class="builds-header">
       <div>
-        <h2>⚔️ Build Optimizer</h2>
+        <h2><span class="icon-build"></span> Build Optimizer</h2>
         <p class="builds-subtitle">Create and analyze optimal item builds for maximum gold efficiency</p>
       </div>
       <button v-if="currentBuild.length > 0" @click="clearBuild" class="btn-clear-build">
@@ -566,6 +566,16 @@ function formatStatValue(statKey, value) {
 </script>
 
 <style scoped>
+.icon-build {
+  width: 2rem;
+  height: 2rem;
+  background: url("https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/missions/newplayerexperience/npe_mission_annihilation.png") no-repeat center center;
+  background-size: contain;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
 .builds-section {
   padding: 2rem;
 }
