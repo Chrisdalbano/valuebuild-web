@@ -65,7 +65,7 @@
         <div class="insight-items">
           <div v-for="(item, idx) in comp" :key="item.id" class="insight-item" :class="{ 'is-winner': isWinner(comp, item) }">
             <div class="item-rank" :class="{ 'rank-winner': isWinner(comp, item) }">
-              {{ isWinner(comp, item) ? '👑' : '💰' }}
+              {{ isWinner(comp, item) ? '👑' : '💠' }}
             </div>
             <img 
               :src="`https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${item.id}.png`" 
@@ -100,7 +100,7 @@
           <span>{{ getRecommendation(comp) }}</span>
         </div>
         
-        <button class="insight-btn">
+        <button class="insight-btn" @click="router.push('/compare')">
           View Full Analysis
           <span class="btn-arrow">→</span>
         </button>
@@ -111,6 +111,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
 const props = defineProps({
   comparisons: {
@@ -413,7 +415,7 @@ function getRecommendation(comp) {
 }
 
 .item-rank.rank-winner {
-  background: linear-gradient(135deg, #22c55e, #10b981);
+  background: linear-gradient(135deg, #245536, #10b981);
   border-color: #22c55e;
   animation: pulse-winner 2s ease-in-out infinite;
 }
