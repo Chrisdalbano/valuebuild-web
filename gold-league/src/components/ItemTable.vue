@@ -412,7 +412,7 @@ const tierOptions = [
 ]
 
 const roleOptions = [
-  { value: 'all', label: 'All', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-all.png' },
+  { value: 'all', label: 'All', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/star-outline-resting.png' },
   { value: 'marksman', label: 'Marksman', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-marksman.png' },
   { value: 'mage', label: 'Mage', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-mage.png' },
   { value: 'tank', label: 'Tank', icon: 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-champion-details/global/default/role-icon-tank.png' },
