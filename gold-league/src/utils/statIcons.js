@@ -1,34 +1,43 @@
 /**
  * Stat Icons Mapping
- * Maps League of Legends stats to their corresponding icon URLs
+ * Maps League of Legends stats to their corresponding official stat mod icon URLs
+ * Icons from: https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/
  */
 
+const STAT_MODS_BASE_URL = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods'
+
 export const STAT_ICONS = {
-  // Offensive Stats
-  'FlatPhysicalDamageMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/precision/coup-de-grace/coupgrace.png',
-  'FlatMagicDamageMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/arcane-comet/arcanecomet.png',
-  'PercentAttackSpeedMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/precision/lethal-tempo/lethal-tempo-icon.png',
-  'FlatCritChanceMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/first-strike/first-strike.png',
-  'PercentCritChanceMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/inspiration/first-strike/first-strike.png',
-  'PercentLifeStealMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/domination/taste-of-blood/greentertaste-of-blood.png',
+  // Offensive Stats - Adaptive Force
+  'FlatPhysicalDamageMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  'FlatMagicDamageMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  
+  // Attack Speed
+  'PercentAttackSpeedMod': `${STAT_MODS_BASE_URL}/statmodsattackspeedicon.png`,
+  
+  // Crit Chance - Use Adaptive Force (no specific crit icon)
+  'FlatCritChanceMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  'PercentCritChanceMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  
+  // Life Steal - Use Adaptive Force (no specific lifesteal icon)
+  'PercentLifeStealMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
   
   // Defensive Stats
-  'FlatArmorMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/resolve/bone-plating/boneplating.png',
-  'FlatSpellBlockMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/resolve/second-wind/secondwind.png',
-  'FlatHPPoolMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/resolve/overgrowth/overgrowth.png',
-  'FlatHPRegenMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/resolve/revitalize/revitalize.png',
+  'FlatArmorMod': `${STAT_MODS_BASE_URL}/statmodsarmoricon.png`,
+  'FlatSpellBlockMod': `${STAT_MODS_BASE_URL}/statmodsmagicresicon.png`,
+  'FlatHPPoolMod': `${STAT_MODS_BASE_URL}/statmodshealthplusicon.png`,
+  'FlatHPRegenMod': `${STAT_MODS_BASE_URL}/statmodshealthscalingicon.png`,
   
-  // Mana Stats
-  'FlatMPPoolMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/manaflow-band/manaflowband.png',
-  'FlatMPRegenMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/gathering-storm/gathering-storm.png',
+  // Mana Stats - Use Health Plus as placeholder (no mana icon in statmods)
+  'FlatMPPoolMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
+  'FlatMPRegenMod': `${STAT_MODS_BASE_URL}/statmodsadaptiveforceicon.png`,
   
   // Mobility Stats
-  'FlatMovementSpeedMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/celerity/celeritytemp.png',
-  'PercentMovementSpeedMod': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/celerity/celeritytemp.png',
+  'FlatMovementSpeedMod': `${STAT_MODS_BASE_URL}/statmodsmovementspeedicon.png`,
+  'PercentMovementSpeedMod': `${STAT_MODS_BASE_URL}/statmodsmovementspeedicon.png`,
   
-  // Utility Stats
-  'AbilityHaste': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/transcendence/transcendence.png',
-  'CooldownReduction': 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/styles/sorcery/transcendence/transcendence.png',
+  // Utility Stats - Ability Haste / CDR
+  'AbilityHaste': `${STAT_MODS_BASE_URL}/statmodscdrscalingicon.png`,
+  'CooldownReduction': `${STAT_MODS_BASE_URL}/statmodscdrscalingicon.png`,
 }
 
 /**

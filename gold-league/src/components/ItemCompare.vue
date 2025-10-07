@@ -283,8 +283,10 @@
               class="breakdown-bar-item"
             >
               <div class="bar-label">
-                <img v-if="getStatIcon(key)" :src="getStatIcon(key)" :alt="formatStatName(key)" class="stat-icon" />
-                <span class="bar-stat-name">{{ formatStatName(key) }}</span>
+                <div class="bar-stat-name">
+                  <img v-if="getStatIcon(key)" :src="getStatIcon(key)" :alt="formatStatName(key)" class="stat-icon" />
+                  <span>{{ formatStatName(key) }}</span>
+                </div>
                 <span class="bar-stat-value">{{ formatStatValue(key, stat.amount) }}</span>
               </div>
               <div class="bar-wrapper">
@@ -1462,17 +1464,6 @@ function formatDescription(html) {
   gap: 0.125rem;
 }
 
-.stat-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  margin-right: 0.375rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 2px;
-  align-self: flex-start;
-}
-
 .bar-stat-name {
   color: var(--text-secondary);
   font-size: 0.75rem;
@@ -1480,6 +1471,14 @@ function formatDescription(html) {
   display: flex;
   align-items: center;
   gap: 0.375rem;
+}
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: brightness(1.1);
 }
 
 .bar-stat-value {
