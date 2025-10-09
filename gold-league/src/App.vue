@@ -96,10 +96,8 @@
       </button>
     </transition>
 
-    <footer class="app-footer">
-      <p>BuildValue by <a href="https://chrisdalbano.com" target="_blank" style="color: var(--gold); text-decoration: none;">Chrisdalbano</a> | Advanced League of Legends item analytics</p>
-      <p class="disclaimer">Data from Riot Games Data Dragon API - Not endorsed by Riot Games</p>
-    </footer>
+    <!-- Professional Footer -->
+    <Footer />
   </div>
 </template>
 
@@ -112,6 +110,7 @@ import ItemBreakdown from './components/ItemBreakdown.vue'
 import QuickInsights from './components/QuickInsights.vue'
 import BuildOptimizer from './components/BuildOptimizer.vue'
 import AboutSection from './components/AboutSection.vue'
+import Footer from './components/Footer.vue'
 import { itemsApi } from './api/items'
 import { isItemDeprecated, filterDeprecatedItems } from './utils/deprecatedItems'
 import { useChampionSplash } from './composables/useChampionSplash'
@@ -308,6 +307,8 @@ function scrollToTop() {
 #app {
   min-height: 100vh;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Champion Splash Hero Banner */
@@ -594,25 +595,6 @@ function scrollToTop() {
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
   padding: 0;
-}
-
-.app-footer {
-  background: var(--bg-secondary);
-  padding: 1.5rem;
-  text-align: center;
-  color: var(--text-tertiary);
-  border-top: 1px solid var(--border-primary);
-  font-size: 0.875rem;
-}
-
-.app-footer p {
-  margin: 0.375rem 0;
-}
-
-.disclaimer {
-  font-size: 0.75rem;
-  font-style: italic;
-  color: var(--text-tertiary);
 }
 
 /* Scroll to Top Button */

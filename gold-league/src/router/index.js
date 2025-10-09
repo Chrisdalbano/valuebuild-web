@@ -46,5 +46,12 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// Track page views in Mouseflow after each route change
+router.afterEach((to) => {
+  if (typeof window._mfq !== 'undefined') {
+    window._mfq.push(['newPageView', to.fullPath])
+  }
+})
+
 export default router
 
