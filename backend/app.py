@@ -170,6 +170,25 @@ async def get_metadata():
     return metadata
 
 
+@app.get("/api/items/metadata")
+async def get_items_metadata():
+    """
+    Get items metadata for footer display
+    Returns item count and last update timestamp
+    """
+    # Get item count
+    item_count = await items_collection.count_documents({'isDeprecated': False, 'imageValidated': True})
+    
+    # Get last update from ETL metadata
+    metadata = await metadata_collection.find_one({'_id': 'latest'})
+    last_update = metadata.get('lastUpdated') if metadata else None
+    
+    return {
+        "itemCount": item_count,
+        "lastUpdate": last_update
+    }
+
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for monitoring"""

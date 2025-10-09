@@ -570,6 +570,18 @@ const props = defineProps({
   allItems: {
     type: Array,
     default: () => []
+  },
+  compareItems: {
+    type: Array,
+    default: () => []
+  },
+  currentBuild: {
+    type: Array,
+    default: () => []
+  },
+  goldIconUrl: {
+    type: String,
+    default: ''
   }
 })
 
@@ -595,7 +607,7 @@ const swapSearchQuery = ref('')
 const swapSearchInput = ref(null)
 const filteredSwapItems = ref([])
 
-const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem', 'addItem'])
+const emit = defineEmits(['clear', 'viewDetailed', 'removeItem', 'addMore', 'swapItem', 'addItem', 'compare', 'addToBuild', 'browseItems'])
 
 function removeItem(item) {
   emit('removeItem', item)

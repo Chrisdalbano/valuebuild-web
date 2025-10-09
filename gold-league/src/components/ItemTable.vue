@@ -1,5 +1,9 @@
 <template>
   <div class="item-browser">
+    <!-- Loading State -->
+    <LoadingSkeleton v-if="props.items.length === 0" :type="viewMode" :count="24" message="Loading items from API..." />
+    
+    <template v-else>
     <!-- Floating Comparison Tray -->
     <transition name="slide-up">
       <div v-if="selectedItems.length > 0" class="comparison-tray">
@@ -384,12 +388,14 @@
         Load {{ Math.min(24, remainingItems) }} More
       </button>
     </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { getItemImageUrl, getValidatedItemImageUrl, formatStatName, formatStatValue } from '../api/items'
+import LoadingSkeleton from './LoadingSkeleton.vue'
 
 const props = defineProps({
   items: {
