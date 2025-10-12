@@ -14,7 +14,7 @@ STAT_VALUES = {
     "FlatHPPoolMod": 2.666667,          # HP from Ruby Crystal (2.67g per 1 HP)
     "FlatMPPoolMod": 1,                 # Mana from Sapphire Crystal (1g per 1 Mana)
     "FlatHPRegenMod": 300,              # HP Regen from Rejuvenation Bead (300g per 100% base, API gives 1.0 = 100%)
-    "FlatMPRegenMod": 600,              # MP Regen from Faerie Charm (300g per 50% base, so 600g per 100%)
+    "FlatMPRegenMod": 400,              # MP Regen from Faerie Charm (200g per 50% base, so 400g per 100%)
     "FlatMovementSpeedMod": 12,         # MS from Boots (12g per 1 MS)
     
     # Percentage stats (API returns as decimal where 1.0 = 100%)
@@ -26,7 +26,7 @@ STAT_VALUES = {
     "PercentLifeStealMod": 5355,        # Lifesteal: 53.55g per 1%, API gives decimal, so 5355g per 1.0 (100%)
     
     # Ability Haste (introduced in Season 11, replaces CDR)
-    "AbilityHaste": 25,                 # Ability Haste: 25g per 1 AH (10 AH = 250g from Kindlegem)
+    "AbilityHaste": 50,                 # Ability Haste: 25g per 1 AH (10 AH = 250g from Kindlegem)
 }
 
 # Additional stat mappings for Data Dragon API response
