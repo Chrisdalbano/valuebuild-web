@@ -26,7 +26,7 @@ STAT_VALUES = {
     "PercentLifeStealMod": 5355,        # Lifesteal: 53.55g per 1%, API gives decimal, so 5355g per 1.0 (100%)
     
     # Ability Haste (introduced in Season 11, replaces CDR)
-    "AbilityHaste": 26.67,              # Ability Haste: ~26.67g per 1 AH (based on Kindlegem)
+    "AbilityHaste": 25,                 # Ability Haste: 25g per 1 AH (10 AH = 250g from Kindlegem)
 }
 
 # Additional stat mappings for Data Dragon API response
@@ -49,28 +49,42 @@ STAT_MAPPING = {
 
 def parse_stats_from_description(description):
     """
-    Parse stats from item description when stats field is empty.
-    Handles cases like Rejuvenation Bead where stats are only in description.
+    Parse stats from item description when stats field is empty or incomplete.
+    Handles cases where stats appear only in description text.
     """
     stats = {}
     
     if not description:
         return stats
     
-    # Remove HTML tags
+    # Remove HTML tags for cleaner parsing
     clean_desc = re.sub(r'<[^>]+>', ' ', description)
     
     # Pattern: "100% Base Health Regen" -> FlatHPRegenMod: 1.0
-    hp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+Base Health Regen', clean_desc, re.IGNORECASE)
+    # Also matches: "50% base health regeneration", "150% Base Health Regen"
+    hp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+[Bb]ase [Hh]ealth [Rr]egen(?:eration)?', clean_desc)
     if hp_regen_match:
         value = float(hp_regen_match.group(1)) / 100  # Convert percentage to decimal (100% -> 1.0)
         stats['FlatHPRegenMod'] = value
     
     # Pattern: "50% Base Mana Regen" -> FlatMPRegenMod: 0.5
-    mp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+Base Mana Regen', clean_desc, re.IGNORECASE)
+    # Also matches: "100% base mana regeneration"
+    mp_regen_match = re.search(r'(\d+(?:\.\d+)?)%?\s+[Bb]ase [Mm]ana [Rr]egen(?:eration)?', clean_desc)
     if mp_regen_match:
         value = float(mp_regen_match.group(1)) / 100  # Convert percentage to decimal
         stats['FlatMPRegenMod'] = value
+    
+    # Pattern: "10 Ability Haste" or "15 ability haste" -> AbilityHaste: 10
+    # Also matches: "20 Haste", "25 AH"
+    ability_haste_match = re.search(r'(\d+(?:\.\d+)?)\s+[Aa]bility [Hh]aste', clean_desc)
+    if ability_haste_match:
+        value = float(ability_haste_match.group(1))
+        stats['AbilityHaste'] = value
+    else:
+        # Alternative pattern: just "15 Haste" (less common)
+        haste_match = re.search(r'(\d+(?:\.\d+)?)\s+[Hh]aste(?!\w)', clean_desc)
+        if haste_match:
+            stats['AbilityHaste'] = float(haste_match.group(1))
     
     return stats
 
@@ -82,14 +96,18 @@ def calculate_efficiency(item):
     
     Where Gold Value is the sum of (stat amount × gold per stat point)
     """
-    stats = item.get("stats", {})
+    stats = item.get("stats", {}).copy() if item.get("stats") else {}
     
-    # If stats are empty, try to parse from description
-    if not stats or len(stats) == 0:
-        description = item.get("description", "")
-        parsed_stats = parse_stats_from_description(description)
-        if parsed_stats:
-            stats = parsed_stats
+    # Always try to parse additional stats from description
+    # This catches stats that DDragon might miss or put only in description
+    description = item.get("description", "")
+    parsed_stats = parse_stats_from_description(description)
+    
+    # Merge parsed stats with API stats
+    # Parsed stats only add if the stat key doesn't already exist
+    for stat_key, stat_value in parsed_stats.items():
+        if stat_key not in stats:
+            stats[stat_key] = stat_value
     
     gold = item.get("gold", {})
     cost = gold.get("total", 1)
