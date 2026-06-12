@@ -6,8 +6,11 @@ import BuildStatsCard from '../molecules/BuildStatsCard.vue'
 import CombinedStatsCard from '../molecules/CombinedStatsCard.vue'
 import BuildInsightsCard from '../molecules/BuildInsightsCard.vue'
 import BuildSuggestionsPanel from '../molecules/BuildSuggestionsPanel.vue'
+import BudgetOptimizerPanel from '../molecules/BudgetOptimizerPanel.vue'
+import ShareBuildButton from '../molecules/ShareBuildButton.vue'
 import { useBuildStats } from '@/composables/useBuildStats'
 import { useBuildSuggestions } from '@/composables/useBuildSuggestions'
+import { useShareableBuild } from '@/composables/useShareableBuild'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -28,6 +31,10 @@ const { suggestions, subtitle } = useBuildSuggestions(
   currentBuild,
   selectedRole
 )
+
+// shareable builds: /builds?b=3071,3153,... <-> currentBuild
+const { shareUrl } = useShareableBuild(currentBuild, toRef(props, 'items'))
+
 
 function addComparedItems() {
   props.compareItems.forEach(item => {
@@ -55,15 +62,20 @@ function removeFromBuild(index) {
         <h2><span class="icon-build"></span> Build Optimizer</h2>
         <p class="builds-subtitle">Create and analyze optimal item builds for maximum gold efficiency</p>
       </div>
-      <button v-if="currentBuild.length > 0" @click="currentBuild = []" class="btn-clear-build">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-        </svg>
-        Clear Build
-      </button>
+      <div class="header-actions">
+        <ShareBuildButton v-if="currentBuild.length > 0" :url="shareUrl" />
+        <button v-if="currentBuild.length > 0" @click="currentBuild = []" class="btn-clear-build">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+          </svg>
+          Clear Build
+        </button>
+      </div>
     </div>
 
     <BuildRolePicker v-model="selectedRole" />
+
+    <BudgetOptimizerPanel :items="items" :role="selectedRole" @apply="currentBuild = $event" />
 
     <div class="build-slots-container">
       <h3>Your Build</h3>
@@ -133,6 +145,8 @@ function removeFromBuild(index) {
 .icon-build { width: 2rem; height: 2rem; background: url("https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/missions/newplayerexperience/npe_mission_annihilation.png") no-repeat center center; background-size: contain; display: inline-block; vertical-align: middle; margin-right: 2px; }
 
 .builds-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+
+.header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
 .builds-subtitle { color: var(--fg-muted); font-size: 0.9375rem; margin-top: 0.5rem; }
 

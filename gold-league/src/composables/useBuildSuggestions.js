@@ -12,7 +12,7 @@ export const buildRoleOptions = [
   { value: 'support', label: 'Support', icon: `${CDRAGON}/role-icon-support.png` },
 ]
 
-const ROLE_MATCHERS = {
+export const ROLE_MATCHERS = {
   marksman: s => s.FlatPhysicalDamageMod || s.FlatCritChanceMod || s.PercentAttackSpeedMod,
   mage: s => s.FlatMagicDamageMod || s.FlatMPRegenMod,
   tank: s => s.FlatHPPoolMod || s.FlatArmorMod || s.FlatSpellBlockMod,
