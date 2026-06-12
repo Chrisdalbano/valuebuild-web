@@ -59,6 +59,12 @@ export function getCombineCost(item) {
   return item.gold.base || 0
 }
 
+// Builds route still pins DDragon patch 14.20.1 (legacy quirk, kept verbatim
+// in Phase 2 — see docs/design/builds-decomposition.md §4)
+export function buildItemImageUrl(itemId) {
+  return `https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${itemId}.png`
+}
+
 // Legacy compare-route image fallback: swap to a flat grey placeholder
 export function imgPlaceholderOnError(e) {
   e.target.src =
