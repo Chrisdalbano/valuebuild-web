@@ -109,7 +109,7 @@ Ordered by impact-per-effort; each is independently shippable:
 
 ## Progress
 
-- [ ] Phase 1 — Tailwind v4 + tokens (pixel-identical)
+- [x] Phase 1 — Tailwind v4 + tokens (pixel-identical) — shipped 2026-06-12, spec: `docs/design/tokens.md`
 - [ ] Phase 2 — atomic decomposition (explorer / compare / builds / about)
 - [ ] Phase 3 — Inspira pass (hero, badges, spotlight cards, border-beam, boards, chrome, skeletons)
 - [ ] Phase 4 — features (shareable builds → patch diff → budget optimizer → champion context → …)
