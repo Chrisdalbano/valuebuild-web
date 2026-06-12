@@ -59,6 +59,17 @@ defineProps({
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--accent-lead) 10%, transparent),
     color-mix(in srgb, var(--accent-warm) 5%, transparent));
+  box-shadow: 0 0 28px color-mix(in srgb, var(--accent-lead) 16%, transparent);
+  animation: winner-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes winner-breathe {
+  0%, 100% { box-shadow: 0 0 22px color-mix(in srgb, var(--accent-lead) 12%, transparent); }
+  50% { box-shadow: 0 0 34px color-mix(in srgb, var(--accent-lead) 22%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .insight-card.winner { animation: none; }
 }
 
 .insight-header {

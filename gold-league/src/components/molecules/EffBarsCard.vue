@@ -1,7 +1,14 @@
 <script setup>
+import { ref, useTemplateRef } from 'vue'
+import { useRevealOnce } from '@/composables/useRevealOnce'
+
 const props = defineProps({
   items: { type: Array, required: true },
 })
+
+const card = useTemplateRef('card')
+const revealed = ref(false)
+useRevealOnce(card, () => (revealed.value = true))
 
 function truncate(name) {
   return name.substring(0, 15) + (name.length > 15 ? '...' : '')
@@ -14,7 +21,7 @@ function normalizedWidth(item) {
 </script>
 
 <template>
-  <div class="insight-card">
+  <div class="insight-card" ref="card" :class="{ revealed }">
     <div class="insight-header">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -26,7 +33,7 @@ function normalizedWidth(item) {
       <div v-for="item in items" :key="item.id" class="component-item">
         <div class="component-name">{{ truncate(item.name) }}</div>
         <div class="component-bar">
-          <div class="component-fill" :style="{ width: normalizedWidth(item) + '%' }"></div>
+          <div class="component-fill" :style="{ width: normalizedWidth(item) + '%', '--i': items.indexOf(item) }"></div>
           <span class="component-value">{{ item.goldEfficiency.toFixed(0) }}%</span>
         </div>
       </div>
@@ -78,7 +85,15 @@ function normalizedWidth(item) {
 .component-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent-lead), var(--accent-warm));
-  transition: width 0.3s ease;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s var(--ease-standard) calc(var(--i, 0) * 110ms), width 0.3s ease;
+}
+
+.insight-card.revealed .component-fill { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .component-fill { transform: scaleX(1); transition: none; }
 }
 
 .component-value {

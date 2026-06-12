@@ -14,7 +14,8 @@ defineEmits(['open', 'remove'])
 
 <template>
   <div :class="['build-slot', { filled: item }]" @click="$emit('open')">
-    <template v-if="item">
+    <transition name="seat" appear>
+    <div v-if="item" :key="item.id" class="slot-filled">
       <button @click.stop="$emit('remove')" class="slot-remove">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M18 6L6 18M6 6l12 12"/>
@@ -28,16 +29,14 @@ defineEmits(['open', 'remove'])
         <img :src="goldIconUrl" alt="gold" class="gold-icon" /> {{ item.cost }}
       </div>
       <EfficiencyBadge :value="item.goldEfficiency" :decimals="0" class="slot-eff" />
-
-    </template>
-    <template v-else>
-      <div class="slot-placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-        <span>Slot {{ slotNumber }}</span>
-      </div>
-    </template>
+    </div>
+    </transition>
+    <div v-if="!item" class="slot-placeholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      <span>Slot {{ slotNumber }}</span>
+    </div>
   </div>
 </template>
 
@@ -149,4 +148,25 @@ defineEmits(['open', 'remove'])
 
 .slot-remove svg { width: 14px; height: 14px; }
 .slot-remove:hover { transform: scale(1.1); background: rgb(200, 40, 40); }
+
+.slot-filled {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* item "seats" into the slot with a settle */
+.seat-enter-active { animation: seat-in 0.45s var(--ease-standard); }
+@keyframes seat-in {
+  0% { transform: scale(0.7); opacity: 0; }
+  70% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat-enter-active { animation: none; }
+}
 </style>

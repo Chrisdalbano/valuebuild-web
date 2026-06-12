@@ -1,12 +1,16 @@
 <script setup>
+import { computed } from 'vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
+import NumberTicker from '@/components/atoms/NumberTicker.vue'
 
-defineProps({
+const props = defineProps({
   totalCost: { type: Number, required: true },
   totalValue: { type: Number, required: true },
   avgEfficiency: { type: Number, required: true },
   goldIconUrl: { type: String, default: '' },
 })
+
+const netGain = computed(() => props.totalValue - props.totalCost)
 </script>
 
 <template>
@@ -21,19 +25,19 @@ defineProps({
       <div class="build-stat">
         <span class="stat-label">Total Cost</span>
         <span class="stat-value gold-line">
-          <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> {{ totalCost }}
+          <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> <NumberTicker :value="totalCost" />
         </span>
       </div>
       <div class="build-stat">
         <span class="stat-label">Gold Value</span>
         <span class="stat-value gold-line">
-          <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> {{ totalValue }}
+          <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> <NumberTicker :value="totalValue" />
         </span>
       </div>
       <div class="build-stat">
         <span class="stat-label">Net Gain</span>
-        <span class="stat-value" :class="(totalValue - totalCost) >= 0 ? 'positive' : 'negative'">
-          {{ (totalValue - totalCost) >= 0 ? '+' : '' }}{{ totalValue - totalCost }}
+        <span class="stat-value" :class="netGain >= 0 ? 'positive' : 'negative'">
+          <NumberTicker :value="netGain" :prefix="netGain >= 0 ? '+' : ''" :decimals="2" />
           <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" />
         </span>
       </div>

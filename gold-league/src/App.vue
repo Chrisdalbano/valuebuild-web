@@ -120,7 +120,9 @@ function goToItems() {
         />
 
         <router-view v-slot="{ Component }">
+          <transition name="page" mode="out-in">
           <component
+            :key="$route.path"
             :is="Component"
             :items="$route.name === 'Compare' ? compareItems : items"
             :compare-items="compareItems"
@@ -136,6 +138,7 @@ function goToItems() {
             @browse-items="goToItems"
             @view-detailed="detailedItem = $event"
           />
+          </transition>
         </router-view>
       </template>
     </main>
@@ -185,4 +188,10 @@ function goToItems() {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* fast route transitions (instant under reduced motion via global guard) */
+.page-enter-active { transition: opacity var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard); }
+.page-leave-active { transition: opacity var(--dur-instant) var(--ease-exit); }
+.page-enter-from { opacity: 0; transform: translateY(8px); }
+.page-leave-to { opacity: 0; }
 </style>
