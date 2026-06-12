@@ -41,4 +41,8 @@ coverage/
 # Heroku
 .heroku/
 
+# Markdown: scratch notes stay untracked, but project doctrine + docs are source
 *.md
+!README.md
+!CLAUDE.md
+!docs/**/*.md
