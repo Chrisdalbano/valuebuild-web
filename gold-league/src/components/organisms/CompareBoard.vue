@@ -136,7 +136,7 @@ function goToItems() {
 }
 
 /* Mobile carousel (sizes the child cards' roots — layout concern of this container) */
-.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; background: var(--bg-canvas); border: 2px solid var(--accent-lead); border-radius: 50%; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: var(--z-raised); background: var(--bg-canvas); border: 2px solid var(--accent-lead); border-radius: 50%; width: 44px; height: 44px; display: none; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
 
 .carousel-nav:hover:not(:disabled) { background: var(--accent-lead); transform: translateY(-50%) scale(1.1); }
 .carousel-nav:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border-strong); }

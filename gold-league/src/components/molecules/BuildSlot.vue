@@ -1,7 +1,7 @@
 <script setup>
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
-import BuildSlotTooltip from './BuildSlotTooltip.vue'
-import { buildItemImageUrl } from '@/utils/itemHelpers'
+import ItemHoverCard from './ItemHoverCard.vue'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   item: { type: Object, default: null },
@@ -20,14 +20,15 @@ defineEmits(['open', 'remove'])
           <path d="M18 6L6 18M6 6l12 12"/>
         </svg>
       </button>
-      <img :src="buildItemImageUrl(item.id)" :alt="item.name" class="slot-icon" />
+      <ItemHoverCard :item="item" :mobile-tap="false">
+        <ItemIcon :item="item" size="hero" :alt="item.name" class="slot-icon" />
+      </ItemHoverCard>
       <div class="slot-name">{{ item.name }}</div>
       <div class="slot-cost gold-line">
         <img :src="goldIconUrl" alt="gold" class="gold-icon" /> {{ item.cost }}
       </div>
       <EfficiencyBadge :value="item.goldEfficiency" :decimals="0" class="slot-eff" />
 
-      <BuildSlotTooltip :item="item" />
     </template>
     <template v-else>
       <div class="slot-placeholder">
@@ -68,12 +69,6 @@ defineEmits(['open', 'remove'])
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--accent-lead) 5%, transparent),
     color-mix(in srgb, var(--accent-warm) 5%, transparent));
-}
-
-.build-slot.filled:hover :deep(.build-item-tooltip) {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
 }
 
 .slot-placeholder {

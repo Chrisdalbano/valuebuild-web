@@ -1,6 +1,6 @@
 <script setup>
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
-import { buildItemImageUrl } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   item: { type: Object, required: true },
@@ -13,7 +13,7 @@ defineProps({
 <template>
   <div class="insight-item" :class="{ 'is-winner': winner }">
     <div class="item-rank" :class="{ 'rank-winner': winner }">{{ winner ? '👑' : '💠' }}</div>
-    <img :src="buildItemImageUrl(item.id)" :alt="item.name" class="insight-item-img" />
+    <ItemIcon :item="item" size="xl" :alt="item.name" class="insight-item-img" />
     <div class="insight-item-details">
       <div class="insight-item-name">{{ item.name }}</div>
       <div class="insight-item-stats">

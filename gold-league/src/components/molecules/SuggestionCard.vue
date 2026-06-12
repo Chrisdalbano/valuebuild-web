@@ -1,6 +1,7 @@
 <script setup>
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
-import { buildItemImageUrl } from '@/utils/itemHelpers'
+import ItemHoverCard from './ItemHoverCard.vue'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   suggestion: { type: Object, required: true },
@@ -14,7 +15,9 @@ defineEmits(['add'])
 <template>
   <div class="suggestion-card">
     <div class="suggestion-header">
-      <img :src="buildItemImageUrl(suggestion.id)" :alt="suggestion.name" class="suggestion-icon" />
+      <ItemHoverCard :item="suggestion" :mobile-tap="false">
+        <ItemIcon :item="suggestion" size="lg" :alt="suggestion.name" class="suggestion-icon" />
+      </ItemHoverCard>
       <div class="suggestion-info">
         <div class="suggestion-name">{{ suggestion.name }}</div>
         <div class="suggestion-reason">{{ suggestion.reason }}</div>

@@ -1,8 +1,8 @@
 <script setup>
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
-import { getItemImageUrl } from '@/api/items'
-import { imgPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemHoverCard from './ItemHoverCard.vue'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   item: { type: Object, required: true },
@@ -14,7 +14,9 @@ defineEmits(['pick'])
 
 <template>
   <div @click="$emit('pick', item)" class="swap-item" :class="{ 'already-selected': alreadySelected }">
-    <img :src="getItemImageUrl(item.id)" :alt="item.name" class="swap-item-img" @error="imgPlaceholderOnError" />
+    <ItemHoverCard :item="item" placement="right" :mobile-tap="false">
+      <ItemIcon :item="item" size="lg" :alt="item.name" class="swap-item-img" />
+    </ItemHoverCard>
     <div class="swap-item-info">
       <div class="swap-item-name">{{ item.name }}</div>
       <div class="swap-item-stats">

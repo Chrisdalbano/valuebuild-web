@@ -40,7 +40,7 @@ defineEmits(['close'])
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   padding: 0.5rem;
-  z-index: 999;
+  z-index: var(--z-nav);
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
@@ -78,7 +78,7 @@ defineEmits(['close'])
   line-height: 1;
 }
 
-.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 998; }
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: calc(var(--z-nav) - 1); }
 
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }

@@ -1,7 +1,6 @@
 <script setup>
 import GoldValue from '@/components/atoms/GoldValue.vue'
-import { getItemImageUrl } from '@/api/items'
-import { imgCdragonThenPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   upgrades: { type: Array, required: true },
@@ -15,7 +14,7 @@ defineEmits(['select'])
     <h3>Builds Into</h3>
     <div class="upgrade-list">
       <div v-for="upgrade in upgrades" :key="upgrade.id" class="upgrade-card" @click="$emit('select', upgrade)">
-        <img :src="getItemImageUrl(upgrade.id)" :alt="upgrade.name" class="upgrade-icon" @error="imgCdragonThenPlaceholderOnError" />
+        <ItemIcon :item="upgrade" size="lg" :alt="upgrade.name" class="upgrade-icon" />
         <div class="upgrade-name">{{ upgrade.name }}</div>
         <GoldValue :amount="upgrade.cost" class="upgrade-cost" />
       </div>

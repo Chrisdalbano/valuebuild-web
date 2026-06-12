@@ -123,7 +123,7 @@ function scrollCarousel(direction) {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 10;
+  z-index: var(--z-raised);
   background: var(--bg-canvas);
   border: 2px solid var(--accent-lead);
   border-radius: 50%;

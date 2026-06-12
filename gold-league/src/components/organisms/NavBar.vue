@@ -90,7 +90,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border-bottom: 1px solid var(--border); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
 
 .navbar.scrolled {
   background: color-mix(in srgb, var(--bg-canvas) 95%, transparent);

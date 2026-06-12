@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
-import NestedRecipeTooltip from './NestedRecipeTooltip.vue'
-import { getItemImageUrl } from '@/api/items'
-import { getComponents, getComponentsCost, getCombineCost, imgPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemHoverCard from './ItemHoverCard.vue'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
+import { getComponents, getComponentsCost, getCombineCost } from '@/utils/itemHelpers'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -12,11 +12,6 @@ const props = defineProps({
 })
 
 const components = computed(() => getComponents(props.item, props.allItems))
-const hoveredComponent = ref(null)
-
-function hasSubComponents(comp) {
-  return getComponents(comp, props.allItems).length > 0
-}
 </script>
 
 <template>
@@ -28,28 +23,18 @@ function hasSubComponents(comp) {
       Recipe
     </div>
     <div class="recipe-components">
-      <div
-        v-for="comp in components"
-        :key="comp.id"
-        class="recipe-component"
-        @mouseenter="!isMobile && (hoveredComponent = comp)"
-        @mouseleave="hoveredComponent = null"
-      >
-        <img :src="getItemImageUrl(comp.id)" :alt="comp.name" class="recipe-comp-icon" @error="imgPlaceholderOnError" />
+      <div v-for="comp in components" :key="comp.id" class="recipe-component">
+        <ItemHoverCard :item="comp">
+          <ItemIcon :item="comp" size="sm" :alt="comp.name" class="recipe-comp-icon" />
+        </ItemHoverCard>
         <div class="recipe-comp-info">
           <div class="recipe-comp-name">{{ comp.name }}</div>
           <GoldValue :amount="comp.cost" class="recipe-comp-cost" />
         </div>
-
-        <NestedRecipeTooltip
-          v-if="!isMobile && hoveredComponent?.id === comp.id && hasSubComponents(comp)"
-          :component="comp"
-          :all-items="allItems"
-        />
       </div>
       <div class="recipe-arrow">→</div>
       <div class="recipe-final">
-        <img :src="getItemImageUrl(item.id)" :alt="item.name" class="recipe-final-icon" @error="imgPlaceholderOnError" />
+        <ItemIcon :item="item" size="sm" :alt="item.name" class="recipe-final-icon" />
         <div class="recipe-final-info">
           <div class="recipe-final-name">{{ item.name }}</div>
           <GoldValue :amount="item.cost" class="recipe-final-cost" />

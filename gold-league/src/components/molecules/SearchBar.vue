@@ -53,7 +53,7 @@ function pick(item) {
         @click="pick(suggestion)"
         class="suggestion-item"
       >
-        <ItemIcon :item-id="suggestion.id" :alt="suggestion.name" class="suggestion-img" />
+        <ItemIcon :item="suggestion" size="md" :alt="suggestion.name" class="suggestion-img" />
         <div class="suggestion-info">
           <div class="suggestion-name">{{ suggestion.name }}</div>
           <div class="suggestion-meta">
@@ -126,7 +126,7 @@ function pick(item) {
   border: 2px solid var(--accent-lead);
   border-radius: var(--radius-lg);
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.7);
-  z-index: 1000;
+  z-index: var(--z-dropdown);
   max-height: 400px;
   overflow-y: auto;
 }

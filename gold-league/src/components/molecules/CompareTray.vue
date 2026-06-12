@@ -75,7 +75,7 @@ defineEmits(['remove', 'clear', 'compare', 'add-to-build', 'image-failed'])
   border-top: 2px solid var(--accent-lead);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3),
     0 -1px 0 color-mix(in srgb, var(--accent-lead) 20%, transparent);
-  z-index: 100;
+  z-index: var(--z-tray);
   padding: 1rem 1.5rem;
 }
 

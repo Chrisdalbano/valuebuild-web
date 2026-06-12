@@ -1,4 +1,5 @@
 <script setup>
+import ItemHoverCard from './ItemHoverCard.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 
@@ -11,12 +12,9 @@ defineEmits(['remove', 'image-failed'])
 
 <template>
   <div class="tray-item">
-    <ItemIcon
-      :item-id="item.id"
-      :alt="item.name"
-      class="tray-item-img"
-      @failed="$emit('image-failed', $event)"
-    />
+    <ItemHoverCard :item="item" :mobile-tap="false">
+      <ItemIcon :item="item" size="md" :alt="item.name" class="tray-item-img" @failed="$emit('image-failed', $event)" />
+    </ItemHoverCard>
     <div class="tray-item-info">
       <div class="tray-item-name">{{ item.name }}</div>
       <EfficiencyBadge :value="item.goldEfficiency" class="tray-item-eff" />

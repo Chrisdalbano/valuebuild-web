@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
-import { getItemImageUrl } from '@/api/items'
-import { getCombineCost, imgCdragonThenPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
+import { getCombineCost } from '@/utils/itemHelpers'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -23,7 +23,7 @@ const componentsCost = computed(() =>
     <div class="recipe-tree">
       <div class="components-list">
         <div v-for="comp in components" :key="comp.id" class="component-card" @click="$emit('select', comp)">
-          <img :src="getItemImageUrl(comp.id)" :alt="comp.name" class="component-icon" @error="imgCdragonThenPlaceholderOnError" />
+          <ItemIcon :item="comp" size="lg" :alt="comp.name" class="component-icon" />
           <div class="component-info">
             <div class="component-name">{{ comp.name }}</div>
             <GoldValue :amount="comp.cost" class="component-cost" />
@@ -33,7 +33,7 @@ const componentsCost = computed(() =>
       </div>
       <div class="recipe-arrow">→</div>
       <div class="final-item">
-        <img :src="getItemImageUrl(item.id)" :alt="item.name" class="component-icon" @error="imgCdragonThenPlaceholderOnError" />
+        <ItemIcon :item="item" size="lg" :alt="item.name" class="component-icon" />
         <div class="component-info">
           <div class="component-name">{{ item.name }}</div>
           <GoldValue :amount="item.cost" class="component-cost" />

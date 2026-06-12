@@ -1,7 +1,6 @@
 <script setup>
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
-import { getItemImageUrl } from '@/api/items'
-import { imgPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
 defineProps({
   winner: { type: Object, required: true },
@@ -23,7 +22,7 @@ defineProps({
       <span>Most Efficient</span>
     </div>
     <div class="insight-winner">
-      <img :src="getItemImageUrl(winner.id)" :alt="winner.name" class="winner-icon" @error="imgPlaceholderOnError" />
+      <ItemIcon :item="winner" size="xl" :alt="winner.name" class="winner-icon" />
       <div class="winner-info">
         <div class="winner-name">{{ winner.name }}</div>
         <EfficiencyBadge :value="winner.goldEfficiency" :decimals="1" suffix=" Efficient" class="winner-eff" />

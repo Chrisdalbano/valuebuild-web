@@ -59,28 +59,5 @@ export function getCombineCost(item) {
   return item.gold.base || 0
 }
 
-// Builds route still pins DDragon patch 14.20.1 (legacy quirk, kept verbatim
-// in Phase 2 — see docs/design/builds-decomposition.md §4)
-export function buildItemImageUrl(itemId) {
-  return `https://ddragon.leagueoflegends.com/cdn/14.20.1/img/item/${itemId}.png`
-}
 
-// Legacy compare-route image fallback: swap to a flat grey placeholder
-export function imgPlaceholderOnError(e) {
-  e.target.src =
-    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%2327272a" width="64" height="64"/%3E%3C/svg%3E'
-}
 
-// Breakdown-modal fallback chain: CommunityDragon once, then grey placeholder
-export function imgCdragonThenPlaceholderOnError(e) {
-  const img = e.target
-  if (!img.dataset.fallbackTried) {
-    img.dataset.fallbackTried = 'true'
-    const itemId = img.alt || img.src.match(/\/(\d+)\.png/)?.[1]
-    if (itemId) {
-      img.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
-      return
-    }
-  }
-  imgPlaceholderOnError(e)
-}

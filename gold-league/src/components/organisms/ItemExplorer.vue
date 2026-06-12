@@ -60,12 +60,6 @@ function removeSelected(item) {
   if (index > -1) selectedItems.value.splice(index, 1)
 }
 
-// Mobile tap-tooltip state
-const activeTooltipId = ref(null)
-function closeTooltip() {
-  if (isMobile.value) activeTooltipId.value = null
-}
-
 // Infinite scroll
 const isLoadingMore = ref(false)
 function handleScroll() {
@@ -114,18 +108,15 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
         <RoleFilter v-model="roleFilter" />
       </div>
 
-      <div v-if="viewMode === 'grid'" class="items-grid" @click.self="closeTooltip">
+      <div v-if="viewMode === 'grid'" class="items-grid">
         <ItemCard
           v-for="item in displayedItems"
           :key="item.id"
           :item="item"
           :selected="selectedIds.includes(item.id)"
           :selecting="selectingItemId === item.id"
-          :tooltip-active="activeTooltipId === item.id"
-          :show-tooltip="!isMobile"
           @toggle="toggleSelect"
           @image-failed="markImageFailed"
-          @close-tooltip="closeTooltip"
         />
       </div>
 

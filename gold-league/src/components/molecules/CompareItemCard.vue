@@ -4,8 +4,8 @@ import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
 import RecipeSection from './RecipeSection.vue'
 import StatBreakdownBars from './StatBreakdownBars.vue'
-import { getItemImageUrl } from '@/api/items'
-import { itemTier, formatRiotDescription, imgPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
+import { itemTier, formatRiotDescription } from '@/utils/itemHelpers'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -38,7 +38,7 @@ const hasBreakdown = computed(
     <RecipeSection :item="item" :all-items="allItems" :is-mobile="isMobile" />
 
     <div class="detail-header">
-      <img :src="getItemImageUrl(item.id)" :alt="item.name" class="detail-icon" @error="imgPlaceholderOnError" />
+      <ItemIcon :item="item" size="xl" :alt="item.name" class="detail-icon" />
       <div class="detail-title">
         <h4>{{ item.name }}</h4>
         <span class="detail-tier">{{ tierLabel }}</span>

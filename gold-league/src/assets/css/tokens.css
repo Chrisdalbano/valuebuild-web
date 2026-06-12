@@ -118,6 +118,20 @@
   --footer-bg-deep: oklch(0.1663 0.0262 269.37);       /* #0a0e1a */
 
   /* ------------------------------------------------------------------
+     Layering — every fixed/absolute surface uses this scale.
+     Magic z-indexes (99999 !important) are banned.
+     ------------------------------------------------------------------ */
+  --z-raised: 10;     /* in-flow raised bits (badges, rank chips) */
+  --z-tray: 90;       /* floating comparison tray */
+  --z-nav: 100;       /* fixed navbar + mobile menu */
+  --z-dropdown: 600;  /* in-page dropdowns (search suggestions) */
+  --z-modal-scrim: 780;
+  --z-modal: 800;     /* modals (breakdown, swap) */
+  --z-scrim: 840;     /* tap-popover backdrop (sits above modals) */
+  --z-popover: 850;   /* teleported stat cards — may open inside modals */
+  --z-toast: 900;     /* highest interactive layer */
+
+  /* ------------------------------------------------------------------
      Motion
      ------------------------------------------------------------------ */
   --dur-instant: 75ms;

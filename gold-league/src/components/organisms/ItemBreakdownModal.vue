@@ -5,8 +5,8 @@ import GoldValue from '@/components/atoms/GoldValue.vue'
 import BreakdownRecipe from '../molecules/BreakdownRecipe.vue'
 import BreakdownStatAnalysis from '../molecules/BreakdownStatAnalysis.vue'
 import BreakdownUpgrades from '../molecules/BreakdownUpgrades.vue'
-import { getItemImageUrl } from '@/api/items'
-import { getCombineCost, imgCdragonThenPlaceholderOnError } from '@/utils/itemHelpers'
+import ItemIcon from '@/components/atoms/ItemIcon.vue'
+import { getCombineCost } from '@/utils/itemHelpers'
 
 const props = defineProps({
   item: { type: Object, default: null },
@@ -60,7 +60,7 @@ function sanitizeHtml(html) {
       <div class="item-breakdown">
         <div class="breakdown-header">
           <div class="item-main">
-            <img :src="getItemImageUrl(item.id)" :alt="item.name" class="item-icon-xl" @error="imgCdragonThenPlaceholderOnError" />
+            <ItemIcon :item="item" size="hero" :alt="item.name" class="item-icon-xl" :lazy="false" />
             <div>
               <h2>{{ item.name }}</h2>
               <span class="item-tier">{{ tierLabel }}</span>
@@ -112,7 +112,7 @@ function sanitizeHtml(html) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal);
   padding: 2rem;
   overflow-y: auto;
 }
