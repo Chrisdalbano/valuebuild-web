@@ -14,7 +14,7 @@ import { useChampionSplash } from './composables/useChampionSplash'
 
 const router = useRouter()
 const { splash } = useChampionSplash()
-const { items, loading, error, loadItems } = useItems()
+const { items, loading, error, offlineSnapshot, loadItems } = useItems()
 const { randomComparisons, generateRandomComparisons } = useRandomComparisons(items)
 
 const compareItems = ref([])
@@ -94,6 +94,11 @@ function goToItems() {
       <div v-if="error" class="error-banner">
         <span>{{ error }}</span>
         <button @click="retryLoad" class="btn-small">Retry</button>
+      </div>
+
+      <div v-if="offlineSnapshot" class="offline-banner">
+        <span>⚡ Offline — showing your last saved item snapshot.</span>
+        <button @click="retryLoad" class="btn-small">Reconnect</button>
       </div>
 
       <div v-if="loading && items.length === 0" class="loading-state">
@@ -180,6 +185,18 @@ function goToItems() {
 .btn-small { padding: 0.375rem 0.875rem; font-size: 0.8125rem; background: var(--accent-warm); color: var(--fg-primary); border: 1px solid var(--accent-warm); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s; }
 
 .btn-small:hover { background: var(--accent-warm-hover); }
+
+.offline-banner {
+  background: var(--accent-lead-tint);
+  border: 1px solid color-mix(in srgb, var(--accent-lead) 45%, transparent);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--fg-primary);
+}
 
 .loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 1.5rem; color: var(--fg-secondary); }
 
