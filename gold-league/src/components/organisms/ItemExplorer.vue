@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, toRef, onMounted, onUnmounted } from 'vue'
-import LoadingSkeleton from '../LoadingSkeleton.vue'
+import SkeletonMedia from '../atoms/SkeletonMedia.vue'
 import CompareTray from '../molecules/CompareTray.vue'
 import SearchBar from '../molecules/SearchBar.vue'
 import ViewToggle from '../molecules/ViewToggle.vue'
@@ -90,7 +90,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
 <template>
   <div class="item-browser">
-    <LoadingSkeleton v-if="props.items.length === 0" :type="viewMode" :count="24" message="Loading items from API..." />
+    <SkeletonMedia v-if="props.items.length === 0" :type="viewMode" :count="24" message="Loading items from API..." />
 
     <template v-else>
       <CompareTray

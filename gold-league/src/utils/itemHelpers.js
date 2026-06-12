@@ -70,3 +70,17 @@ export function imgPlaceholderOnError(e) {
   e.target.src =
     'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%2327272a" width="64" height="64"/%3E%3C/svg%3E'
 }
+
+// Breakdown-modal fallback chain: CommunityDragon once, then grey placeholder
+export function imgCdragonThenPlaceholderOnError(e) {
+  const img = e.target
+  if (!img.dataset.fallbackTried) {
+    img.dataset.fallbackTried = 'true'
+    const itemId = img.alt || img.src.match(/\/(\d+)\.png/)?.[1]
+    if (itemId) {
+      img.src = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId.toLowerCase()}.png`
+      return
+    }
+  }
+  imgPlaceholderOnError(e)
+}

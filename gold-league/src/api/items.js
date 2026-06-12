@@ -31,6 +31,19 @@ export const itemsApi = {
   },
 
   /**
+   * Get ETL metadata (patch, lastUpdated, itemCount, status)
+   */
+  async getMetadata() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/metadata`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching metadata:', error)
+      throw error
+    }
+  },
+
+  /**
    * Get a specific item by ID
    */
   async getItem(itemId) {

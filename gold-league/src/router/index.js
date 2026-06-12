@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ItemExplorer from '../components/organisms/ItemExplorer.vue'
 import CompareBoard from '../components/organisms/CompareBoard.vue'
 import BuildBoard from '../components/organisms/BuildBoard.vue'
-import AboutSection from '../components/AboutSection.vue'
+import AboutSection from '../components/organisms/AboutSection.vue'
 
 const routes = [
   {
