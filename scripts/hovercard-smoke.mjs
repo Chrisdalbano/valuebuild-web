@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 const require = createRequire(path.join(process.cwd(), 'noop.js'))
 const { chromium } = require('playwright-core')
 const browser = await chromium.launch({
-  executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  executablePath: process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe',
   headless: true, args: ['--disable-web-security'],
 })
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })

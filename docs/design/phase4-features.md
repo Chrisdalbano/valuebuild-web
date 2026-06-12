@@ -1,6 +1,6 @@
 # Phase 4 — feature roadmap (frontend-only slice)
 
-**Status:** IN PROGRESS · 2026-06-12 · Phase 4 of `docs/UI-MIGRATION-INSPIRA-ATOMIC.md`
+**Status:** SHIPPED (frontend slice) · 2026-06-12 · Phase 4 of `docs/UI-MIGRATION-INSPIRA-ATOMIC.md`
 **Scope note:** backend/DB work is deferred per Christian (2026-06-12), so this slice ships the
 zero-backend features: shareable builds (§4.1), budget optimizer (§4.3 in plan), PWA (§4.7), CI
 hardening (§4.8, frontend smoke only). Deferred until the backend session: patch-diff (§4.2,
