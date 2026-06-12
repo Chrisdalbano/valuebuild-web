@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from './components/organisms/NavBar.vue'
+import ExplorerHero from './components/organisms/ExplorerHero.vue'
 import QuickInsights from './components/organisms/QuickInsights.vue'
 import ItemBreakdownModal from './components/organisms/ItemBreakdownModal.vue'
 import AppFooter from './components/organisms/AppFooter.vue'
@@ -101,6 +102,8 @@ function goToItems() {
       </div>
 
       <template v-else-if="items.length > 0">
+        <ExplorerHero v-if="$route.path === '/'" :item-count="items.length" />
+
         <QuickInsights
           v-if="$route.path === '/' && randomComparisons.length > 0"
           :comparisons="randomComparisons"

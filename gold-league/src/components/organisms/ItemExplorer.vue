@@ -38,6 +38,12 @@ const {
 
 const { suggestions } = useItemSuggestions(itemsRef, search, failedImages)
 
+// top-3 efficiency items of the current filtered view get the gold beam
+const beamIds = computed(() => {
+  const top = [...filtered.value].sort((a, b) => b.goldEfficiency - a.goldEfficiency).slice(0, 3)
+  return new Set(top.map(i => i.id))
+})
+
 // Selection (the floating tray)
 const selectedItems = ref([])
 const selectingItemId = ref(null)
@@ -115,6 +121,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
           :item="item"
           :selected="selectedIds.includes(item.id)"
           :selecting="selectingItemId === item.id"
+          :beam="beamIds.has(item.id)"
           @toggle="toggleSelect"
           @image-failed="markImageFailed"
         />

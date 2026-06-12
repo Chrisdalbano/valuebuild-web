@@ -1,7 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch, useTemplateRef } from 'vue'
 import { efficiencyTier } from '@/utils/itemHelpers'
+import { useRevealOnce, prefersReducedMotion } from '@/composables/useRevealOnce'
 
+// THE efficiency verdict. The % counts up on first reveal (the number is the
+// product — it should feel alive), instant under reduced motion.
 const props = defineProps({
   value: { type: Number, required: true },
   // 'text' = colored percentage, 'rating' = tinted pill with the verdict label,
@@ -10,29 +13,68 @@ const props = defineProps({
   decimals: { type: Number, default: null }, // null = render value as-is
   prefix: { type: String, default: '' },
   suffix: { type: String, default: '' },
+  animated: { type: Boolean, default: true },
 })
 
+const el = useTemplateRef('el')
 const tier = computed(() => efficiencyTier(props.value))
 const classes = computed(() => [
   props.variant === 'rating' ? 'eff-rating' : 'eff-text',
   `tier-${tier.value.key}`,
 ])
-const display = computed(() =>
-  props.decimals === null ? props.value : props.value.toFixed(props.decimals)
+
+const animDecimals = computed(() =>
+  props.decimals !== null ? props.decimals : props.value % 1 === 0 ? 0 : 2
 )
+
+const isText = computed(() => props.variant !== 'rating' && props.variant !== 'label')
+const shown = ref(props.animated && isText.value ? 0 : props.value)
+const revealed = ref(false)
+let raf = null
+
+function animateTo(target, from) {
+  cancelAnimationFrame(raf)
+  if (prefersReducedMotion() || !props.animated) {
+    shown.value = target
+    return
+  }
+  const start = performance.now()
+  const duration = 700
+  const step = now => {
+    const t = Math.min(1, (now - start) / duration)
+    shown.value = from + (target - from) * (1 - Math.pow(1 - t, 3))
+    if (t < 1) raf = requestAnimationFrame(step)
+  }
+  raf = requestAnimationFrame(step)
+}
+
+useRevealOnce(el, () => {
+  revealed.value = true
+  if (isText.value) animateTo(props.value, 0)
+})
+
+watch(() => props.value, (val, old) => {
+  if (!isText.value) return
+  if (revealed.value) animateTo(val, old)
+  else shown.value = props.animated ? shown.value : val
+})
+
+const display = computed(() => {
+  if (props.decimals !== null) return shown.value.toFixed(props.decimals)
+  // value-as-is rendering once settled; fixed precision while rolling
+  return shown.value === props.value ? String(props.value) : shown.value.toFixed(animDecimals.value)
+})
 </script>
 
 <template>
-  <span :class="classes">
+  <span ref="el" :class="classes">
     <template v-if="variant === 'rating' || variant === 'label'">{{ tier.label }}</template>
     <template v-else>{{ prefix }}{{ display }}%{{ suffix }}</template>
   </span>
 </template>
 
 <style scoped>
-.eff-text {
-  font-weight: inherit;
-}
+.eff-text { font-weight: inherit; font-variant-numeric: tabular-nums; }
 
 .eff-text.tier-excellent { color: var(--eff-positive); }
 .eff-text.tier-good { color: var(--fb-info); }

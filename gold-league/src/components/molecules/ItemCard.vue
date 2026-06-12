@@ -1,6 +1,8 @@
 <script setup>
+import { ref } from 'vue'
 import ItemHoverCard from './ItemHoverCard.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
+import BorderBeam from '@/components/atoms/BorderBeam.vue'
 import SelectCheckbox from '@/components/atoms/SelectCheckbox.vue'
 import TierPill from '@/components/atoms/TierPill.vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
@@ -10,13 +12,29 @@ defineProps({
   item: { type: Object, required: true },
   selected: { type: Boolean, default: false },
   selecting: { type: Boolean, default: false },
+  // gold beam for the top-efficiency items in the current view
+  beam: { type: Boolean, default: false },
 })
 
 defineEmits(['toggle', 'image-failed'])
+
+// pointer-tracked spotlight (CSS vars only — paints a small card, no layout)
+const spot = ref({ x: '50%', y: '50%' })
+function onPointerMove(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  spot.value = { x: `${e.clientX - rect.left}px`, y: `${e.clientY - rect.top}px` }
+}
 </script>
 
 <template>
-  <div @click="$emit('toggle', item)" :class="['item-card', { selected, selecting }]">
+  <div
+    @click="$emit('toggle', item)"
+    @pointermove="onPointerMove"
+    :class="['item-card', { selected, selecting }]"
+    :style="{ '--spot-x': spot.x, '--spot-y': spot.y }"
+  >
+    <BorderBeam v-if="beam" :duration="7" />
+    <span class="spotlight" aria-hidden="true"></span>
     <div class="card-header">
       <ItemHoverCard :item="item" :mobile-tap="false">
         <ItemIcon :item="item" size="hero" :alt="item.name" class="card-img" @failed="$emit('image-failed', $event)" />
@@ -75,6 +93,25 @@ defineEmits(['toggle', 'image-failed'])
 .item-card.selecting { animation: selectPulse 0.4s ease; }
 
 @keyframes selectPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+/* pointer-tracked gold sheen */
+.spotlight {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-standard);
+  background: radial-gradient(220px circle at var(--spot-x) var(--spot-y),
+    color-mix(in srgb, var(--accent-lead) 14%, transparent), transparent 65%);
+  z-index: var(--z-raised);
+}
+
+.item-card:hover .spotlight { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce), (hover: none) {
+  .spotlight { display: none; }
+}
 
 .card-header {
   position: relative;

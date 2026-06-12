@@ -159,6 +159,12 @@ h2 { font-size: 1.875rem; line-height: 2.25rem; }
 h3 { font-size: 1.5rem; line-height: 2rem; }
 h4 { font-size: 1.25rem; line-height: 1.75rem; }
 
+/* Text selection in brand gold */
+::selection {
+  background: color-mix(in srgb, var(--accent-lead) 30%, transparent);
+  color: var(--fg-primary);
+}
+
 /* Focus styles */
 *:focus-visible {
   outline: 2px solid var(--gold);
