@@ -110,12 +110,12 @@
      Layer 3 — component tokens (added as components are built)
      ------------------------------------------------------------------ */
 
-  /* AppFooter — legacy off-palette violet theme, kept verbatim in Phase 2.
-     Phase 3 retheme candidate (gold-on-dark like the rest of the app). */
-  --footer-accent: oklch(0.6056 0.2189 292.72);        /* #8b5cf6 */
-  --footer-accent-bright: oklch(0.7889 0.1284 301.61); /* #c9a6ff */
-  --footer-bg: oklch(0.2101 0.0318 264.66);            /* rgb(17,24,39) */
-  --footer-bg-deep: oklch(0.1663 0.0262 269.37);       /* #0a0e1a */
+  /* AppFooter + skeletons — rethemed to brand gold in Phase 3.4
+     (was an off-palette violet one-off inherited from the legacy Footer). */
+  --footer-accent: var(--p-gold-500);
+  --footer-accent-bright: var(--p-gold-400);
+  --footer-bg: var(--p-neutral-925);
+  --footer-bg-deep: var(--p-neutral-950);
 
   /* ------------------------------------------------------------------
      Layering — every fixed/absolute surface uses this scale.

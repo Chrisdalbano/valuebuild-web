@@ -111,5 +111,5 @@ Ordered by impact-per-effort; each is independently shippable:
 
 - [x] Phase 1 — Tailwind v4 + tokens (pixel-identical) — shipped 2026-06-12, spec: `docs/design/tokens.md`
 - [x] Phase 2 — atomic decomposition (explorer / compare / builds / about + chrome) — shipped 2026-06-12, specs: `docs/design/*-decomposition.md`
-- [ ] Phase 3 — Inspira pass (hero, badges, spotlight cards, border-beam, boards, chrome, skeletons)
+- [x] Phase 3 — Inspira pass (hero, badges, spotlight cards, border-beam, boards, chrome, skeletons) — shipped 2026-06-12, spec: `docs/design/inspira-pass.md`
 - [ ] Phase 4 — features (shareable builds → patch diff → budget optimizer → champion context → …)

@@ -1,6 +1,6 @@
 # Phase 3 — Inspira pass + visual core fixes
 
-**Status:** IN PROGRESS · 2026-06-12 · Phase 3 of `docs/UI-MIGRATION-INSPIRA-ATOMIC.md`
+**Status:** SHIPPED · 2026-06-12 · Phase 3 of `docs/UI-MIGRATION-INSPIRA-ATOMIC.md`
 **Brief from Christian:** professional, usable, steady UI; fix broken visuals — popups/z-index, non-reused components, icon availability, lazy loading. Item icons become ONE component reused everywhere, able to "extend into" a floating stats card. Full rebuild authority.
 
 ## Slice 1 — The item-icon system (the core fix)
