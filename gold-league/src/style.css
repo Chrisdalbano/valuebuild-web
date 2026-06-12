@@ -33,6 +33,12 @@
   --color-support: var(--accent-support);
   --color-support-tint: var(--accent-support-tint);
 
+  /* item tiers */
+  --color-tier-legendary: var(--tier-legendary);
+  --color-tier-epic: var(--tier-epic);
+  --color-tier-component: var(--tier-component);
+  --color-tier-basic: var(--tier-basic);
+
   /* efficiency verdicts */
   --color-eff-positive: var(--eff-positive);
   --color-eff-neutral: var(--eff-neutral);

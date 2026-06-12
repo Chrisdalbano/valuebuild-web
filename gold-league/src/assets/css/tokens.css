@@ -44,6 +44,9 @@
   --p-neutral-400: oklch(0.7118 0.0129 286.07); /* rgb(161,161,170) */
   --p-neutral-50: oklch(0.9851 0 89.88);        /* rgb(250,250,250) */
 
+  /* Violet — epic-tier accent. 500 = legacy rgb(168,85,247) */
+  --p-violet-500: oklch(0.6268 0.2325 303.9);
+
   /* Feedback — current values, tokenized */
   --p-feedback-success: oklch(0.7227 0.192 149.58);  /* rgb(34,197,94)  */
   --p-feedback-warning: oklch(0.7952 0.1617 86.05);  /* rgb(234,179,8)  */
@@ -86,6 +89,12 @@
   --eff-positive: oklch(0.6959 0.1491 162.48);
   --eff-neutral: oklch(0.7686 0.1647 70.08);
   --eff-negative: oklch(0.6368 0.2078 25.33);
+
+  /* Item tiers — the domain's 4-tier taxonomy (badges, pills) */
+  --tier-legendary: var(--p-gold-500);
+  --tier-epic: var(--p-violet-500);
+  --tier-component: var(--p-feedback-info);
+  --tier-basic: var(--p-neutral-550);
 
   /* Feedback */
   --fb-success: var(--p-feedback-success);

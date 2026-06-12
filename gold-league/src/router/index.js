@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ItemTable from '../components/ItemTable.vue'
+import ItemExplorer from '../components/organisms/ItemExplorer.vue'
 import ItemCompare from '../components/ItemCompare.vue'
 import BuildOptimizer from '../components/BuildOptimizer.vue'
 import AboutSection from '../components/AboutSection.vue'
@@ -8,7 +8,7 @@ const routes = [
   {
     path: '/',
     name: 'Items',
-    component: ItemTable,
+    component: ItemExplorer,
     meta: { title: 'Items Database' },
     props: true
   },
