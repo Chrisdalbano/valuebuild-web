@@ -80,7 +80,7 @@ defineEmits(['toggle', 'image-failed', 'close-tooltip'])
   border-color: var(--accent-lead);
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--accent-lead) 10%, transparent),
-    color-mix(in srgb, var(--p-rust-500) 10%, transparent));
+    color-mix(in srgb, var(--accent-warm) 10%, transparent));
   box-shadow: 0 0 20px color-mix(in srgb, var(--accent-lead) 30%, transparent),
     inset 0 0 20px color-mix(in srgb, var(--accent-lead) 10%, transparent);
 }

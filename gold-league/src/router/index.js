@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ItemExplorer from '../components/organisms/ItemExplorer.vue'
-import ItemCompare from '../components/ItemCompare.vue'
+import CompareBoard from '../components/organisms/CompareBoard.vue'
 import BuildOptimizer from '../components/BuildOptimizer.vue'
 import AboutSection from '../components/AboutSection.vue'
 
@@ -15,7 +15,7 @@ const routes = [
   {
     path: '/compare',
     name: 'Compare',
-    component: ItemCompare,
+    component: CompareBoard,
     meta: { title: 'Item Comparison' },
     props: true
   },

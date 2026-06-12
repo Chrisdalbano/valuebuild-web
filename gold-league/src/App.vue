@@ -104,7 +104,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import Navigation from './components/Navigation.vue'
-import ItemCompare from './components/ItemCompare.vue'
 import ItemBreakdown from './components/ItemBreakdown.vue'
 import QuickInsights from './components/QuickInsights.vue'
 import BuildOptimizer from './components/BuildOptimizer.vue'

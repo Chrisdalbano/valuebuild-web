@@ -24,3 +24,43 @@ export function sanitizeDescription(desc) {
     .replace(/&nbsp;/g, ' ')
     .trim()
 }
+
+// Riot description → display HTML (v-html target; trusted DDragon data,
+// script tags stripped, Riot's semantic tags mapped to styled spans)
+export function formatRiotDescription(html) {
+  if (!html) return ''
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<br\s*\/?>/gi, '<br>')
+    .replace(/<\/?passive>/gi, '')
+    .replace(/<\/?active>/gi, '')
+    .replace(/<\/?unique>/gi, '<span class="unique-tag">')
+    .replace(/<\/?stats>/gi, '<span class="stats-tag">')
+    .replace(/<\/?attention>/gi, '<strong class="attention">')
+    .replace(/<\/?li>/gi, '• ')
+    .replace(/<\/?ul>/gi, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '<br><br>')
+    .trim()
+}
+
+// Recipe lookups — resolve an item's component build path against the full list
+export function getComponents(item, allItems) {
+  if (!item.from || !allItems) return []
+  return item.from.map(id => allItems.find(i => i.id === id)).filter(Boolean)
+}
+
+export function getComponentsCost(item, allItems) {
+  return getComponents(item, allItems).reduce((sum, comp) => sum + (comp.cost || 0), 0)
+}
+
+export function getCombineCost(item) {
+  if (!item.gold) return 0
+  return item.gold.base || 0
+}
+
+// Legacy compare-route image fallback: swap to a flat grey placeholder
+export function imgPlaceholderOnError(e) {
+  e.target.src =
+    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect fill="%2327272a" width="64" height="64"/%3E%3C/svg%3E'
+}

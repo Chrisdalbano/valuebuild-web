@@ -83,6 +83,10 @@
   --accent-support: var(--p-azure-500);
   --accent-support-tint: var(--p-azure-tint);
 
+  /* Warm accent = rust (gradients pairing with gold, danger-adjacent warmth) */
+  --accent-warm: var(--p-rust-500);
+  --accent-warm-hover: var(--p-rust-400);
+
   /* Efficiency verdicts — the app's core semantic.
      Values = the colors the monoliths hardcode today (#10b981/#f59e0b/#ef4444);
      EfficiencyBadge (Phase 2) consumes these instead. */

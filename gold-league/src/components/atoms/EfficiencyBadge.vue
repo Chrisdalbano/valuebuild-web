@@ -4,8 +4,12 @@ import { efficiencyTier } from '@/utils/itemHelpers'
 
 const props = defineProps({
   value: { type: Number, required: true },
-  // 'text' = colored percentage, 'rating' = tinted pill with the verdict label
+  // 'text' = colored percentage, 'rating' = tinted pill with the verdict label,
+  // 'label' = plain colored verdict word
   variant: { type: String, default: 'text' },
+  decimals: { type: Number, default: null }, // null = render value as-is
+  prefix: { type: String, default: '' },
+  suffix: { type: String, default: '' },
 })
 
 const tier = computed(() => efficiencyTier(props.value))
@@ -13,12 +17,15 @@ const classes = computed(() => [
   props.variant === 'rating' ? 'eff-rating' : 'eff-text',
   `tier-${tier.value.key}`,
 ])
+const display = computed(() =>
+  props.decimals === null ? props.value : props.value.toFixed(props.decimals)
+)
 </script>
 
 <template>
   <span :class="classes">
-    <template v-if="variant === 'rating'">{{ tier.label }}</template>
-    <template v-else>{{ value }}%</template>
+    <template v-if="variant === 'rating' || variant === 'label'">{{ tier.label }}</template>
+    <template v-else>{{ prefix }}{{ display }}%{{ suffix }}</template>
   </span>
 </template>
 
