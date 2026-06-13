@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import BuildItemRow from './BuildItemRow.vue'
+import ChampionTimelineChart from './ChampionTimelineChart.vue'
 import { useChampionAnalysis } from '@/composables/useChampionAnalysis'
 
 // Per-champion itemization analysis. Speculative suggestions — itemIds resolve
@@ -17,6 +18,13 @@ const { analysis, loading, error, pending } = useChampionAnalysis(championId)
 
 const byId = computed(() => new Map(props.allItems.map(i => [i.id, i])))
 const resolve = ids => (ids || []).map(id => byId.value.get(id)).filter(Boolean)
+
+// cumulative gold per progression stage (exact, from real item costs) for the chart
+const timelineStages = computed(() =>
+  (analysis.value?.progression || [])
+    .map(s => ({ name: s.stage, gold: resolve(s.itemIds).reduce((sum, it) => sum + (it.cost || 0), 0) }))
+    .filter(s => s.gold > 0)
+)
 const tryBuild = ids => {
   const valid = resolve(ids).map(i => i.id)
   if (valid.length) router.push({ path: '/builds', query: { b: valid.join(',') } })
@@ -56,6 +64,7 @@ const tryBuild = ids => {
             <p v-if="s.note" class="ca-text">{{ s.note }}</p>
           </div>
         </div>
+        <ChampionTimelineChart v-if="timelineStages.length >= 2" :stages="timelineStages" />
       </div>
 
       <div v-if="analysis.situational?.length" class="ca-block">
