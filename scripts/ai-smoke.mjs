@@ -75,6 +75,10 @@ await mock.route('**/api/items/*/ai', route => route.fulfill({
     effects: [{
       name: 'On-hit', estimatedGoldValue: 520, confidence: 'medium',
       reasoning: ['step one', 'step two'], baseStatEquivalence: '≈ 15 AD',
+      comparisons: [
+        { stat: 'Attack Damage', amount: 15, gold: 525 },
+        { stat: 'Health', amount: 195, gold: 520 },
+      ],
     }],
     summary: 'mock summary', caveats: 'mock caveats',
     bestOn: {
@@ -97,6 +101,11 @@ await check('ready-state renders the effect→stat→gold map with AI badges', a
   if (badges < 1) throw new Error('no AI badges rendered')
   const equiv = await mock.locator('.flow-equiv').first().textContent()
   if (!/AD/.test(equiv)) throw new Error(`equivalence missing: ${equiv}`)
+  // quantitative comparison chips (actual numbers vs base stats)
+  const chips = await mock.locator('.ai-effect-panel .compare-chip').count()
+  if (chips < 2) throw new Error(`expected comparison chips, got ${chips}`)
+  const chip = await mock.locator('.ai-effect-panel .compare-chip').first().textContent()
+  if (!/\d/.test(chip)) throw new Error(`comparison chip has no number: ${chip}`)
 })
 
 await check('ready-state renders the Best-On champion rows', async () => {

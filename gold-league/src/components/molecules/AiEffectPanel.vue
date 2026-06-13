@@ -11,6 +11,9 @@ const props = defineProps({
 })
 
 const { analysis, loading, error, pending } = useAiAnalysis(toRef(props, 'item'))
+
+// round 26.65 -> 27, keep small decimals readable
+const formatAmount = n => (typeof n === 'number' ? Math.round(n) : n)
 </script>
 
 <template>
@@ -53,6 +56,12 @@ const { analysis, loading, error, pending } = useAiAnalysis(toRef(props, 'item')
             <span class="flow-equiv">{{ eff.baseStatEquivalence }}</span>
             <span class="flow-arrow" aria-hidden="true">→</span>
             <AiBadge :value="eff.estimatedGoldValue" :confidence="eff.confidence" />
+          </div>
+          <div v-if="eff.comparisons && eff.comparisons.length" class="effect-compares">
+            <span class="compare-lead">≈ worth</span>
+            <span v-for="(c, k) in eff.comparisons" :key="k" class="compare-chip">
+              <strong>{{ formatAmount(c.amount) }}</strong> {{ c.stat }}
+            </span>
           </div>
           <ul v-if="eff.reasoning && eff.reasoning.length" class="effect-reasoning">
             <li v-for="(step, j) in eff.reasoning" :key="j">{{ step }}</li>
@@ -113,6 +122,18 @@ const { analysis, loading, error, pending } = useAiAnalysis(toRef(props, 'item')
 .flow-effect { color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; }
 .flow-arrow { color: var(--accent-support); font-weight: 700; }
 .flow-equiv { color: var(--fg-secondary); font-size: 0.875rem; }
+
+.effect-compares { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+.compare-lead { color: var(--fg-muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.compare-chip {
+  font-size: 0.8125rem;
+  color: var(--fg-secondary);
+  background: var(--accent-support-tint);
+  border: 1px solid color-mix(in srgb, var(--accent-support) 25%, transparent);
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+}
+.compare-chip strong { color: var(--accent-support); font-weight: 700; }
 
 .effect-reasoning { margin: 0.75rem 0 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; }
 .effect-reasoning li { color: var(--fg-muted); font-size: 0.8125rem; line-height: 1.5; }

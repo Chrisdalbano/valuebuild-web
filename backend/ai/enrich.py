@@ -14,7 +14,10 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .gemini_client import generate_json, is_configured, _model
-from .prompts import build_effect_prompt, build_digest_prompt, build_best_on_prompt
+from .prompts import (
+    build_effect_prompt, build_digest_prompt, build_best_on_prompt,
+    EFFECT_PROMPT_VERSION, BEST_ON_PROMPT_VERSION, DIGEST_PROMPT_VERSION,
+)
 
 logger = logging.getLogger("ai.enrich")
 
@@ -46,7 +49,7 @@ def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
 # mid-string (finish_reason=MAX_TOKENS) -> parse failure -> None. Give thinking +
 # JSON real headroom: effects responses are small, the 80-item digest is large.
 EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
-DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "8192"))
+DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "16384"))
 BEST_ON_MAX_TOKENS = int(os.getenv("AI_BEST_ON_MAX_TOKENS", "3072"))
 
 
@@ -61,8 +64,11 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
     enriched = skipped = failed = 0
     logger.info("AI effect enrichment: %d curated items for patch %s", len(curated), patch)
     for it in curated:
-        # field-specific skip: the doc may already exist from the best-on pass
-        if await ai_col.find_one({"_id": it["id"], "patch": patch, "effects": {"$exists": True}}):
+        # skip only if effects exist AT THE CURRENT PROMPT VERSION (bumping the
+        # version in prompts.py forces a refresh of stale cached effects)
+        if await ai_col.find_one(
+            {"_id": it["id"], "patch": patch, "effectsVersion": EFFECT_PROMPT_VERSION}
+        ):
             skipped += 1
             continue
         result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS)
@@ -76,6 +82,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
                     "patch": patch,
                     "model": _model(),
                     "effects": result.get("effects", []),
+                    "effectsVersion": EFFECT_PROMPT_VERSION,
                     "summary": result.get("summary", ""),
                     "caveats": result.get("caveats", ""),
                     "generatedAt": datetime.utcnow(),
@@ -102,7 +109,9 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
     enriched = skipped = failed = 0
     logger.info("AI best-on: %d curated items for patch %s", len(curated), patch)
     for it in curated:
-        if await ai_col.find_one({"_id": it["id"], "patch": patch, "bestOn": {"$exists": True}}):
+        if await ai_col.find_one(
+            {"_id": it["id"], "patch": patch, "bestOn.version": BEST_ON_PROMPT_VERSION}
+        ):
             skipped += 1
             continue
         result = await _gen(
@@ -118,6 +127,7 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
                     "bestOn": {
                         "champions": result.get("champions", []),
                         "caveats": result.get("caveats", ""),
+                        "version": BEST_ON_PROMPT_VERSION,
                         "model": BEST_ON_MODEL,
                         "generatedAt": datetime.utcnow(),
                     },
@@ -132,11 +142,11 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
     return {"bestOn": enriched, "bestOnSkipped": skipped, "bestOnFailed": failed}
 
 
-async def generate_research_digest(items, patch, ai_col) -> bool:
+async def generate_research_digest(items, patch, ai_col, champions=None) -> bool:
     curated = select_curated_items(items)
     if not curated:
         return False
-    digest = await _gen(build_digest_prompt(curated, patch), DIGEST_MAX_TOKENS)
+    digest = await _gen(build_digest_prompt(curated, patch, champions), DIGEST_MAX_TOKENS)
     if not isinstance(digest, dict):
         return False
     await ai_col.replace_one(
@@ -145,6 +155,7 @@ async def generate_research_digest(items, patch, ai_col) -> bool:
             "_id": "research_digest",
             "patch": patch,
             "model": _model(),
+            "version": DIGEST_PROMPT_VERSION,
             "outliers": digest.get("outliers", []),
             "effectSpotlights": digest.get("effectSpotlights", []),
             "experimentalBuilds": digest.get("experimentalBuilds", []),
@@ -179,7 +190,7 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         # long (resumable) per-item passes can't starve it on a constrained worker.
         # Then best-on (the new feature) and effects — both resumable + idempotent,
         # so repeated /api/ai/refresh triggers converge.
-        digest_ok = await generate_research_digest(items, patch, ai_col)
+        digest_ok = await generate_research_digest(items, patch, ai_col, champions)
         best_on_stats = await generate_best_on(items, champions, patch, ai_col)
         effect_stats = await enrich_item_effects(items, patch, ai_col)
 

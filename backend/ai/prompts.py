@@ -10,6 +10,13 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from efficiency import STAT_VALUES  # noqa: E402
 
+# Bump a version to force re-generation of that pass on the next enrichment run
+# (the resumable skip-check compares stored version == current). Use when the
+# prompt/JSON shape changes so cached docs for the SAME patch get refreshed.
+EFFECT_PROMPT_VERSION = 2
+BEST_ON_PROMPT_VERSION = 1
+DIGEST_PROMPT_VERSION = 2
+
 # Human-readable base-stat gold values for the prompt (per 1 point unless noted).
 _STAT_LABELS = {
     "FlatPhysicalDamageMod": "Attack Damage (per 1)",
@@ -55,7 +62,11 @@ Ground every estimate in these base-stat gold values (this is the project's grou
 
 Rules:
 - Value ONLY the non-stat effects. The flat stats are already priced elsewhere — do not re-value them.
-- Express each effect's value by relating it to base stats (e.g. "a 200 HP shield every 20s ≈ X gold of effective Health").
+- For EACH effect, give a hard number (estimatedGoldValue) AND express that gold as concrete amounts
+  of 2-3 RELEVANT base stats using the table above — e.g. 480g = "≈16 Magic Resist" OR "≈17 Armor" OR
+  "≈178 Health". Use the table's gold-per-stat to do the division; show the actual numbers.
+- Pick the comparison stats that fit the effect: shields/heals/tenacity -> MR/Armor/Health (effective HP);
+  on-hit/empowered attacks/burn -> Attack Damage or Ability Power (think in terms of total bonus damage).
 - Be explicit that these are APPROXIMATE estimates for a typical use case; real value varies by champion, matchup, and game state.
 - NEVER restate the item's overall efficiency as if effects were included; the canonical efficiency stays stat-only.
 - Output STRICT JSON only, no prose outside it."""
@@ -72,12 +83,17 @@ Return JSON with this exact shape:
       "estimatedGoldValue": <number, approximate gold value of THIS effect>,
       "confidence": "low" | "medium" | "high",
       "reasoning": ["short step", "short step"],
-      "baseStatEquivalence": "one line relating the value to base stats"
+      "baseStatEquivalence": "one line relating the value to base stats",
+      "comparisons": [
+        {{"stat": "Magic Resist" | "Armor" | "Health" | "Attack Damage" | "Ability Power",
+          "amount": <number of that stat this gold buys>, "gold": <gold = amount * table value>}}
+      ]
     }}
   ],
   "summary": "1-2 sentence plain-language takeaway",
   "caveats": "1 sentence on why this is approximate"
 }}
+Each effect's comparisons array should have 2-3 entries with REAL numbers derived from the table.
 If the item has no meaningful non-stat effect, return {{"effects": [], "summary": "...", "caveats": "..."}}."""
 
 
@@ -96,26 +112,45 @@ def build_effect_prompt(item: dict) -> str:
 
 _DIGEST_SYSTEM = """You are a League of Legends itemization researcher writing a \
 patch digest of DISCOVERIES for patch {patch}. You are given items with their \
-stat-only gold efficiency and effect text. Surface non-obvious findings.
+stat-only gold efficiency and effect text, plus the champion roster. Surface \
+non-obvious, SPECIFIC findings — not textbook meta knowledge.
 
-Frame everything as hypotheses, not facts. Output STRICT JSON only."""
+Ground every estimate in these base-stat gold values:
+{base_stats}
 
-_DIGEST_USER = """Items (name | cost | stat-efficiency% | short effect):
+Hard rules:
+- Quantify. Every outlier states its actual efficiency % and HOW FAR off it is, in gold terms
+  (e.g. "97% efficient — its passive adds ~450g, ≈15 MR of effective value, that the % ignores").
+- Effect spotlights must put a GOLD NUMBER on the effect and relate it to a base stat (MR/Armor/HP/AD/AP).
+- Experimental builds must be NON-OBVIOUS and CHAMPION-SPECIFIC. Name the champion (from the roster) and
+  the exact mechanic the build exploits. BAN generic meta stacks (e.g. Warmog's + Titanic on a generic
+  tank, standard ADC crit cores) — if it's a build everyone already runs, do not include it.
+- Use only itemIds from the provided list; use only champion names from the roster.
+- Frame everything as hypotheses, not facts. Output STRICT JSON only."""
+
+_DIGEST_USER = """Items (id | name | cost | stat-efficiency% | short effect):
 {item_lines}
+
+Champion roster (name | tags | range):
+{roster}
 
 Return JSON with this exact shape:
 {{
   "outliers": [
-    {{"itemId": "id", "name": "name", "claim": "why it's over/under-valued (hypothesis)", "direction": "overvalued" | "undervalued"}}
+    {{"itemId": "id", "name": "name", "efficiency": <number, the stat-only %>,
+      "direction": "overvalued" | "undervalued",
+      "claim": "quantified hypothesis citing gold/stat numbers"}}
   ],
   "effectSpotlights": [
-    {{"itemId": "id", "name": "name", "insight": "what its effect is really worth / linked mechanic"}}
+    {{"itemId": "id", "name": "name", "estimatedEffectGold": <number>,
+      "insight": "what the effect is worth in gold + the base-stat it compares to"}}
   ],
   "experimentalBuilds": [
-    {{"title": "build name", "itemIds": ["id", "id", "id"], "rationale": "why try this (hypothesis)"}}
+    {{"title": "build name", "forChampion": "champion from roster", "itemIds": ["id", "id", "id"],
+      "rationale": "the specific mechanic exploited + quantitative hook (NON-generic)"}}
   ]
 }}
-Limit to at most 6 outliers, 6 effectSpotlights, 4 experimentalBuilds. Use only itemIds from the list."""
+Limit to at most 6 outliers, 6 effectSpotlights, 4 experimentalBuilds."""
 
 
 _BEST_ON_SYSTEM = """You are a League of Legends itemization analyst. Given one \
@@ -173,7 +208,7 @@ def build_best_on_prompt(item: dict, champion_roster: list, patch: str) -> str:
     return f"{system}\n\n{user}"
 
 
-def build_digest_prompt(items: list, patch: str) -> str:
+def build_digest_prompt(items: list, patch: str, champions: list = None) -> str:
     lines = []
     for it in items:
         effect = strip_html(it.get("description", ""))[:90]
@@ -181,6 +216,13 @@ def build_digest_prompt(items: list, patch: str) -> str:
             f"{it.get('id')} | {it.get('name')} | {it.get('cost')}g | "
             f"{it.get('goldEfficiency')}% | {effect}"
         )
-    system = _DIGEST_SYSTEM.format(patch=patch)
-    user = _DIGEST_USER.format(item_lines="\n".join(lines))
+    roster_lines = []
+    for c in (champions or []):
+        tags = "/".join(c.get("tags", [])) or "?"
+        roster_lines.append(f"{c.get('name')} | {tags} | {c.get('rangeType', '?')}")
+    system = _DIGEST_SYSTEM.format(patch=patch, base_stats=_base_stat_table())
+    user = _DIGEST_USER.format(
+        item_lines="\n".join(lines),
+        roster="\n".join(roster_lines) or "(roster unavailable)",
+    )
     return f"{system}\n\n{user}"
