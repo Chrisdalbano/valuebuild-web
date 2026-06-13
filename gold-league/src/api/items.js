@@ -1,7 +1,11 @@
 import axios from 'axios'
 
 // Use environment variable for API URL, fallback to localhost for development
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+// VITE_API_BASE_URL overrides when set; otherwise dev hits the local backend and
+// production builds hit the live Render API (so the hosted bundle is always correct).
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? 'https://valuebuild-web.onrender.com' : 'http://localhost:8000')
 
 export const itemsApi = {
   /**

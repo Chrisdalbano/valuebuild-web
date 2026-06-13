@@ -23,10 +23,19 @@ app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 
+# Allow the Firebase Hosting domains for this project (frontend moved off Netlify)
+# without needing a CORS_ORIGINS env change. Scoped to this project's domains +
+# the custom domain. Override/extend via CORS_ORIGINS env as before.
+CORS_ORIGIN_REGEX = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https://(buildvalue-b202d\.web\.app|buildvalue-b202d\.firebaseapp\.com|buildvalue\.chrisdalbano\.com)",
+)
+
 # CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
