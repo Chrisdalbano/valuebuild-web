@@ -40,13 +40,21 @@ await check('grid details button opens the breakdown modal', async () => {
 
 await check('modal shows the AI panel with a speculative disclaimer', async () => {
   await page.waitForSelector('.ai-effect-panel', { timeout: 5000 })
-  const disc = await page.locator('.ai-disclaimer').textContent()
+  const disc = await page.locator('.ai-effect-panel .ai-disclaimer').textContent()
   if (!/speculative/i.test(disc)) throw new Error(`disclaimer: ${disc}`)
 })
 
 await check('AI panel degrades gracefully (pending/empty, never blank or thrown)', async () => {
   const body = await page.locator('.ai-effect-panel').textContent()
   if (!body || !body.trim()) throw new Error('AI panel empty')
+})
+
+await check('modal shows the Best-On panel with a speculative disclaimer', async () => {
+  await page.waitForSelector('.item-best-on-panel', { timeout: 5000 })
+  const disc = await page.locator('.item-best-on-panel .ai-disclaimer').textContent()
+  if (!/speculative/i.test(disc)) throw new Error(`disclaimer: ${disc}`)
+  const body = await page.locator('.item-best-on-panel').textContent()
+  if (!body || !body.trim()) throw new Error('Best-On panel empty')
 })
 
 await check('table-view details button also opens the modal', async () => {
@@ -69,6 +77,13 @@ await mock.route('**/api/items/*/ai', route => route.fulfill({
       reasoning: ['step one', 'step two'], baseStatEquivalence: '≈ 15 AD',
     }],
     summary: 'mock summary', caveats: 'mock caveats',
+    bestOn: {
+      champions: [
+        { name: 'Aatrox', why: 'kit synergy reason', synergyStat: 'OnHit', confidence: 'high' },
+        { name: 'Mundo', why: 'sustain reason', synergyStat: 'Health', confidence: 'medium' },
+      ],
+      caveats: 'varies by matchup',
+    },
   }),
 }))
 
@@ -82,6 +97,16 @@ await check('ready-state renders the effect→stat→gold map with AI badges', a
   if (badges < 1) throw new Error('no AI badges rendered')
   const equiv = await mock.locator('.flow-equiv').first().textContent()
   if (!/AD/.test(equiv)) throw new Error(`equivalence missing: ${equiv}`)
+})
+
+await check('ready-state renders the Best-On champion rows', async () => {
+  await mock.waitForSelector('.item-best-on-panel .champ-row', { timeout: 5000 })
+  const rows = await mock.locator('.item-best-on-panel .champ-row').count()
+  if (rows !== 2) throw new Error(`expected 2 champion rows, got ${rows}`)
+  const name = await mock.locator('.item-best-on-panel .champ-name').first().textContent()
+  if (!/Aatrox/.test(name)) throw new Error(`champ name: ${name}`)
+  const stat = await mock.locator('.item-best-on-panel .champ-stat').first().textContent()
+  if (!/OnHit/.test(stat)) throw new Error(`synergy stat missing: ${stat}`)
 })
 
 // --- AI Research tab: pending state (real backend) ---

@@ -67,9 +67,11 @@ def _parse_json(text: str):
     return json.loads(cleaned)
 
 
-def generate_json(prompt: str, *, temperature: float = 0.4, max_output_tokens: int = 2048):
+def generate_json(prompt: str, *, temperature: float = 0.4, max_output_tokens: int = 2048, model: str = None):
     """Call Gemini Flash for a JSON object/array. Returns the parsed value, or
-    None on any failure (no quota, network, parse error, missing key)."""
+    None on any failure (no quota, network, parse error, missing key). Pass
+    `model` to route a specific call (e.g. the cheaper gemini-flash-lite-latest)
+    instead of the default GEMINI_MODEL."""
     client = _get_client()
     if client is None:
         return None
@@ -80,7 +82,7 @@ def generate_json(prompt: str, *, temperature: float = 0.4, max_output_tokens: i
             temperature=temperature,
             max_output_tokens=max_output_tokens,
         )
-        resp = client.models.generate_content(model=_model(), contents=prompt, config=config)
+        resp = client.models.generate_content(model=model or _model(), contents=prompt, config=config)
         return _parse_json(resp.text)
     except Exception as e:
         logger.warning("Gemini call failed: %s", _redact(str(e))[:200])

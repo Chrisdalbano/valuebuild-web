@@ -6,6 +6,7 @@ import BreakdownRecipe from '../molecules/BreakdownRecipe.vue'
 import BreakdownStatAnalysis from '../molecules/BreakdownStatAnalysis.vue'
 import BreakdownUpgrades from '../molecules/BreakdownUpgrades.vue'
 import AiEffectPanel from '../molecules/AiEffectPanel.vue'
+import ItemBestOnPanel from '../molecules/ItemBestOnPanel.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 import { getCombineCost } from '@/utils/itemHelpers'
 
@@ -100,6 +101,8 @@ function sanitizeHtml(html) {
         </div>
 
         <AiEffectPanel :key="item.id" :item="item" />
+
+        <ItemBestOnPanel :key="`best-${item.id}`" :item="item" />
 
         <BreakdownUpgrades v-if="buildsInto.length > 0" :upgrades="buildsInto" @select="$emit('select', $event)" />
       </div>

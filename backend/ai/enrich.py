@@ -14,13 +14,18 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .gemini_client import generate_json, is_configured, _model
-from .prompts import build_effect_prompt, build_digest_prompt
+from .prompts import build_effect_prompt, build_digest_prompt, build_best_on_prompt
 
 logger = logging.getLogger("ai.enrich")
 
 CURATED_LIMIT = int(os.getenv("AI_CURATED_LIMIT", "80"))
 # seconds between Gemini calls — default respects ~15 RPM free-tier limits
 CALL_DELAY = float(os.getenv("AI_CALL_DELAY_SECONDS", "4"))
+
+# "Best on" is a lighter task (name champions + why) — route it to the cheaper,
+# faster flash-lite model, with a shorter delay (lite has higher RPM headroom).
+BEST_ON_MODEL = os.getenv("AI_BEST_ON_MODEL", "gemini-flash-lite-latest")
+BEST_ON_CALL_DELAY = float(os.getenv("AI_BEST_ON_CALL_DELAY_SECONDS", "2"))
 
 
 def _has_effect(item: dict) -> bool:
@@ -42,11 +47,12 @@ def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
 # JSON real headroom: effects responses are small, the 80-item digest is large.
 EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
 DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "8192"))
+BEST_ON_MAX_TOKENS = int(os.getenv("AI_BEST_ON_MAX_TOKENS", "3072"))
 
 
-async def _gen(prompt: str, max_output_tokens: int = 3072):
+async def _gen(prompt: str, max_output_tokens: int = 3072, model: str = None):
     """Run the sync Gemini call off the event loop."""
-    fn = partial(generate_json, max_output_tokens=max_output_tokens)
+    fn = partial(generate_json, max_output_tokens=max_output_tokens, model=model)
     return await asyncio.get_event_loop().run_in_executor(None, fn, prompt)
 
 
@@ -55,15 +61,16 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
     enriched = skipped = failed = 0
     logger.info("AI effect enrichment: %d curated items for patch %s", len(curated), patch)
     for it in curated:
-        if await ai_col.find_one({"_id": it["id"], "patch": patch}):
+        # field-specific skip: the doc may already exist from the best-on pass
+        if await ai_col.find_one({"_id": it["id"], "patch": patch, "effects": {"$exists": True}}):
             skipped += 1
             continue
         result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS)
         if isinstance(result, dict):
-            await ai_col.replace_one(
+            # $set (not replace) so a prior best-on field on this doc survives
+            await ai_col.update_one(
                 {"_id": it["id"]},
-                {
-                    "_id": it["id"],
+                {"$set": {
                     "itemId": it["id"],
                     "name": it.get("name", ""),
                     "patch": patch,
@@ -72,7 +79,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
                     "summary": result.get("summary", ""),
                     "caveats": result.get("caveats", ""),
                     "generatedAt": datetime.utcnow(),
-                },
+                }},
                 upsert=True,
             )
             enriched += 1
@@ -81,6 +88,48 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
         await asyncio.sleep(CALL_DELAY)
     logger.info("AI effect enrichment done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
     return {"enriched": enriched, "skipped": skipped, "failed": failed, "curated": len(curated)}
+
+
+async def generate_best_on(items, champions, patch, ai_col) -> dict:
+    """For each curated item, ask flash-lite which champions abuse it and why,
+    grounded in the champion roster. Resumable (skips docs that already have a
+    bestOn for this patch) and idempotent via $set so it composes with the
+    effects pass and converges across repeated /api/ai/refresh triggers."""
+    curated = select_curated_items(items)
+    if not champions:
+        logger.warning("best-on skipped: no champion roster (run champion ETL)")
+        return {"bestOn": 0, "bestOnSkipped": 0, "bestOnFailed": 0}
+    enriched = skipped = failed = 0
+    logger.info("AI best-on: %d curated items for patch %s", len(curated), patch)
+    for it in curated:
+        if await ai_col.find_one({"_id": it["id"], "patch": patch, "bestOn": {"$exists": True}}):
+            skipped += 1
+            continue
+        result = await _gen(
+            build_best_on_prompt(it, champions, patch), BEST_ON_MAX_TOKENS, BEST_ON_MODEL
+        )
+        if isinstance(result, dict) and isinstance(result.get("champions"), list):
+            await ai_col.update_one(
+                {"_id": it["id"]},
+                {"$set": {
+                    "itemId": it["id"],
+                    "name": it.get("name", ""),
+                    "patch": patch,
+                    "bestOn": {
+                        "champions": result.get("champions", []),
+                        "caveats": result.get("caveats", ""),
+                        "model": BEST_ON_MODEL,
+                        "generatedAt": datetime.utcnow(),
+                    },
+                }},
+                upsert=True,
+            )
+            enriched += 1
+        else:
+            failed += 1
+        await asyncio.sleep(BEST_ON_CALL_DELAY)
+    logger.info("AI best-on done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
+    return {"bestOn": enriched, "bestOnSkipped": skipped, "bestOnFailed": failed}
 
 
 async def generate_research_digest(items, patch, ai_col) -> bool:
@@ -121,14 +170,21 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
             {"isDeprecated": False, "imageValidated": True}, {"_id": 0}
         ).to_list(length=None)
         ai_col = db["ai_analysis"]
+        # compact roster for grounding best-on (name | tags | rangeType)
+        champions = await db["champions_cache"].find(
+            {}, {"_id": 0, "name": 1, "tags": 1, "rangeType": 1}
+        ).to_list(length=None)
 
-        # Digest first: it's a single Gemini call that only needs items_cache, so
-        # it must not be starved by the long (resumable) per-item effects loop —
-        # on a constrained worker the batch can recycle before the digest runs.
+        # Digest first: a single Gemini call that only needs items_cache, so the
+        # long (resumable) per-item passes can't starve it on a constrained worker.
+        # Then best-on (the new feature) and effects — both resumable + idempotent,
+        # so repeated /api/ai/refresh triggers converge.
         digest_ok = await generate_research_digest(items, patch, ai_col)
+        best_on_stats = await generate_best_on(items, champions, patch, ai_col)
         effect_stats = await enrich_item_effects(items, patch, ai_col)
 
-        return {"status": "complete", "patch": patch, "digest": digest_ok, **effect_stats}
+        return {"status": "complete", "patch": patch, "digest": digest_ok,
+                **best_on_stats, **effect_stats}
     except Exception as e:
         logger.warning("AI enrichment failed: %s", str(e)[:200])
         return {"status": "error", "error": str(e)[:200]}

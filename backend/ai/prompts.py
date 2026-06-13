@@ -118,6 +118,61 @@ Return JSON with this exact shape:
 Limit to at most 6 outliers, 6 effectSpotlights, 4 experimentalBuilds. Use only itemIds from the list."""
 
 
+_BEST_ON_SYSTEM = """You are a League of Legends itemization analyst. Given one \
+item and the current champion roster, name the champions who get the MOST value \
+from this item and explain why, referencing their kit (abilities, scalings, \
+resource, range) and the item's real stats/effect.
+
+These base-stat gold values are the project's ground truth (context only):
+{base_stats}
+
+Rules:
+- Pick champions ONLY from the provided roster; use their exact names.
+- At most 5 champions, strongest synergy first.
+- Each "why" is 1-2 sentences tying a concrete part of the champion's kit to this item.
+- These are hypotheses about synergy, NOT statements about the item's gold efficiency.
+- NEVER restate the item's overall efficiency; the canonical efficiency stays stat-only.
+- Output STRICT JSON only, no prose outside it."""
+
+_BEST_ON_USER = """Item: {name} (cost {cost}g)
+Flat stats: {stats}
+Effect text: {effect_text}
+
+Champion roster (name | tags | range):
+{roster}
+
+Return JSON with this exact shape:
+{{
+  "champions": [
+    {{
+      "name": "exact champion name from the roster",
+      "why": "1-2 sentences tying their kit to this item",
+      "synergyStat": "the key stat/effect they exploit (e.g. AbilityHaste, OnHit, Lethality, Shield)",
+      "confidence": "low" | "medium" | "high"
+    }}
+  ],
+  "caveats": "1 sentence: speculative, varies by matchup/patch"
+}}"""
+
+
+def build_best_on_prompt(item: dict, champion_roster: list, patch: str) -> str:
+    stats = ", ".join(sorted((item.get("statBreakdown") or {}).keys())) or "none"
+    effect_text = strip_html(item.get("description", "")) or "(no effect text)"
+    roster_lines = []
+    for c in champion_roster:
+        tags = "/".join(c.get("tags", [])) or "?"
+        roster_lines.append(f"{c.get('name')} | {tags} | {c.get('rangeType', '?')}")
+    system = _BEST_ON_SYSTEM.format(base_stats=_base_stat_table())
+    user = _BEST_ON_USER.format(
+        name=item.get("name", "?"),
+        cost=item.get("cost", 0),
+        stats=stats,
+        effect_text=effect_text[:1200],
+        roster="\n".join(roster_lines),
+    )
+    return f"{system}\n\n{user}"
+
+
 def build_digest_prompt(items: list, patch: str) -> str:
     lines = []
     for it in items:

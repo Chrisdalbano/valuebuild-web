@@ -7,6 +7,7 @@ import { itemsApi } from '@/api/items'
 // rather than an error.
 export function useAiAnalysis(itemRef) {
   const analysis = ref(null) // { effects, summary, caveats } when ready
+  const bestOn = ref(null)   // { champions, caveats } when present in the same doc
   const loading = ref(false)
   const error = ref(false)
   const pending = ref(false)
@@ -17,10 +18,12 @@ export function useAiAnalysis(itemRef) {
     error.value = false
     pending.value = false
     analysis.value = null
+    bestOn.value = null
     try {
       const data = await itemsApi.getItemAi(id)
       if (data && data.status === 'ready') {
         analysis.value = data
+        bestOn.value = data.bestOn || null
       } else {
         pending.value = true
       }
@@ -37,5 +40,5 @@ export function useAiAnalysis(itemRef) {
     { immediate: true }
   )
 
-  return { analysis, loading, error, pending }
+  return { analysis, bestOn, loading, error, pending }
 }
