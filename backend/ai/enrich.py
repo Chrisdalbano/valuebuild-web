@@ -8,6 +8,7 @@ for the current patch); throttled to respect the API rate limit.
 import os
 import asyncio
 import logging
+from functools import partial
 from datetime import datetime
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -35,9 +36,18 @@ def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
     return pool[:limit]
 
 
-async def _gen(prompt: str):
+# Flash models spend "thinking" tokens out of max_output_tokens BEFORE emitting
+# JSON; at the old 2048 cap thinking (~2k) starved the response and it truncated
+# mid-string (finish_reason=MAX_TOKENS) -> parse failure -> None. Give thinking +
+# JSON real headroom: effects responses are small, the 80-item digest is large.
+EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
+DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "8192"))
+
+
+async def _gen(prompt: str, max_output_tokens: int = 3072):
     """Run the sync Gemini call off the event loop."""
-    return await asyncio.get_event_loop().run_in_executor(None, generate_json, prompt)
+    fn = partial(generate_json, max_output_tokens=max_output_tokens)
+    return await asyncio.get_event_loop().run_in_executor(None, fn, prompt)
 
 
 async def enrich_item_effects(items, patch, ai_col) -> dict:
@@ -48,7 +58,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
         if await ai_col.find_one({"_id": it["id"], "patch": patch}):
             skipped += 1
             continue
-        result = await _gen(build_effect_prompt(it))
+        result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS)
         if isinstance(result, dict):
             await ai_col.replace_one(
                 {"_id": it["id"]},
@@ -77,7 +87,7 @@ async def generate_research_digest(items, patch, ai_col) -> bool:
     curated = select_curated_items(items)
     if not curated:
         return False
-    digest = await _gen(build_digest_prompt(curated, patch))
+    digest = await _gen(build_digest_prompt(curated, patch), DIGEST_MAX_TOKENS)
     if not isinstance(digest, dict):
         return False
     await ai_col.replace_one(
