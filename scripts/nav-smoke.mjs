@@ -15,6 +15,7 @@ const ROOTS = {
   Items: '.item-browser',
   Compare: '.compare-container, .empty-state',
   Builds: '.builds-section',
+  Research: '.research-board',
   About: '.about-landing',
 }
 
@@ -52,7 +53,7 @@ await page.goto(`${base}/`)
 await page.waitForSelector('.item-card', { timeout: 30000 })
 
 // every from→to sequence through the nav tabs
-const tabs = ['Items', 'About', 'Compare', 'Builds']
+const tabs = ['Items', 'About', 'Compare', 'Builds', 'Research']
 for (const from of tabs) {
   for (const to of tabs) {
     if (from === to) continue

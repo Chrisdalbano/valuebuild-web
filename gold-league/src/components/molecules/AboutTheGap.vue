@@ -2,9 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-// Phase A ships before the /research route exists; flip this to true (and the
-// route lands in Phase B3) to turn the teaser into a live link.
-const researchLive = ref(false)
+// The /research route exists as of Phase B3 — the teaser is now a live link.
+const researchLive = ref(true)
 const router = useRouter()
 
 function openResearch() {

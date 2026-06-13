@@ -15,6 +15,7 @@ const routes = computed(() => [
   { path: '/', name: 'Items', badge: null },
   { path: '/compare', name: 'Compare', badge: props.compareCount > 0 ? props.compareCount : null },
   { path: '/builds', name: 'Builds', badge: props.buildCount > 0 ? props.buildCount : null },
+  { path: '/research', name: 'Research', badge: null },
   { path: '/about', name: 'About', badge: null },
 ])
 

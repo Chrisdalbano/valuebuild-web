@@ -98,6 +98,7 @@ jobs:
           node ../scripts/hovercard-smoke.mjs http://localhost:4173
           node ../scripts/nav-smoke.mjs http://localhost:4173
           node ../scripts/popover-stability.mjs http://localhost:4173
+          node ../scripts/ai-smoke.mjs http://localhost:4173
           node ../scripts/features-smoke.mjs http://localhost:4173
           node ../scripts/pwa-smoke.mjs http://localhost:4173
 

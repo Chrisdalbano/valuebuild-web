@@ -84,6 +84,41 @@ await check('ready-state renders the effect→stat→gold map with AI badges', a
   if (!/AD/.test(equiv)) throw new Error(`equivalence missing: ${equiv}`)
 })
 
+// --- AI Research tab: pending state (real backend) ---
+await check('/research renders header + honesty banner + pending state', async () => {
+  await page.goto(`${base}/research`)
+  await page.waitForSelector('.research-board', { timeout: 30000 })
+  const banner = await page.locator('.honesty-banner').textContent()
+  if (!/hypotheses/i.test(banner)) throw new Error(`banner: ${banner}`)
+  // backend has no quota → pending state, not an error or blank
+  await page.waitForSelector('.research-state', { timeout: 5000 })
+})
+
+// --- AI Research tab: ready-state (route-mocked digest) ---
+const rmock = await browser.newPage({ viewport: { width: 1440, height: 1200 } })
+await rmock.route('**/api/research', route => route.fulfill({
+  status: 200, contentType: 'application/json',
+  body: JSON.stringify({
+    status: 'ready', patch: '16.11.1', generatedAt: new Date(0).toISOString(),
+    outliers: [{ itemId: '3153', name: 'Blade of the Ruined King', claim: 'effect undervalued', direction: 'undervalued' }],
+    effectSpotlights: [{ itemId: '3157', name: "Zhonya's Hourglass", insight: 'Stasis is pure survival value' }],
+    experimentalBuilds: [{ title: 'On-hit bruiser', itemIds: ['3153', '3157'], rationale: 'test the synergy' }],
+  }),
+}))
+
+await check('ready-state renders outliers, spotlights, and experimental builds', async () => {
+  await rmock.goto(`${base}/research`)
+  await rmock.waitForSelector('.research-board', { timeout: 30000 })
+  await rmock.waitForSelector('.outlier-card', { timeout: 5000 })
+  if (!(await rmock.locator('.spotlight-row').count())) throw new Error('no spotlights')
+  if (!(await rmock.locator('.exp-build').count())) throw new Error('no experimental builds')
+})
+
+await check('"Try this build" links into /builds?b=', async () => {
+  await rmock.locator('.btn-try').first().click()
+  await rmock.waitForURL('**/builds?b=*', { timeout: 5000 })
+})
+
 await browser.close()
 console.log(failures === 0 ? 'ALL PASS' : `${failures} FAILURES`)
 process.exit(failures === 0 ? 0 : 1)

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import ItemExplorer from '../components/organisms/ItemExplorer.vue'
 import CompareBoard from '../components/organisms/CompareBoard.vue'
 import BuildBoard from '../components/organisms/BuildBoard.vue'
+import ResearchBoard from '../components/organisms/ResearchBoard.vue'
 import AboutSection from '../components/organisms/AboutSection.vue'
 
 const routes = [
@@ -24,6 +25,13 @@ const routes = [
     name: 'Builds',
     component: BuildBoard,
     meta: { title: 'Build Optimizer' },
+    props: true
+  },
+  {
+    path: '/research',
+    name: 'Research',
+    component: ResearchBoard,
+    meta: { title: 'AI Research' },
     props: true
   },
   {
