@@ -8,9 +8,11 @@ import BuildInsightsCard from '../molecules/BuildInsightsCard.vue'
 import BuildSuggestionsPanel from '../molecules/BuildSuggestionsPanel.vue'
 import BudgetOptimizerPanel from '../molecules/BudgetOptimizerPanel.vue'
 import ShareBuildButton from '../molecules/ShareBuildButton.vue'
+import SavedBuildsPanel from '../molecules/SavedBuildsPanel.vue'
 import { useBuildStats } from '@/composables/useBuildStats'
 import { useBuildSuggestions } from '@/composables/useBuildSuggestions'
 import { useShareableBuild } from '@/composables/useShareableBuild'
+import { useSavedBuilds } from '@/composables/useSavedBuilds'
 
 const props = defineProps({
   items: { type: Array, required: true },
@@ -35,6 +37,26 @@ const { suggestions, subtitle } = useBuildSuggestions(
 // shareable builds: /builds?b=3071,3153,... <-> currentBuild
 const { shareUrl } = useShareableBuild(currentBuild, toRef(props, 'items'))
 
+// named builds persisted to localStorage (orthogonal to the URL share)
+const { savedBuilds, saveBuild, deleteBuild, renameBuild, loadBuild } = useSavedBuilds()
+const savingName = ref('')
+const showSaveInput = ref(false)
+
+function commitSave() {
+  const build = saveBuild(savingName.value, currentBuild.value.map(i => i.id))
+  if (build) {
+    savingName.value = ''
+    showSaveInput.value = false
+  }
+}
+
+function applySavedBuild(id) {
+  const ids = loadBuild(id)
+  if (!ids) return
+  const byId = new Map(props.items.map(i => [i.id, i]))
+  // the share watcher syncs the URL automatically once currentBuild changes
+  currentBuild.value = ids.map(id => byId.get(id)).filter(Boolean).slice(0, 6)
+}
 
 function addComparedItems() {
   props.compareItems.forEach(item => {
@@ -63,6 +85,24 @@ function removeFromBuild(index) {
         <p class="builds-subtitle">Create and analyze optimal item builds for maximum gold efficiency</p>
       </div>
       <div class="header-actions">
+        <div v-if="currentBuild.length > 0 && showSaveInput" class="save-build-inline">
+          <input
+            v-model="savingName"
+            class="save-build-input"
+            placeholder="Build name…"
+            maxlength="40"
+            @keyup.enter="commitSave"
+            @keyup.escape="showSaveInput = false"
+          />
+          <button @click="commitSave" class="btn-save-confirm" :disabled="!savingName.trim()">Save</button>
+        </div>
+        <button v-if="currentBuild.length > 0 && !showSaveInput" @click="showSaveInput = true" class="btn-save-build">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <path d="M17 21v-8H7v8M7 3v5h8"/>
+          </svg>
+          Save Build
+        </button>
         <ShareBuildButton v-if="currentBuild.length > 0" :url="shareUrl" />
         <button v-if="currentBuild.length > 0" @click="currentBuild = []" class="btn-clear-build">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -120,6 +160,14 @@ function removeFromBuild(index) {
       <BuildInsightsCard :recommendation="recommendation" :synergies="synergies" />
     </div>
 
+    <SavedBuildsPanel
+      :builds="savedBuilds"
+      :all-items="items"
+      @load="applySavedBuild"
+      @delete="deleteBuild"
+      @rename="renameBuild($event.id, $event.name)"
+    />
+
     <BuildSuggestionsPanel
       :suggestions="suggestions"
       :subtitle="subtitle"
@@ -154,6 +202,15 @@ function removeFromBuild(index) {
 
 .btn-clear-build svg { width: 18px; height: 18px; }
 .btn-clear-build:hover { background: var(--fb-error); border-color: var(--fb-error); color: white; transform: translateY(-2px); }
+
+.btn-save-build { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--fg-primary); font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-save-build svg { width: 18px; height: 18px; }
+.btn-save-build:hover { background: var(--accent-lead); border-color: var(--accent-lead); color: var(--bg-canvas); transform: translateY(-2px); }
+
+.save-build-inline { display: flex; gap: 0.5rem; align-items: center; }
+.save-build-input { padding: 0.75rem 1rem; background: var(--bg-canvas); border: 1px solid var(--accent-lead); border-radius: var(--radius-md); color: var(--fg-primary); font-size: 0.9375rem; font-weight: 500; width: 180px; }
+.btn-save-confirm { padding: 0.75rem 1.25rem; background: var(--accent-lead); border: 1px solid var(--accent-lead); border-radius: var(--radius-md); color: var(--bg-canvas); font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-save-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .build-slots-container { background: var(--bg-elevated); padding: 2rem; border-radius: var(--radius-lg); margin-bottom: 2rem; border: 2px solid var(--border); }
 

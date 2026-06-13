@@ -75,6 +75,38 @@ await check('slot remove empties the slot', async () => {
   if (after !== before - 1) throw new Error(`filled ${before} -> ${after}`)
 })
 
+await check('save build persists a named build to the panel', async () => {
+  // precondition: at least one filled slot (left by the prior checks)
+  if ((await page.locator('.build-slot.filled').count()) < 1) {
+    await page.locator('.btn-add-suggestion').first().click()
+    await page.waitForTimeout(300)
+  }
+  await page.locator('.btn-save-build').click()
+  await page.locator('.save-build-input').fill('Smoke Test Build')
+  await page.locator('.btn-save-confirm').click()
+  await page.waitForSelector('.saved-builds .saved-row', { timeout: 3000 })
+  const name = await page.locator('.saved-row .saved-name').first().textContent()
+  if (name.trim() !== 'Smoke Test Build') throw new Error(`saved name: ${name}`)
+})
+
+await check('saved build survives a page reload (localStorage)', async () => {
+  await page.reload()
+  await page.waitForSelector('.build-slot', { timeout: 30000 })
+  await page.waitForSelector('.saved-builds .saved-row', { timeout: 5000 })
+})
+
+await check('loading a saved build fills slots and writes the share URL', async () => {
+  await page.locator('.saved-btn.load').first().click()
+  await page.waitForSelector('.build-slot.filled', { timeout: 3000 })
+  await page.waitForFunction(() => /[?&]b=/.test(location.search), { timeout: 3000 })
+})
+
+await check('deleting a saved build removes it from the panel', async () => {
+  await page.locator('.saved-btn.danger').first().click()
+  await page.waitForTimeout(300)
+  if ((await page.locator('.saved-row').count()) !== 0) throw new Error('saved build still present')
+})
+
 await check('clear build returns to empty state', async () => {
   await page.locator('.btn-clear-build').click()
   await page.waitForSelector('.builds-empty-state', { timeout: 3000 })
