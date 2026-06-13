@@ -208,9 +208,12 @@ async def get_research():
 
 @app.get("/api/champions")
 async def get_champions():
-    """Compact champion reference data (name, tags, resource, range, spells).
-    Used to ground the AI 'Best on' feature; also handy for debugging."""
-    champions = await champions_collection.find({}, {'_id': 0}).to_list(length=None)
+    """Compact champion reference data (id, name, tags, resource, range, spells).
+    Used to ground the AI 'Best on' feature + resolve champion portrait icons."""
+    docs = await champions_collection.find(
+        {}, {'name': 1, 'key': 1, 'tags': 1, 'rangeType': 1, 'patch': 1}
+    ).to_list(length=None)
+    champions = [{'id': d.pop('_id'), **d} for d in docs]
     return {'champions': champions, 'count': len(champions)}
 
 

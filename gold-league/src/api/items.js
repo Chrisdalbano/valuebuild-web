@@ -83,6 +83,20 @@ export const itemsApi = {
       console.error('Error fetching AI research:', error)
       throw error
     }
+  },
+
+  /**
+   * Compact champion reference data for resolving portrait icons.
+   * Returns { champions: [{ id, name, key, tags, rangeType, patch }], count }.
+   */
+  async getChampions() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/champions`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching champions:', error)
+      throw error
+    }
   }
 }
 

@@ -2,6 +2,7 @@
 import { useRouter } from 'vue-router'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 import ItemHoverCard from './ItemHoverCard.vue'
+import { useChampions } from '@/composables/useChampions'
 
 const props = defineProps({
   builds: { type: Array, required: true },
@@ -9,6 +10,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const { championIcon } = useChampions()
 
 function resolveAll(ids) {
   return (ids || []).map(id => props.allItems.find(i => i.id === id)).filter(Boolean)
@@ -26,7 +28,17 @@ function tryBuild(ids) {
       <article v-for="(b, i) in builds" :key="i" class="exp-build">
         <div class="exp-title-row">
           <div class="exp-title">{{ b.title }}</div>
-          <span v-if="b.forChampion" class="exp-champ">{{ b.forChampion }}</span>
+          <span v-if="b.forChampion" class="exp-champ">
+            <img
+              v-if="championIcon(b.forChampion)"
+              :src="championIcon(b.forChampion)"
+              :alt="b.forChampion"
+              class="exp-champ-icon"
+              loading="lazy"
+              @error="e => (e.target.style.display = 'none')"
+            />
+            {{ b.forChampion }}
+          </span>
         </div>
         <div class="exp-items">
           <ItemHoverCard v-for="item in resolveAll(b.itemIds)" :key="item.id" :item="item" :mobile-tap="false">
@@ -62,11 +74,13 @@ function tryBuild(ids) {
 .exp-title-row { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .exp-title { color: var(--fg-primary); font-weight: 700; font-size: 1.0625rem; }
 .exp-champ {
+  display: inline-flex; align-items: center; gap: 0.375rem;
   font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em;
   color: var(--accent-support); background: var(--accent-support-tint);
   border: 1px solid color-mix(in srgb, var(--accent-support) 25%, transparent);
-  padding: 0.2rem 0.625rem; border-radius: 999px; white-space: nowrap;
+  padding: 0.2rem 0.625rem 0.2rem 0.25rem; border-radius: 999px; white-space: nowrap;
 }
+.exp-champ-icon { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
 
 .exp-items { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .exp-icon { border: 1px solid var(--border-strong); }
