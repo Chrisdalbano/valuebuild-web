@@ -34,6 +34,11 @@ BEST_ON_CALL_DELAY = float(os.getenv("AI_BEST_ON_CALL_DELAY_SECONDS", "2"))
 CHAMPION_MODEL = os.getenv("AI_CHAMPION_MODEL", "gemini-flash-lite-latest")
 CHAMPION_CALL_DELAY = float(os.getenv("AI_CHAMPION_CALL_DELAY_SECONDS", "2"))
 
+# Cost control: route the digest + effects to flash-lite too (≈6× cheaper output
+# than flash-latest). Everything AI now runs on flash-lite by default.
+DIGEST_MODEL = os.getenv("AI_DIGEST_MODEL", "gemini-flash-lite-latest")
+EFFECT_MODEL = os.getenv("AI_EFFECT_MODEL", "gemini-flash-lite-latest")
+
 
 def _has_effect(item: dict) -> bool:
     desc = (item.get("description") or "").lower()
@@ -76,7 +81,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
         ):
             skipped += 1
             continue
-        result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS)
+        result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS, EFFECT_MODEL)
         if isinstance(result, dict):
             # $set (not replace) so a prior best-on field on this doc survives
             await ai_col.update_one(
@@ -85,7 +90,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
                     "itemId": it["id"],
                     "name": it.get("name", ""),
                     "patch": patch,
-                    "model": _model(),
+                    "model": EFFECT_MODEL,
                     "effects": result.get("effects", []),
                     "effectsVersion": EFFECT_PROMPT_VERSION,
                     "summary": result.get("summary", ""),
@@ -148,10 +153,17 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
 
 
 async def generate_research_digest(items, patch, ai_col, champions=None) -> bool:
+    # Gate: only (re)generate when missing or stale (patch/version) — NOT on every
+    # /api/ai/refresh. The digest is a single expensive call and was the main cost
+    # leak (it re-ran on every trigger).
+    if await ai_col.find_one(
+        {"_id": "research_digest", "patch": patch, "version": DIGEST_PROMPT_VERSION}
+    ):
+        return True
     curated = select_curated_items(items)
     if not curated:
         return False
-    digest = await _gen(build_digest_prompt(curated, patch, champions), DIGEST_MAX_TOKENS)
+    digest = await _gen(build_digest_prompt(curated, patch, champions), DIGEST_MAX_TOKENS, DIGEST_MODEL)
     if not isinstance(digest, dict):
         return False
     await ai_col.replace_one(
@@ -159,7 +171,7 @@ async def generate_research_digest(items, patch, ai_col, champions=None) -> bool
         {
             "_id": "research_digest",
             "patch": patch,
-            "model": _model(),
+            "model": DIGEST_MODEL,
             "version": DIGEST_PROMPT_VERSION,
             "outliers": digest.get("outliers", []),
             "effectSpotlights": digest.get("effectSpotlights", []),
