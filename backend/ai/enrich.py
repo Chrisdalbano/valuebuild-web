@@ -112,8 +112,11 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         ).to_list(length=None)
         ai_col = db["ai_analysis"]
 
-        effect_stats = await enrich_item_effects(items, patch, ai_col)
+        # Digest first: it's a single Gemini call that only needs items_cache, so
+        # it must not be starved by the long (resumable) per-item effects loop —
+        # on a constrained worker the batch can recycle before the digest runs.
         digest_ok = await generate_research_digest(items, patch, ai_col)
+        effect_stats = await enrich_item_effects(items, patch, ai_col)
 
         return {"status": "complete", "patch": patch, "digest": digest_ok, **effect_stats}
     except Exception as e:
