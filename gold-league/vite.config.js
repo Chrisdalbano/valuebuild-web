@@ -26,6 +26,9 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/(ddragon\.leagueoflegends\.com|raw\.communitydragon\.org)\/.*\.(png|jpg)$/,
