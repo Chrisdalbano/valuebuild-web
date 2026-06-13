@@ -13,6 +13,10 @@ load_dotenv()
 # Import ETL pipeline
 from etl.data_pipeline import ETLScheduler, run_etl_now
 
+# Import AI enrichment (Gemini effect valuation + research digest)
+from ai.enrich import run_ai_enrichment
+from ai.gemini_client import is_configured as ai_is_configured
+
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
 # Environment configuration
@@ -34,6 +38,13 @@ mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client['gold_league']
 items_collection = db['items_cache']
 metadata_collection = db['etl_metadata']
+ai_collection = db['ai_analysis']
+
+
+async def _current_patch():
+    """Patch of the latest ETL run, used to gate stale AI caches."""
+    meta = await metadata_collection.find_one({'_id': 'latest'})
+    return (meta or {}).get('patch')
 
 # ETL Scheduler instance
 etl_scheduler = None
@@ -67,6 +78,12 @@ async def startup_event():
     else:
         print(f"✅ Found {item_count} cached items in MongoDB\n")
     
+    # AI enrichment status (no key = features serve 'pending' gracefully)
+    if ai_is_configured():
+        print("🤖 Gemini AI enrichment: configured (run POST /api/ai/refresh to populate)")
+    else:
+        print("🤖 Gemini AI enrichment: GEMINI_API_KEY not set — AI features will show 'pending'")
+
     # Start the ETL scheduler for weekly updates
     etl_scheduler = ETLScheduler(MONGO_URI)
     etl_scheduler.start()
@@ -151,6 +168,38 @@ async def get_item(item_id: str):
         raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
     
     return item
+
+
+@app.get("/api/items/{item_id}/ai")
+async def get_item_ai(item_id: str):
+    """Cached Gemini effect analysis for an item — only if it matches the current
+    patch (else 'pending', so stale AI never shows against fresh items)."""
+    doc = await ai_collection.find_one({'_id': item_id}, {'_id': 0})
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured()}
+
+
+@app.get("/api/research")
+async def get_research():
+    """The current patch's AI research digest (outliers, effect spotlights,
+    experimental builds). 'pending' until enrichment has run for this patch."""
+    doc = await ai_collection.find_one({'_id': 'research_digest'}, {'_id': 0})
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured(), 'patch': patch}
+
+
+@app.post("/api/ai/refresh")
+async def refresh_ai(background_tasks: BackgroundTasks):
+    """Trigger AI enrichment in the background (mirrors /api/items/refresh).
+    No-ops gracefully if GEMINI_API_KEY is unset or quota is exhausted."""
+    if not ai_is_configured():
+        return {'status': 'skipped', 'reason': 'GEMINI_API_KEY not set'}
+    background_tasks.add_task(run_ai_enrichment, MONGO_URI)
+    return {'status': 'processing', 'note': 'AI enrichment started; poll /api/research'}
 
 
 @app.get("/api/metadata")

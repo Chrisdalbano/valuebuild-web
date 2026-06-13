@@ -327,15 +327,28 @@ class ETLScheduler:
     """Manages scheduled ETL jobs"""
     
     def __init__(self, mongo_uri: str = "mongodb://localhost:27017"):
+        self.mongo_uri = mongo_uri
         self.etl = DDragonETL(mongo_uri)
         self.scheduler = AsyncIOScheduler()
     
     async def run_etl_job(self):
-        """Wrapper to run ETL job"""
+        """Wrapper to run ETL job, then (best-effort) refresh AI enrichment for the
+        new patch. AI failures never affect the item ETL."""
         try:
             await self.etl.extract_and_transform()
         except Exception as e:
             print(f"❌ Scheduled ETL job failed: {e}")
+            return
+
+        try:
+            from ai.gemini_client import is_configured
+            from ai.enrich import run_ai_enrichment
+            if is_configured():
+                print("🤖 ETL done — refreshing AI enrichment for the new patch...")
+                result = await run_ai_enrichment(self.mongo_uri)
+                print(f"🤖 AI enrichment: {result}")
+        except Exception as e:
+            print(f"⚠️  AI enrichment after ETL failed (item data is unaffected): {e}")
     
     def start(self):
         """Start the scheduler with weekly job"""
