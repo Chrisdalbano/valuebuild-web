@@ -16,7 +16,7 @@ from efficiency import STAT_VALUES  # noqa: E402
 EFFECT_PROMPT_VERSION = 2
 BEST_ON_PROMPT_VERSION = 1
 DIGEST_PROMPT_VERSION = 2
-CHAMPION_PROMPT_VERSION = 1
+CHAMPION_PROMPT_VERSION = 2  # v2: exclude tier-3 boot upgrades from the roster
 
 # Human-readable base-stat gold values for the prompt (per 1 point unless noted).
 _STAT_LABELS = {

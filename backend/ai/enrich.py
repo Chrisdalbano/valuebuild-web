@@ -175,15 +175,34 @@ def _is_support(item: dict) -> bool:
     return "GoldPer" in (item.get("tags") or [])
 
 
+def _is_tier3_boots(item: dict) -> bool:
+    """Tier-3 boot upgrades (Crimson Lucidity, Swiftmarch, …) are conditional
+    late upgrades, not build targets. Tell: tier-2 boots build from basic Boots
+    (1001); tier-3 upgrades build from a tier-2 boot, so `from` lacks 1001."""
+    if "Boots" not in (item.get("tags") or []):
+        return False
+    frm = item.get("from") or []
+    return bool(frm) and "1001" not in frm
+
+
 def select_build_items(items: list) -> list:
     """Completed, BUILT Summoner's Rift items the champion analysis can recommend
     from — mirrors the frontend budget-optimizer pool (built, non-support,
-    non-component) so the AI only picks real, buildable itemIds."""
-    pool = [
-        it for it in items
-        if it.get("from") and not it.get("into") and not _is_support(it)
-        and it.get("cost", 0) > 0
-    ]
+    non-component, non-tier3-boots) so the AI only picks real, directly-buildable
+    itemIds."""
+    pool = []
+    for it in items:
+        if not it.get("from") or it.get("cost", 0) <= 0:
+            continue
+        if _is_support(it) or _is_tier3_boots(it):
+            continue
+        # tier-2 boots (build from basic Boots 1001) are complete build targets
+        # even though they have an `into` (the optional tier-3 upgrade); other
+        # items with `into` are components and are skipped.
+        is_t2_boots = "Boots" in (it.get("tags") or []) and "1001" in (it.get("from") or [])
+        if it.get("into") and not is_t2_boots:
+            continue
+        pool.append(it)
     pool.sort(key=lambda it: it.get("cost", 0), reverse=True)
     return pool
 

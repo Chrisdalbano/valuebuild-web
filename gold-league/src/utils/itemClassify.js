@@ -11,6 +11,17 @@ export function isBoots(item) {
   return tags(item).includes('Boots')
 }
 
+// Tier-3 boot upgrades (Crimson Lucidity, Swiftmarch, Spellslinger's Shoes, …)
+// are conditional late-game upgrades, not items you build directly, so they
+// shouldn't appear in build suggestions. Tell: tier-2 boots build FROM basic
+// Boots (1001); the tier-3 upgrades build from a tier-2 boot, so their `from`
+// does NOT include 1001.
+export function isTier3Boots(item) {
+  if (!isBoots(item)) return false
+  const from = Array.isArray(item.from) ? item.from : []
+  return from.length > 0 && !from.includes('1001')
+}
+
 // The real support items (World Atlas line) carry Riot's `GoldPer` tag. They are
 // purchasable:true (the non-purchasable IDs are turret/dummy entities the ETL
 // already drops), so detection is the tag, never the purchasable flag.
