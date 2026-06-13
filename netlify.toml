@@ -20,15 +20,18 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Branch-specific deployments
+# Branch-specific deployments — every context MUST install deps first. These
+# overrides previously dropped the `npm ci`, so a cold build (after a Netlify
+# cache eviction) failed with "vite: not found" and the live site froze on the
+# last good deploy.
 [context.production]
-  command = "npm run build"
-  
+  command = "npm ci && npm run build"
+
 [context.deploy-preview]
-  command = "npm run build"
+  command = "npm ci && npm run build"
 
 [context.branch-deploy]
-  command = "npm run build"
+  command = "npm ci && npm run build"
 
 # Headers for security
 [[headers]]
