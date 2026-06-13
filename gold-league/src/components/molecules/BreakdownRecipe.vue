@@ -22,7 +22,7 @@ const componentsCost = computed(() =>
     <h3>Recipe & Cost Analysis</h3>
     <div class="recipe-tree">
       <div class="components-list">
-        <div v-for="comp in components" :key="comp.id" class="component-card" @click="$emit('select', comp)">
+        <div v-for="(comp, i) in components" :key="`${comp.id}-${i}`" class="component-card" @click="$emit('select', comp)">
           <ItemIcon :item="comp" size="lg" :alt="comp.name" class="component-icon" />
           <div class="component-info">
             <div class="component-name">{{ comp.name }}</div>

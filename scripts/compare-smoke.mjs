@@ -57,6 +57,56 @@ await check('3 detail cards + add-item card', async () => {
   if (cards !== 4) throw new Error(`expected 3 + add card = 4, got ${cards}`) // 3 items + AddItemCard
 })
 
+await check('each detail card carries the AI effect panel (speculative)', async () => {
+  // The compare view reuses the per-item AI panel; it must render (pending or
+  // ready), never blank. One panel per real item (excludes the add-item card).
+  const panels = await page.locator('.items-grid .detail-card .ai-effect-panel').count()
+  if (panels !== 3) throw new Error(`expected 3 AI panels, got ${panels}`)
+  const disc = await page.locator('.ai-effect-panel .ai-disclaimer').first().textContent()
+  if (!/speculative/i.test(disc)) throw new Error(`disclaimer: ${disc}`)
+})
+
+// --- recipe hover-card regressions (need a recipe-bearing item present) ---
+// The top-efficiency grid items are basic components with no recipe; add a
+// known legendary (Infinity Edge — a recipe item for all of LoL's history),
+// run the recipe hover checks, then remove it to restore the 3-item state the
+// count-sensitive checks below depend on.
+await check('add a legendary so a recipe is present', async () => {
+  await page.locator('.add-item-card').click()
+  await page.waitForSelector('.swap-modal', { timeout: 3000 })
+  await page.locator('.swap-search-input').fill('infinity edge')
+  await page.waitForTimeout(300)
+  await page.locator('.swap-item:not(.already-selected)').first().click()
+  await page.waitForSelector('.swap-modal', { state: 'detached', timeout: 3000 })
+  await page.waitForSelector('.detail-card .recipe-final-icon', { timeout: 3000 })
+})
+
+await check('recipe final item floats its own stats card on hover', async () => {
+  // Regression: the recipe's FINAL item was a bare icon (no hover card) — it
+  // must now float a stats card like the components do.
+  await page.locator('.detail-card .recipe-final-icon').first().hover()
+  await page.waitForSelector('body > .floating-card .item-stats-card', { timeout: 3000 })
+  const name = await page.locator('.item-stats-card h4').textContent()
+  if (!name.trim()) throw new Error('empty final-item card')
+  await page.mouse.move(10, 800)
+  await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })
+})
+
+await check('hovering one recipe component opens exactly one card (no dup-key)', async () => {
+  // Regression: duplicate :key (e.g. 2x Long Sword) made both hover cards open
+  // at once. Any single component hover must yield exactly one floating card.
+  await page.locator('.detail-card .recipe-comp-icon').first().hover()
+  await page.waitForSelector('body > .floating-card', { timeout: 3000 })
+  await page.waitForTimeout(150)
+  const cards = await page.locator('body > .floating-card').count()
+  if (cards !== 1) throw new Error(`expected 1 floating card, got ${cards}`)
+  await page.mouse.move(10, 800)
+  await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })
+  // restore 3-item state: drop the legendary we added
+  await page.locator('.detail-card:has(.recipe-final-icon) .btn-remove-item').first().click()
+  await page.waitForTimeout(400)
+})
+
 await check('analysis panel has recommendation text', async () => {
   const text = await page.locator('.analysis-text').textContent()
   if (!/best gold efficiency/.test(text)) throw new Error(`unexpected: ${text.slice(0, 60)}`)

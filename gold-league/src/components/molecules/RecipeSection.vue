@@ -23,7 +23,10 @@ const components = computed(() => getComponents(props.item, props.allItems))
       Recipe
     </div>
     <div class="recipe-components">
-      <div v-for="comp in components" :key="comp.id" class="recipe-component">
+      <!-- key includes the index: a recipe can list the same component twice
+           (e.g. 2x Long Sword), and a duplicate :key makes both hover cards
+           open at once -->
+      <div v-for="(comp, i) in components" :key="`${comp.id}-${i}`" class="recipe-component">
         <ItemHoverCard :item="comp">
           <ItemIcon :item="comp" size="sm" :alt="comp.name" class="recipe-comp-icon" />
         </ItemHoverCard>
@@ -34,7 +37,9 @@ const components = computed(() => getComponents(props.item, props.allItems))
       </div>
       <div class="recipe-arrow">→</div>
       <div class="recipe-final">
-        <ItemIcon :item="item" size="sm" :alt="item.name" class="recipe-final-icon" />
+        <ItemHoverCard :item="item">
+          <ItemIcon :item="item" size="sm" :alt="item.name" class="recipe-final-icon" />
+        </ItemHoverCard>
         <div class="recipe-final-info">
           <div class="recipe-final-name">{{ item.name }}</div>
           <GoldValue :amount="item.cost" class="recipe-final-cost" />

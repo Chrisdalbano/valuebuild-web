@@ -13,7 +13,7 @@ defineEmits(['select'])
   <div class="builds-into">
     <h3>Builds Into</h3>
     <div class="upgrade-list">
-      <div v-for="upgrade in upgrades" :key="upgrade.id" class="upgrade-card" @click="$emit('select', upgrade)">
+      <div v-for="(upgrade, i) in upgrades" :key="`${upgrade.id}-${i}`" class="upgrade-card" @click="$emit('select', upgrade)">
         <ItemIcon :item="upgrade" size="lg" :alt="upgrade.name" class="upgrade-icon" />
         <div class="upgrade-name">{{ upgrade.name }}</div>
         <GoldValue :amount="upgrade.cost" class="upgrade-cost" />

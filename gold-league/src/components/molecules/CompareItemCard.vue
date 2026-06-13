@@ -4,6 +4,7 @@ import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
 import RecipeSection from './RecipeSection.vue'
 import StatBreakdownBars from './StatBreakdownBars.vue'
+import AiEffectPanel from './AiEffectPanel.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 import { itemTier, formatRiotDescription } from '@/utils/itemHelpers'
 
@@ -80,6 +81,8 @@ const hasBreakdown = computed(
       </div>
       <div class="desc-text" v-html="formatRiotDescription(item.description)"></div>
     </div>
+
+    <AiEffectPanel :key="item.id" :item="item" />
   </div>
 </template>
 
