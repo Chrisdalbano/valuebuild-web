@@ -42,7 +42,7 @@ export function useItems() {
       items.value = filterDeprecatedItems(rawItems)
       console.log(`Loaded ${items.value.length} items (filtered ${rawItems.length - items.value.length} deprecated)`)
       if (items.value.length === 0) {
-        error.value = 'No items found. Please refresh the data.'
+        error.value = "We couldn't find any item data right now. Please try again shortly."
       } else {
         saveSnapshot(rawItems)
       }
@@ -53,7 +53,7 @@ export function useItems() {
         offlineSnapshot.value = true
         console.warn('Network unavailable — showing the saved item snapshot.')
       } else {
-        error.value = 'Failed to load items. Make sure the backend is running on http://localhost:8000'
+        error.value = "We couldn't load item data right now. Please check your connection and try again."
         console.error('Load error:', err)
       }
     } finally {

@@ -6,8 +6,8 @@ import ResearchEffectSpotlights from '../molecules/ResearchEffectSpotlights.vue'
 import ResearchExperimentalBuilds from '../molecules/ResearchExperimentalBuilds.vue'
 import { useResearch } from '@/composables/useResearch'
 
-// The AI Research tab — per-patch Gemini discoveries. Everything here is
-// explicitly speculative (hypotheses), separate from the canonical efficiency.
+// The Research Lab tab — per-patch discoveries. Everything here is explicitly
+// speculative (hypotheses), separate from the canonical efficiency.
 defineProps({
   allItems: { type: Array, default: () => [] },
 })

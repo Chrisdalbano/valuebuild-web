@@ -3,7 +3,7 @@ import { toRef } from 'vue'
 import AiBadge from '@/components/atoms/AiBadge.vue'
 import { useAiAnalysis } from '@/composables/useAiAnalysis'
 
-// Per-item Gemini effect valuation. Lazy (fetches when the modal opens). The
+// Per-item effect valuation. Lazy (fetches when the modal opens). The
 // canonical gold-efficiency number lives elsewhere and stays formula-only;
 // everything here is explicitly a speculative AI estimate.
 const props = defineProps({

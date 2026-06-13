@@ -57,7 +57,7 @@ export const itemsApi = {
   },
 
   /**
-   * Get cached Gemini effect analysis for an item.
+   * Get the cached effect analysis for an item.
    * Returns { status: 'ready' | 'pending', effects?, summary?, caveats?,
    *   bestOn?: { champions: [{ name, why, synergyStat, confidence }], caveats } }.
    */

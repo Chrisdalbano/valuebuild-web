@@ -1,7 +1,7 @@
 import { ref, watch } from 'vue'
 import { itemsApi } from '@/api/items'
 
-// Lazily fetches the cached Gemini effect analysis for an item. Mirrors the
+// Lazily fetches the cached effect analysis for an item. Mirrors the
 // useItems shape (loading/error) plus a `pending` flag for "not analyzed yet"
 // (no key / no quota / pre-enrichment), which the UI shows as a graceful note
 // rather than an error.
