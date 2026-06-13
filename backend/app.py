@@ -39,6 +39,7 @@ db = mongo_client['gold_league']
 items_collection = db['items_cache']
 metadata_collection = db['etl_metadata']
 ai_collection = db['ai_analysis']
+champions_collection = db['champions_cache']
 
 
 async def _current_patch():
@@ -77,7 +78,20 @@ async def startup_event():
             print("⚠️  Application will start, but no data is available yet.\n")
     else:
         print(f"✅ Found {item_count} cached items in MongoDB\n")
-    
+
+    # Bootstrap champion reference data if empty (best-effort; never blocks startup)
+    try:
+        champ_count = await champions_collection.count_documents({})
+        if champ_count == 0:
+            from etl.champion_pipeline import run_champion_etl_now
+            print("🦸 No champion data found. Fetching champion reference...")
+            n = await run_champion_etl_now(MONGO_URI)
+            print(f"🦸 Cached {n} champions.\n")
+        else:
+            print(f"🦸 Found {champ_count} cached champions in MongoDB\n")
+    except Exception as e:
+        print(f"⚠️  Champion bootstrap failed (non-fatal): {e}")
+
     # AI enrichment status (no key = features serve 'pending' gracefully)
     if ai_is_configured():
         print("🤖 Gemini AI enrichment: configured (run POST /api/ai/refresh to populate)")
@@ -190,6 +204,14 @@ async def get_research():
     if doc and doc.get('patch') == patch:
         return {'status': 'ready', **doc}
     return {'status': 'pending', 'configured': ai_is_configured(), 'patch': patch}
+
+
+@app.get("/api/champions")
+async def get_champions():
+    """Compact champion reference data (name, tags, resource, range, spells).
+    Used to ground the AI 'Best on' feature; also handy for debugging."""
+    champions = await champions_collection.find({}, {'_id': 0}).to_list(length=None)
+    return {'champions': champions, 'count': len(champions)}
 
 
 @app.post("/api/ai/refresh")

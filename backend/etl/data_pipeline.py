@@ -340,6 +340,13 @@ class ETLScheduler:
             print(f"❌ Scheduled ETL job failed: {e}")
             return
 
+        # Refresh champion reference data (best-effort; never breaks items or AI)
+        try:
+            from etl.champion_pipeline import run_champion_etl_now
+            await run_champion_etl_now(self.mongo_uri)
+        except Exception as e:
+            print(f"⚠️  Champion ETL after item ETL failed (item data is unaffected): {e}")
+
         try:
             from ai.gemini_client import is_configured
             from ai.enrich import run_ai_enrichment
