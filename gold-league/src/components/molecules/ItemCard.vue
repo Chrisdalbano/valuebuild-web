@@ -7,6 +7,9 @@ import SelectCheckbox from '@/components/atoms/SelectCheckbox.vue'
 import TierPill from '@/components/atoms/TierPill.vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
+import { useItemDetail } from '@/composables/useItemDetail'
+
+const { openDetail } = useItemDetail()
 
 defineProps({
   item: { type: Object, required: true },
@@ -42,6 +45,11 @@ function onPointerMove(e) {
       <div class="card-checkbox">
         <SelectCheckbox :checked="selected" @toggle="$emit('toggle', item)" />
       </div>
+      <button class="card-details" title="Full breakdown" aria-label="Full breakdown" @click.stop="openDetail(item)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/>
+        </svg>
+      </button>
       <TierPill :item="item" class="card-badge" />
     </div>
 
@@ -130,7 +138,34 @@ function onPointerMove(e) {
 
 .card-checkbox { position: absolute; top: 0.75rem; right: 0.75rem; z-index: var(--z-raised); }
 
+.card-details {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: var(--z-raised);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-canvas) 60%, transparent);
+  border: 1px solid var(--border);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-standard), color 0.2s, border-color 0.2s;
+  backdrop-filter: blur(4px);
+}
+
+.card-details svg { width: 15px; height: 15px; }
+.item-card:hover .card-details { opacity: 1; }
+.card-details:hover { color: var(--accent-lead); border-color: var(--accent-lead); }
+
 .card-badge { position: absolute; bottom: 0.75rem; left: 0.75rem; }
+
+@media (hover: none) { .card-details { opacity: 1; } }
 
 .card-body { padding: 1rem; }
 

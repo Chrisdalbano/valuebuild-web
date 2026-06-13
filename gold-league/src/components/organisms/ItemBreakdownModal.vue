@@ -5,6 +5,7 @@ import GoldValue from '@/components/atoms/GoldValue.vue'
 import BreakdownRecipe from '../molecules/BreakdownRecipe.vue'
 import BreakdownStatAnalysis from '../molecules/BreakdownStatAnalysis.vue'
 import BreakdownUpgrades from '../molecules/BreakdownUpgrades.vue'
+import AiEffectPanel from '../molecules/AiEffectPanel.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 import { getCombineCost } from '@/utils/itemHelpers'
 
@@ -97,6 +98,8 @@ function sanitizeHtml(html) {
           <h3>Item Effects</h3>
           <div class="description-content" v-html="sanitizeHtml(item.description)"></div>
         </div>
+
+        <AiEffectPanel :key="item.id" :item="item" />
 
         <BreakdownUpgrades v-if="buildsInto.length > 0" :upgrades="buildsInto" @select="$emit('select', $event)" />
       </div>

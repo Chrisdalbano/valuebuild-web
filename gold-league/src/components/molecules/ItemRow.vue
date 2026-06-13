@@ -6,6 +6,7 @@ import SelectCheckbox from '@/components/atoms/SelectCheckbox.vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
 import GoldValue from '@/components/atoms/GoldValue.vue'
 import { itemTier } from '@/utils/itemHelpers'
+import { useItemDetail } from '@/composables/useItemDetail'
 
 const props = defineProps({
   item: { type: Object, required: true },
@@ -14,6 +15,8 @@ const props = defineProps({
 })
 
 defineEmits(['toggle', 'image-failed'])
+
+const { openDetail } = useItemDetail()
 
 const tierLabel = computed(() => itemTier(props.item).label)
 </script>
@@ -40,7 +43,14 @@ const tierLabel = computed(() => itemTier(props.item).label)
     <td class="td-cost"><GoldValue :amount="item.cost" /></td>
     <td class="td-value"><GoldValue :amount="item.totalGoldValue" /></td>
     <td class="td-rating">
-      <EfficiencyBadge :value="item.goldEfficiency" variant="rating" />
+      <div class="rating-cell">
+        <EfficiencyBadge :value="item.goldEfficiency" variant="rating" />
+        <button class="row-details" title="Full breakdown" aria-label="Full breakdown" @click.stop="openDetail(item)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6M8 11h6"/>
+          </svg>
+        </button>
+      </div>
     </td>
   </tr>
 </template>
@@ -76,7 +86,27 @@ td { padding: 1rem; color: var(--fg-primary); }
 .td-efficiency { text-align: center; width: 150px; }
 .td-cost { text-align: right; width: 120px; }
 .td-value { text-align: right; width: 120px; }
-.td-rating { text-align: center; width: 120px; }
+.td-rating { text-align: center; width: 150px; }
+
+.rating-cell { display: inline-flex; align-items: center; gap: 0.5rem; }
+
+.row-details {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.row-details svg { width: 14px; height: 14px; }
+.row-details:hover { color: var(--accent-lead); border-color: var(--accent-lead); }
 
 @media (max-width: 768px) {
   td { padding: 0.75rem 0.5rem; font-size: 0.8125rem; }

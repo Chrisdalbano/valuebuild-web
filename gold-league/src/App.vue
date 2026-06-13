@@ -11,15 +11,16 @@ import AppHeroSplash from './components/molecules/AppHeroSplash.vue'
 import { useItems } from './composables/useItems'
 import { useRandomComparisons } from './composables/useRandomComparisons'
 import { useChampionSplash } from './composables/useChampionSplash'
+import { useItemDetail } from './composables/useItemDetail'
 
 const router = useRouter()
 const { splash } = useChampionSplash()
 const { items, loading, error, offlineSnapshot, loadItems } = useItems()
 const { randomComparisons, generateRandomComparisons } = useRandomComparisons(items)
+const { detailItem, openDetail, closeDetail } = useItemDetail()
 
 const compareItems = ref([])
 const currentBuild = ref([])
-const detailedItem = ref(null)
 const goldIconUrl = '/20px-Gold_colored_icon.png' // Local SVG icon in public folder
 
 onMounted(async () => {
@@ -118,10 +119,10 @@ function goToItems() {
         />
 
         <ItemBreakdownModal
-          :item="detailedItem"
+          :item="detailItem"
           :all-items="items"
-          @close="detailedItem = null"
-          @select="detailedItem = $event"
+          @close="closeDetail"
+          @select="openDetail"
         />
 
         <router-view v-slot="{ Component }">
@@ -141,7 +142,7 @@ function goToItems() {
             @swap-item="swapComparisonItem"
             @add-item="addToComparison"
             @browse-items="goToItems"
-            @view-detailed="detailedItem = $event"
+            @view-detailed="openDetail"
           />
           </transition>
         </router-view>

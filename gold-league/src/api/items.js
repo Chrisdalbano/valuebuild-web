@@ -54,6 +54,34 @@ export const itemsApi = {
       console.error(`Error fetching item ${itemId}:`, error)
       throw error
     }
+  },
+
+  /**
+   * Get cached Gemini effect analysis for an item.
+   * Returns { status: 'ready' | 'pending', effects?, summary?, caveats? }.
+   */
+  async getItemAi(itemId) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/items/${itemId}/ai`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching AI analysis for ${itemId}:`, error)
+      throw error
+    }
+  },
+
+  /**
+   * Get the current patch's AI research digest.
+   * Returns { status: 'ready' | 'pending', outliers?, effectSpotlights?, experimentalBuilds? }.
+   */
+  async getResearch() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/research`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching AI research:', error)
+      throw error
+    }
   }
 }
 
