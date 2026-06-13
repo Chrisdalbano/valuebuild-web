@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, toRef, onMounted, onUnmounted } from 'vue'
-import SkeletonMedia from '../atoms/SkeletonMedia.vue'
 import CompareTray from '../molecules/CompareTray.vue'
 import SearchBar from '../molecules/SearchBar.vue'
 import ViewToggle from '../molecules/ViewToggle.vue'
@@ -30,6 +29,7 @@ const tierOptions = [
 const isMobile = useIsMobile()
 const viewMode = ref('grid')
 const itemsRef = toRef(props, 'items')
+const isLoading = computed(() => props.items.length === 0)
 
 const {
   search, sortKey, sortDir, tierFilter, typeFilter, excludeSupport, itemsPerPage, failedImages,
@@ -90,30 +90,44 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 
 <template>
   <div class="item-browser">
-    <SkeletonMedia v-if="props.items.length === 0" :type="viewMode" :count="24" message="Loading items from API..." />
+    <CompareTray
+      v-if="!isLoading"
+      :items="selectedItems"
+      @remove="removeSelected"
+      @clear="selectedItems = []"
+      @compare="emit('compare', $event)"
+      @add-to-build="emit('addToBuild', $event)"
+      @image-failed="markImageFailed"
+    />
+
+    <!-- controls render immediately (no pop-in) — usable the instant data lands -->
+    <div class="browser-controls">
+      <div class="controls-row">
+        <SearchBar v-model="search" :suggestions="suggestions" @select-suggestion="search = $event.name" />
+        <ViewToggle v-model="viewMode" />
+      </div>
+      <div class="filters-row">
+        <FilterChips v-model="tierFilter" :options="tierOptions" />
+        <SortControls v-model:sort-key="sortKey" v-model:sort-dir="sortDir" />
+      </div>
+      <TypeFilter v-model="typeFilter" v-model:exclude-support="excludeSupport" />
+    </div>
+
+    <!-- loading: skeleton cards in the SAME grid as the real cards -> no shift -->
+    <div v-if="isLoading" class="items-grid" aria-busy="true">
+      <div v-for="n in 18" :key="n" class="card-skeleton">
+        <div class="cs-header"></div>
+        <div class="cs-body">
+          <div class="cs-line cs-title"></div>
+          <div class="cs-stat"></div>
+          <div class="cs-line cs-sm"></div>
+          <div class="cs-line cs-sm"></div>
+          <div class="cs-rating"></div>
+        </div>
+      </div>
+    </div>
 
     <template v-else>
-      <CompareTray
-        :items="selectedItems"
-        @remove="removeSelected"
-        @clear="selectedItems = []"
-        @compare="emit('compare', $event)"
-        @add-to-build="emit('addToBuild', $event)"
-        @image-failed="markImageFailed"
-      />
-
-      <div class="browser-controls">
-        <div class="controls-row">
-          <SearchBar v-model="search" :suggestions="suggestions" @select-suggestion="search = $event.name" />
-          <ViewToggle v-model="viewMode" />
-        </div>
-        <div class="filters-row">
-          <FilterChips v-model="tierFilter" :options="tierOptions" />
-          <SortControls v-model:sort-key="sortKey" v-model:sort-dir="sortDir" />
-        </div>
-        <TypeFilter v-model="typeFilter" v-model:exclude-support="excludeSupport" />
-      </div>
-
       <div v-if="viewMode === 'grid'" class="items-grid">
         <ItemCard
           v-for="item in displayedItems"
@@ -175,6 +189,36 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
   gap: 1.5rem;
   margin-bottom: 2rem;
   position: relative;
+}
+
+/* skeleton card mirrors ItemCard's exact box so swapping in real cards causes
+   ZERO layout shift (same grid, same border/radius, square header, body) */
+.card-skeleton {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.cs-header { aspect-ratio: 1; border-bottom: 1px solid var(--border); }
+.cs-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.cs-line { border-radius: var(--radius-sm); }
+.cs-title { height: 2.4em; }
+.cs-stat { height: 2.5rem; border-radius: var(--radius-sm); }
+.cs-sm { height: 0.95rem; width: 80%; }
+.cs-sm:nth-of-type(odd) { width: 65%; }
+.cs-rating { height: 2rem; border-radius: var(--radius-sm); margin-top: 0.25rem; }
+
+.cs-header, .cs-line, .cs-stat, .cs-rating {
+  background: linear-gradient(90deg,
+    var(--accent-lead-tint) 0%,
+    color-mix(in srgb, var(--accent-lead) 12%, transparent) 50%,
+    var(--accent-lead-tint) 100%);
+  background-size: 200% 100%;
+  animation: cs-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes cs-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .cs-header, .cs-line, .cs-stat, .cs-rating { animation: none; }
 }
 
 @media (max-width: 768px) {

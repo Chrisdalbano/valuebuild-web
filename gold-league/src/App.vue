@@ -102,12 +102,15 @@ function goToItems() {
         <button @click="retryLoad" class="btn-small">Reconnect</button>
       </div>
 
-      <div v-if="loading && items.length === 0" class="loading-state">
+      <!-- only non-home routes get a centered spinner; the home route renders its
+           full chrome + skeleton grid (ItemExplorer self-skeletons) so there's no
+           layout shift when the data lands -->
+      <div v-if="loading && items.length === 0 && $route.path !== '/'" class="loading-state">
         <div class="spinner"></div>
-        <p>Loading items from Riot API...</p>
+        <p>Loading…</p>
       </div>
 
-      <template v-else-if="items.length > 0">
+      <template v-else-if="items.length > 0 || ($route.path === '/' && loading)">
         <ExplorerHero v-if="$route.path === '/'" :item-count="items.length" />
 
         <QuickInsights

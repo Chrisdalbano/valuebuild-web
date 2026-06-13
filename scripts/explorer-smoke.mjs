@@ -54,6 +54,9 @@ await check('tray remove buttons empty selection and hide tray', async () => {
 await check('Compare navigates to /compare', async () => {
   await page.locator('.item-card').nth(0).click()
   await page.locator('.item-card').nth(1).click()
+  // dismiss any open hover popover so it can't intercept the tray button click
+  await page.mouse.move(10, 700)
+  await page.waitForTimeout(200)
   await page.locator('.btn-compare-now').click()
   await page.waitForURL('**/compare', { timeout: 5000 })
 })
