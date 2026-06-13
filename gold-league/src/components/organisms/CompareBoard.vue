@@ -70,8 +70,12 @@ function goToItems() {
 </script>
 
 <template>
-  <div v-if="items.length >= 1" class="compare-container">
-    <CompareHeader :count="items.length" @clear="emit('clear')" />
+  <!-- single root element: a routed component used inside <transition mode=
+       "out-in"> MUST have one root, or Vue can't track its leave and page
+       navigation stalls into a blank view -->
+  <div class="compare-board">
+    <div v-if="items.length >= 1" class="compare-container">
+      <CompareHeader :count="items.length" @clear="emit('clear')" />
 
     <CompareSingleItemNotice v-if="items.length === 1" @add="openSwapModal()" />
     <CompareInsightsPanel v-else :items="items" :insights="insights" />
@@ -105,19 +109,20 @@ function goToItems() {
       />
     </div>
 
-    <CompareAnalysisPanel :insights="insights" :item-count="items.length" />
+      <CompareAnalysisPanel :insights="insights" :item-count="items.length" />
+    </div>
+
+    <CompareEmptyState v-else @browse="goToItems" />
+
+    <SwapItemModal
+      :open="showSwapModal"
+      :title="modalTitle"
+      :all-items="allItems"
+      :selected-items="items"
+      @close="showSwapModal = false; swapTargetItem = null"
+      @select="onModalSelect"
+    />
   </div>
-
-  <CompareEmptyState v-else @browse="goToItems" />
-
-  <SwapItemModal
-    :open="showSwapModal"
-    :title="modalTitle"
-    :all-items="allItems"
-    :selected-items="items"
-    @close="showSwapModal = false; swapTargetItem = null"
-    @select="onModalSelect"
-  />
 </template>
 
 <style scoped>
