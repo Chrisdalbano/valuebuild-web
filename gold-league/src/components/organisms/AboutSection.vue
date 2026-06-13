@@ -11,19 +11,14 @@ import { itemsApi } from '@/api/items'
 // Session-persistent splash
 const { splash } = useChampionSplash()
 
-// Live dataset stats for the research hero + closing CTA
+// Only the "items studied" count is shown on the hero now; patch + freshness
+// live in the footer, so we don't repeat them here.
 const itemCount = ref(0)
-const patch = ref('')
-const lastUpdate = ref(null)
 
 onMounted(async () => {
   try {
     const data = await itemsApi.getMetadata()
-    if (data) {
-      if (data.itemCount) itemCount.value = data.itemCount
-      if (data.patch) patch.value = data.patch
-      if (data.lastUpdate || data.lastUpdated) lastUpdate.value = data.lastUpdate || data.lastUpdated
-    }
+    if (data?.itemCount) itemCount.value = data.itemCount
   } catch {
     /* already logged by the api layer */
   }
@@ -32,11 +27,11 @@ onMounted(async () => {
 
 <template>
   <div class="about-landing">
-    <AboutHero :splash="splash" :item-count="itemCount" :patch="patch" />
+    <AboutHero :splash="splash" :item-count="itemCount" />
     <AboutResearchAreas />
     <AboutFormulaSection />
     <AboutTheGap />
-    <AboutCta :last-update="lastUpdate" />
+    <AboutCta />
   </div>
 </template>
 

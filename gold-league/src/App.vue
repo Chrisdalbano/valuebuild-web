@@ -98,7 +98,7 @@ function goToItems() {
       </div>
 
       <div v-if="offlineSnapshot" class="offline-banner">
-        <span>⚡ Offline — showing your last saved item snapshot.</span>
+        <span>⚡ Offline. Showing your last saved snapshot.</span>
         <button @click="retryLoad" class="btn-small">Reconnect</button>
       </div>
 

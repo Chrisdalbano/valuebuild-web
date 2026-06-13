@@ -7,8 +7,8 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
     <div class="section-container">
       <div class="formula-content">
         <div class="formula-left">
-          <h2>Methodology: Measuring Gold Efficiency</h2>
-          <p>Gold efficiency is the cornerstone metric of this research — the percentage of an item's cost that converts into raw stat value. Every base stat is priced from League's own component items, so the baseline is reproducible, not opinion.</p>
+          <h2>How We Measure Efficiency</h2>
+          <p>Gold efficiency is the core metric: the percentage of an item's cost that converts into raw stat value. Every base stat is priced from League's own component items, so the baseline is reproducible, not opinion.</p>
 
           <div class="formula-box">
             <div class="formula-label">The Formula</div>
@@ -46,12 +46,12 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
               </div>
             </div>
             <div class="example-note">
-              The unique passive amplifies crit damage by 40%, making it essential for ADCs despite being slightly below 100% base efficiency. The true value comes from maximizing your critical strike damage output.
+              The passive amplifies crit damage, which is why it's a core ADC item even though it sits just under 100% base efficiency. The real value is in the crit, not the raw stats.
             </div>
           </div>
 
           <div class="formula-note">
-            Gold efficiency only accounts for base stats, not unique passives or actives. A low-efficiency item can still be optimal if its passive is powerful for your champion.
+            Efficiency only counts base stats, not passives or actives. A low number can still be the right buy when the passive is strong on your champion.
           </div>
         </div>
 

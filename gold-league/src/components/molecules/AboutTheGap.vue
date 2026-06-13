@@ -17,7 +17,7 @@ function openResearch() {
       <div class="section-header">
         <h2>The Open Problem: Valuing Effects</h2>
         <p>
-          Gold efficiency only counts what it can measure — flat stats. But the things that win games
+          Gold efficiency only counts what it can measure: flat stats. But the things that win games
           often aren't stats at all.
         </p>
       </div>
@@ -44,22 +44,22 @@ function openResearch() {
             <li><span>Shield on takedown</span><span class="gap-val unknown">? g</span></li>
             <li><span>On-hit magic damage</span><span class="gap-val unknown">? g</span></li>
           </ul>
-          <p class="gap-foot">Invisible to the formula — yet often the whole point of the item.</p>
+          <p class="gap-foot">Invisible to the formula, yet often the whole point of the item.</p>
         </div>
       </div>
 
       <div class="gap-cta">
         <p class="gap-cta-copy">
-          This is where the research goes next: estimating the gold value of effects
-          <em>in relation to base stats</em>, with the reasoning shown — never blended into the real
-          efficiency number, always labeled as an estimate.
+          This is where the research goes next. We estimate the gold value of effects
+          <em>against base stats</em>, with the reasoning shown. Never blended into the real
+          efficiency number, always labeled an estimate.
         </p>
         <button class="btn-research" :class="{ soon: !researchLive }" @click="openResearch">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4 2.5 5 .5.5.5 1 .5 2h8c0-1 0-1.5.5-2 1-1 2.5-2.5 2.5-5a7 7 0 0 0-7-7Z"/>
             <path d="M9 21h6"/>
           </svg>
-          {{ researchLive ? 'Explore the Research Lab' : 'Research Lab — coming soon' }}
+          {{ researchLive ? 'Explore the Research Lab' : 'Research Lab (coming soon)' }}
         </button>
       </div>
     </div>

@@ -33,7 +33,7 @@ function scrollCarousel(direction) {
     <div class="insights-header">
       <div>
         <h2><span class="icon-flash"></span> Flash Comparisons</h2>
-        <p class="insights-subtitle">Popular item matchups analyzed instantly</p>
+        <p class="insights-subtitle">Popular matchups, priced side by side.</p>
       </div>
       <button @click="$emit('shuffle')" class="btn-shuffle" title="Shuffle comparisons">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

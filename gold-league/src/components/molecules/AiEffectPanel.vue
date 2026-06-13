@@ -43,7 +43,7 @@ const formatAmount = n => (typeof n === 'number' ? Math.round(n) : n)
     <p v-else-if="error" class="ai-note">AI analysis is temporarily unavailable.</p>
 
     <p v-else-if="!analysis.effects || analysis.effects.length === 0" class="ai-note">
-      No non-stat effects to value — this item's worth is fully captured by the stat breakdown above.
+      No non-stat effects to value. This item's worth is fully captured by the stat breakdown above.
     </p>
 
     <!-- ready: the effect → base-stat → gold map -->

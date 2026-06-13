@@ -1,25 +1,6 @@
 <script setup>
-defineProps({
-  lastUpdate: { type: String, default: null },
-})
-
-// Format last update timestamp
-const formatLastUpdate = (timestamp) => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMs = now - date
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) {
-    return 'Today at ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  } else if (diffDays === 1) {
-    return 'Yesterday'
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`
-  } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-}
+// Closing CTA. Dataset freshness (last-updated / patch) lives in the footer now,
+// so it's not repeated here.
 </script>
 
 <template>
@@ -28,22 +9,13 @@ const formatLastUpdate = (timestamp) => {
       <img src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/1111.jpg"
            alt="BuildValue" class="cta-icon" />
       <h2>Go find what the numbers are hiding.</h2>
-      <p>Every item, priced and measured against the latest patch. Start exploring the data.</p>
+      <p>Every item, priced and measured. Start exploring.</p>
       <button @click="$router.push('/')" class="btn-cta-large">
         Browse the Database
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
       </button>
-
-      <!-- Last Update Info -->
-      <div v-if="lastUpdate" class="last-update-info">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="update-icon">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <span>Data last updated: {{ formatLastUpdate(lastUpdate) }}</span>
-      </div>
 
       <div class="disclaimer">
         BuildValue is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
@@ -68,10 +40,6 @@ const formatLastUpdate = (timestamp) => {
 .btn-cta-large:hover { transform: translateY(-2px); box-shadow: 0 6px 30px color-mix(in srgb, var(--accent-lead) 55%, transparent); }
 
 .btn-cta-large svg { width: 20px; height: 20px; }
-
-.last-update-info { margin-top: 2rem; padding: 0.875rem 1.25rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--fg-secondary); }
-
-.update-icon { width: 16px; height: 16px; color: var(--accent-lead); flex-shrink: 0; }
 
 /* Merged legacy cascade: a later duplicate `.disclaimer` rule (in the dead "legacy
    styles" block) overrode margin/padding/background/radius/line-height; only the

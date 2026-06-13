@@ -7,31 +7,31 @@ const areas = [
     icon: `${CD}/icon_gold.png`,
     tint: 'var(--accent-lead)',
     title: 'Efficiency Baselines',
-    body: 'Every item measured against the gold value of its raw stats — the same base values Riot derives component items from. The ground truth the rest of the work builds on.',
+    body: "Every item measured against the gold value of its raw stats, using the same base prices Riot builds component items from. The ground truth everything else stands on.",
   },
   {
     icon: `${CD}/icon_move_speed.png`,
     tint: 'var(--accent-support)',
     title: 'Effect Valuation',
-    body: "The frontier: heals, shields, on-hit and actives that the stat formula can't price. We estimate their gold value in relation to base stats — and show the reasoning.",
+    body: "The frontier. Heals, shields, on-hit and actives the stat formula can't price. We estimate their gold value against base stats, and show the reasoning.",
   },
   {
     icon: `${CD}/icon_cooldown.png`,
     tint: 'var(--p-violet-500)',
     title: 'Patch Deltas',
-    body: 'Itemization shifts every two weeks. Re-measuring from DDragon each patch lets us watch efficiency rise and fall as the meta moves.',
+    body: 'Itemization shifts every patch. Re-measuring each one lets us watch efficiency rise and fall as the meta moves.',
   },
   {
     icon: `${CD}/icon_aoe.png`,
     tint: 'var(--eff-positive)',
     title: 'Outlier Detection',
-    body: 'Which items are quietly over- or under-valued for their cost? Surfacing the statistical outliers is how you find what is "broken" before everyone else does.',
+    body: "Which items are quietly over- or under-valued for their cost. Surfacing the outliers is how you find what's broken before everyone else does.",
   },
   {
     icon: 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perk-images/statmods/statmodsadaptiveforceicon.png',
     tint: 'var(--accent-warm)',
     title: 'Experimental Builds',
-    body: 'Hypotheses worth testing: cost-efficient loadouts and off-meta combinations the numbers suggest might be stronger than their reputation.',
+    body: 'Hypotheses worth testing. Cost-efficient loadouts and off-meta combos the numbers say might be stronger than their reputation.',
   },
 ]
 </script>
@@ -41,7 +41,7 @@ const areas = [
     <div class="section-container">
       <div class="section-header">
         <h2>What We Study</h2>
-        <p>Five threads of research into how gold becomes power in League of Legends — measured, not guessed.</p>
+        <p>Five threads of research into how gold becomes power. Measured, not guessed.</p>
       </div>
 
       <div class="areas-grid">

@@ -13,7 +13,7 @@ defineProps({
     <ParticlesBg :count="36" :opacity="0.4" />
     <div class="hero-inner">
       <h1 class="hero-title">Build<span class="title-accent">Value</span></h1>
-      <p class="hero-tagline">Gold efficiency analytics for every League of Legends item — know what your gold is really buying.</p>
+      <p class="hero-tagline">Know exactly what your gold is buying. Every item, priced to the stat.</p>
     </div>
   </section>
 </template>

@@ -49,11 +49,11 @@ const resources = [
           <h4 class="dataset-title">Dataset</h4>
           <div class="dataset-stats">
             <div class="dstat">
-              <span class="dstat-num">{{ itemCount || '—' }}</span>
+              <span class="dstat-num">{{ itemCount || '…' }}</span>
               <span class="dstat-cap">items analyzed</span>
             </div>
             <div class="dstat">
-              <span class="dstat-num">{{ patch || '—' }}</span>
+              <span class="dstat-num">{{ patch || '…' }}</span>
               <span class="dstat-cap">current patch</span>
             </div>
             <div class="dstat">

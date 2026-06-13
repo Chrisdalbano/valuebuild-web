@@ -17,7 +17,7 @@ function run() {
   budget.value = value
   const build = optimizeBuild(props.items, value, props.role)
   if (build.length === 0) {
-    summary.value = 'No completed items fit that budget — try raising it.'
+    summary.value = 'No completed items fit that budget. Try raising it.'
     return
   }
   const cost = build.reduce((sum, i) => sum + i.cost, 0)
@@ -32,7 +32,7 @@ function run() {
     <div class="optimizer-copy">
       <h3>⚡ Budget Optimizer</h3>
       <p class="optimizer-subtitle">
-        Builds the highest total stat value under your gold budget — replaces the current build.
+        Builds the highest total stat value under your gold budget. Replaces the current build.
       </p>
     </div>
     <div class="optimizer-controls">

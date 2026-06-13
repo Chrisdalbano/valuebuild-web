@@ -36,8 +36,8 @@ const hasContent = computed(() => {
       <div>
         <h1>Research Lab</h1>
         <p class="research-sub">
-          Experimental discoveries for the current patch — mispriced items, what effects are really
-          worth, and builds the numbers suggest are worth testing.
+          Experimental discoveries for this patch. Mispriced items, what effects are really worth,
+          and builds the numbers say are worth testing.
         </p>
       </div>
       <div v-if="digest?.patch" class="patch-chip">
@@ -48,8 +48,8 @@ const hasContent = computed(() => {
     <div class="honesty-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       <span>
-        These are <strong>experimental estimates</strong> — hypotheses, not ground truth. The gold-efficiency
-        numbers elsewhere in the app stay formula-only; nothing here changes them.
+        These are <strong>experimental estimates</strong>: hypotheses, not ground truth. The gold-efficiency
+        numbers elsewhere stay formula-only. Nothing here changes them.
       </span>
     </div>
 

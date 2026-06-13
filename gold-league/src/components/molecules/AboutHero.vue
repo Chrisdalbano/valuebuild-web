@@ -4,7 +4,6 @@ import NumberTicker from '@/components/atoms/NumberTicker.vue'
 defineProps({
   splash: { type: String, default: '' },
   itemCount: { type: Number, default: 0 },
-  patch: { type: String, default: '' },
 })
 </script>
 
@@ -19,18 +18,14 @@ defineProps({
       <h1 class="hero-title">Build<span class="title-accent">Value</span></h1>
 
       <p class="hero-subtitle">
-        A living study of what your gold actually buys in League of Legends — efficiency baselines,
-        effect valuation, and patch-by-patch discoveries, recomputed from the source every week.
+        A living study of what your gold actually buys in League. Efficiency baselines, effect
+        valuation, and patch-by-patch findings.
       </p>
 
       <div class="hero-stats">
         <div class="stat-pill">
           <div class="stat-number"><NumberTicker :value="itemCount" /></div>
           <div class="stat-label">Items Studied</div>
-        </div>
-        <div class="stat-pill">
-          <div class="stat-number">{{ patch || '—' }}</div>
-          <div class="stat-label">Current Patch</div>
         </div>
         <div class="stat-pill">
           <div class="stat-number">Weekly</div>
