@@ -1,4 +1,5 @@
 import { isItemDeprecated } from '@/utils/deprecatedItems'
+import { isSupport, isConsumable } from '@/utils/itemClassify'
 import { ROLE_MATCHERS } from './useBuildSuggestions'
 
 const STEP = 25 // gold granularity (item costs are multiples of 25)
@@ -9,7 +10,12 @@ function candidatePool(items, role) {
     if (isItemDeprecated(item)) return false
     if (!item.id || !/^\d+$/.test(item.id.toString())) return false
     if (!item.cost || item.cost <= 0) return false
-    if (item.into && item.into.length > 0) return false // completed items only
+    if (item.into && item.into.length > 0) return false // not a component
+    // must be BUILT from components — excludes standalone lane starters
+    // (Doran's, the ARAM Guardian's line) that the knapsack would otherwise
+    // favour for their high stat efficiency. Keeps legendaries/epics/boots.
+    if (!item.from || item.from.length === 0) return false
+    if (isSupport(item) || isConsumable(item)) return false
     if (!item.totalGoldValue || item.totalGoldValue <= 0) return false
     return item.statBreakdown && Object.keys(item.statBreakdown).length > 0
   })

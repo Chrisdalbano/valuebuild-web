@@ -22,7 +22,16 @@ DEPRECATED_ITEM_IDS = {
     '3092',  # Frost Queen's Claim (removed from game)
     '3401',  # Face of the Mountain (removed from game)
     '3069',  # Abyssal Mask (old version)
-    
+
+    # ARAM-exclusive "Guardian's" starter line. DDragon (wrongly) marks these
+    # maps.11=true and they're structurally identical to Doran's items, so the
+    # only reliable filter is this curated list + the name-prefix guard below.
+    # (3026 "Guardian Angel" is a legit SR legendary — NOT in this list.)
+    '2051',  # Guardian's Horn (ARAM)
+    '3112',  # Guardian's Orb (ARAM)
+    '3177',  # Guardian's Blade (ARAM)
+    '3184',  # Guardian's Hammer (ARAM)
+
     # NOTE: The following items ARE available on SR and were removed from this list:
     # '3152' - Hextech Rocketbelt (available on SR)
     # '4633' - Riftmaker (available on SR)
@@ -82,6 +91,11 @@ def is_item_deprecated(item):
     name = (item.get('name', '') or '').lower()
     if any(keyword in name for keyword in DEPRECATED_KEYWORDS):
         return True
-    
+
+    # ARAM-exclusive "Guardian's X" line (safety net for future additions).
+    # Note: "Guardian Angel" has no apostrophe-s, so it is not matched.
+    if name.startswith("guardian's "):
+        return True
+
     return False
 

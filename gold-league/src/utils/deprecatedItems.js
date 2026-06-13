@@ -18,7 +18,15 @@ export const DEPRECATED_ITEM_IDS = new Set([
   '3092', // Frost Queen's Claim (removed from game)
   '3401', // Face of the Mountain (removed from game)
   '3069', // Abyssal Mask (old version)
-  
+
+  // ARAM-exclusive "Guardian's" starter line (DDragon mis-marks them SR-available;
+  // structurally identical to Doran's, so blocked by id + the name guard below).
+  // 3026 "Guardian Angel" is a legit SR legendary and is NOT listed.
+  '2051', // Guardian's Horn (ARAM)
+  '3112', // Guardian's Orb (ARAM)
+  '3177', // Guardian's Blade (ARAM)
+  '3184', // Guardian's Hammer (ARAM)
+
   // NOTE: The following items ARE available on SR and were removed from this list:
   // '3152' - Hextech Rocketbelt (available on SR)
   // '4633' - Riftmaker (available on SR)
@@ -64,7 +72,12 @@ export function isItemDeprecated(item) {
   if (DEPRECATED_KEYWORDS.some(keyword => name.includes(keyword))) {
     return true
   }
-  
+
+  // ARAM-exclusive "Guardian's X" line ("Guardian Angel" has no apostrophe-s)
+  if (name.startsWith("guardian's ")) {
+    return true
+  }
+
   return false
 }
 

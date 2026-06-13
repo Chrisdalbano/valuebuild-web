@@ -118,7 +118,12 @@ class DDragonETL:
         name_lower = name.lower()
         if any(keyword in name_lower for keyword in deprecated_keywords):
             return False
-        
+
+        # ARAM-exclusive "Guardian's X" line (DDragon mis-marks them SR-available;
+        # "Guardian Angel" has no apostrophe-s so it is kept)
+        if name_lower.startswith("guardian's "):
+            return False
+
         # Exclude Arena mode items (special ID prefixes for 5+ digit IDs)
         # Arena items: 223094, 326672, etc. (5+ digits)
         # Regular items: 3094, 6672, etc. (4 digits or less)
@@ -272,10 +277,22 @@ class DDragonETL:
                 ]
                 
                 result = await self.items_collection.bulk_write(operations)
-                
+
                 log(f"  ✅ Upserted: {result.upserted_count}")
                 log(f"  ✅ Modified: {result.modified_count}")
-                
+
+                # Retire stale docs: any item no longer in the valid set (now
+                # filtered out — ARAM "Guardian's" line, deprecated, removed) gets
+                # flagged isDeprecated so the API (which queries isDeprecated:False)
+                # stops serving it. Non-destructive (a flag, not a delete).
+                valid_ids = [it['_id'] for it in valid_items]
+                retired = await self.items_collection.update_many(
+                    {'_id': {'$nin': valid_ids}, 'isDeprecated': {'$ne': True}},
+                    {'$set': {'isDeprecated': True}},
+                )
+                if retired.modified_count:
+                    log(f"  🧹 Retired {retired.modified_count} stale item(s) (incl. ARAM/Guardian's)")
+
                 # Update metadata
                 next_update = datetime.utcnow() + timedelta(days=7)
                 metadata = {

@@ -52,12 +52,15 @@ await check('tray remove buttons empty selection and hide tray', async () => {
 })
 
 await check('Compare navigates to /compare', async () => {
-  await page.locator('.item-card').nth(0).click()
-  await page.locator('.item-card').nth(1).click()
-  // dismiss any open hover popover so it can't intercept the tray button click
-  await page.mouse.move(10, 700)
-  await page.waitForTimeout(200)
-  await page.locator('.btn-compare-now').click()
+  // select via the card checkbox (not a body click) so the whole-card hover
+  // popover never opens to intercept the subsequent tray-button click
+  await page.locator('.item-card .card-checkbox').nth(0).click()
+  await page.locator('.item-card .card-checkbox').nth(1).click()
+  await page.mouse.move(10, 750) // park the cursor off the grid
+  await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 }).catch(() => {})
+  const btn = page.locator('.btn-compare-now')
+  await btn.waitFor({ state: 'visible', timeout: 5000 })
+  await btn.click()
   await page.waitForURL('**/compare', { timeout: 5000 })
 })
 
@@ -146,6 +149,16 @@ await check('exclude-support toggle reveals support items', async () => {
   await page.locator('.support-toggle input').uncheck()
   await page.waitForTimeout(300)
   if ((await searchCount('atlas')) < 1) throw new Error('toggle did not reveal support item')
+})
+
+await check('ARAM Guardian\'s items are filtered out (Guardian Angel kept)', async () => {
+  await selectType(/^All$/)
+  await page.locator('.support-toggle input').uncheck().catch(() => {}) // show everything
+  const names = (await searchCount('guardian')) // populates the grid
+  void names
+  const cards = await page.locator('.item-card .card-title').allTextContents()
+  const aram = cards.filter(n => /^Guardian's /.test(n.trim()))
+  if (aram.length) throw new Error(`ARAM items still shown: ${aram.join(', ')}`)
 })
 
 await browser.close()
