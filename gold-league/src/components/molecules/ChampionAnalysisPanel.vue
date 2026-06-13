@@ -3,6 +3,7 @@ import { computed, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import BuildItemRow from './BuildItemRow.vue'
 import ChampionTimelineChart from './ChampionTimelineChart.vue'
+import ChampionBuildCharts from './ChampionBuildCharts.vue'
 import { useChampionAnalysis } from '@/composables/useChampionAnalysis'
 
 // Per-champion itemization analysis. Speculative suggestions — itemIds resolve
@@ -50,6 +51,7 @@ const tryBuild = ids => {
         <div class="ca-label">Core build</div>
         <BuildItemRow :items="resolve(analysis.coreBuild?.itemIds)" tryable @try="tryBuild" />
         <p v-if="analysis.coreBuild?.rationale" class="ca-text">{{ analysis.coreBuild.rationale }}</p>
+        <ChampionBuildCharts :items="resolve(analysis.coreBuild?.itemIds)" />
       </div>
 
       <div v-if="analysis.progression?.length" class="ca-block">

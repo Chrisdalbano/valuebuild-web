@@ -18,11 +18,12 @@ const canvas = ref(null)
 let chart = null
 
 const START_GOLD = 500 // starting gold
-// gold/min incl. passive (~125) + CS/kills by pace
+// gold/min incl. passive (~125) + CS by pace (~21g/minion). Labels carry the
+// CS/min so the "farm desired vs happening" reading is explicit.
 const PACES = [
-  { key: 'Behind', rate: 255, color: '225, 90, 76' },
-  { key: 'Even', rate: 345, color: '240, 168, 41' },
-  { key: 'Ahead', rate: 445, color: '58, 191, 145' },
+  { key: 'Behind · ~5 CS/min', rate: 255, color: '225, 90, 76' },
+  { key: 'Even · ~7.5 CS/min', rate: 345, color: '240, 168, 41' },
+  { key: 'Ahead · ~10 CS/min', rate: 445, color: '58, 191, 145' },
 ]
 const EVEN = PACES[1]
 

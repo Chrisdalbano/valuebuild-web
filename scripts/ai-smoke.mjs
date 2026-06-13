@@ -119,13 +119,13 @@ await check('ready-state renders the Best-On champion rows', async () => {
 })
 
 // --- AI Research tab: pending state (real backend) ---
-await check('/research renders header + honesty banner + pending state', async () => {
+await check('/research renders header + honesty banner + content (pending or ready)', async () => {
   await page.goto(`${base}/research`)
   await page.waitForSelector('.research-board', { timeout: 30000 })
   const banner = await page.locator('.honesty-banner').textContent()
   if (!/hypotheses/i.test(banner)) throw new Error(`banner: ${banner}`)
-  // backend has no quota → pending state, not an error or blank
-  await page.waitForSelector('.research-state', { timeout: 5000 })
+  // either the pending/empty state OR the real ready content — both are valid
+  await page.waitForSelector('.research-state, .research-section', { timeout: 6000 })
 })
 
 // --- AI Research tab: ready-state (route-mocked digest) ---

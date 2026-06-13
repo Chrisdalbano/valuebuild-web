@@ -229,6 +229,38 @@ async def get_champions():
     return {'champions': champions, 'count': len(champions)}
 
 
+@app.get("/api/research/champions")
+async def get_research_champions():
+    """Champion-derived research signals — DETERMINISTIC (no Gemini call): the
+    most-built items across champion core builds this patch + a sample of the
+    off-meta champion experiments. Aggregated from champion_analysis."""
+    from collections import Counter
+    patch = await _current_patch()
+    docs = await champion_analysis_collection.find({'patch': patch}).to_list(length=None)
+    if not docs:
+        return {'status': 'pending', 'configured': ai_is_configured()}
+    counts = Counter()
+    experiments = []
+    for d in docs:
+        for iid in ((d.get('coreBuild') or {}).get('itemIds') or []):
+            counts[iid] += 1
+        exp = d.get('experimental') or {}
+        if exp.get('itemIds'):
+            experiments.append({
+                'champion': d.get('name', d.get('_id')),
+                'title': exp.get('title', ''),
+                'itemIds': exp.get('itemIds', []),
+                'rationale': exp.get('rationale', ''),
+            })
+    return {
+        'status': 'ready',
+        'patch': patch,
+        'championCount': len(docs),
+        'topItems': [{'itemId': i, 'count': c} for i, c in counts.most_common(12)],
+        'experiments': experiments[:12],
+    }
+
+
 @app.get("/api/champions/{champion_id}/ai")
 async def get_champion_ai(champion_id: str):
     """Cached per-champion itemization analysis — only if it matches the current

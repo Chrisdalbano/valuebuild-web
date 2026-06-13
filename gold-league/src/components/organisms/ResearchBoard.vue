@@ -4,6 +4,7 @@ import ResearchEfficiencyChart from '../molecules/ResearchEfficiencyChart.vue'
 import ResearchOutliers from '../molecules/ResearchOutliers.vue'
 import ResearchEffectSpotlights from '../molecules/ResearchEffectSpotlights.vue'
 import ResearchExperimentalBuilds from '../molecules/ResearchExperimentalBuilds.vue'
+import ResearchChampionMeta from '../molecules/ResearchChampionMeta.vue'
 import { useResearch } from '@/composables/useResearch'
 
 // The Research Lab tab — per-patch discoveries. Everything here is explicitly
@@ -76,6 +77,7 @@ const hasContent = computed(() => {
       <ResearchOutliers :outliers="digest.outliers || []" :all-items="allItems" />
       <ResearchEffectSpotlights :spotlights="digest.effectSpotlights || []" :all-items="allItems" />
       <ResearchExperimentalBuilds :builds="digest.experimentalBuilds || []" :all-items="allItems" />
+      <ResearchChampionMeta :all-items="allItems" />
     </template>
   </div>
 </template>
