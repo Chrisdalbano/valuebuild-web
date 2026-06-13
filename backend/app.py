@@ -40,6 +40,7 @@ items_collection = db['items_cache']
 metadata_collection = db['etl_metadata']
 ai_collection = db['ai_analysis']
 champions_collection = db['champions_cache']
+champion_analysis_collection = db['champion_analysis']
 
 
 async def _current_patch():
@@ -219,13 +220,45 @@ async def get_champions():
     return {'champions': champions, 'count': len(champions)}
 
 
+@app.get("/api/champions/{champion_id}/ai")
+async def get_champion_ai(champion_id: str):
+    """Cached per-champion itemization analysis — only if it matches the current
+    patch (else 'pending'). Patch-gated + model stripped, like the item AI."""
+    doc = await champion_analysis_collection.find_one(
+        {'_id': champion_id}, {'_id': 0, 'model': 0}
+    )
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured()}
+
+
+# in-process guard so spamming /api/ai/refresh can't launch overlapping
+# enrichment jobs (the only generation trigger; key stays backend-only)
+_ai_enrichment_running = False
+
+
+async def _run_ai_enrichment_guarded(mongo_uri: str):
+    global _ai_enrichment_running
+    if _ai_enrichment_running:
+        return
+    _ai_enrichment_running = True
+    try:
+        await run_ai_enrichment(mongo_uri)
+    finally:
+        _ai_enrichment_running = False
+
+
 @app.post("/api/ai/refresh")
 async def refresh_ai(background_tasks: BackgroundTasks):
     """Trigger AI enrichment in the background (mirrors /api/items/refresh).
-    No-ops gracefully if GEMINI_API_KEY is unset or quota is exhausted."""
+    No-ops gracefully if GEMINI_API_KEY is unset or quota is exhausted. Guarded
+    against overlapping runs so repeated calls can't spawn concurrent jobs."""
     if not ai_is_configured():
         return {'status': 'skipped', 'reason': 'GEMINI_API_KEY not set'}
-    background_tasks.add_task(run_ai_enrichment, MONGO_URI)
+    if _ai_enrichment_running:
+        return {'status': 'already_running', 'note': 'enrichment in progress; poll /api/research'}
+    background_tasks.add_task(_run_ai_enrichment_guarded, MONGO_URI)
     return {'status': 'processing', 'note': 'AI enrichment started; poll /api/research'}
 
 

@@ -16,6 +16,7 @@ from efficiency import STAT_VALUES  # noqa: E402
 EFFECT_PROMPT_VERSION = 2
 BEST_ON_PROMPT_VERSION = 1
 DIGEST_PROMPT_VERSION = 2
+CHAMPION_PROMPT_VERSION = 1
 
 # Human-readable base-stat gold values for the prompt (per 1 point unless noted).
 _STAT_LABELS = {
@@ -224,5 +225,71 @@ def build_digest_prompt(items: list, patch: str, champions: list = None) -> str:
     user = _DIGEST_USER.format(
         item_lines="\n".join(lines),
         roster="\n".join(roster_lines) or "(roster unavailable)",
+    )
+    return f"{system}\n\n{user}"
+
+
+_CHAMPION_SYSTEM = """You are a League of Legends itemization coach. Given ONE champion \
+and the current buildable-item roster, produce a focused, patch-{patch} itemization \
+guide for Summoner's Rift, grounded in the champion's kit (abilities, scalings, resource, \
+range) and the items' real stats/effects.
+
+These base-stat gold values are the project's ground truth (context only):
+{base_stats}
+
+Rules:
+- Recommend ONLY itemIds that appear in the roster below. Use the exact ids.
+- Be specific to THIS champion's kit; avoid generic "build damage" filler.
+- Situational entries must name a real game situation (vs heavy AP, vs tanks, vs healing,
+  vs hard CC, when ahead, when behind) and the item that answers it.
+- experimental = one OFF-META idea the item numbers/kit suggest, not the standard build.
+- These are speculative suggestions, NOT ground truth, and must never restate or alter
+  the canonical gold-efficiency numbers.
+- Output STRICT JSON only."""
+
+_CHAMPION_USER = """Champion: {name}
+Class tags: {tags} | Resource: {resource} | Range: {range_type}
+Kit: passive "{passive}"; abilities {spells}
+Riot ratings (0-10): attack {attack}, defense {defense}, magic {magic}
+
+Buildable items (id | name | cost | tags | short effect):
+{items}
+
+Return JSON with this exact shape:
+{{
+  "coreBuild": {{ "itemIds": ["id", "id", "id"], "rationale": "1-2 sentences" }},
+  "buildPath": {{ "early": ["id"], "mid": ["id"], "late": ["id"] }},
+  "situational": [
+    {{ "when": "vs heavy AP" | "vs tanks" | "vs healing" | "vs hard CC" | "...",
+       "itemIds": ["id"], "why": "one line" }}
+  ],
+  "experimental": {{ "title": "name", "itemIds": ["id", "id"], "rationale": "off-meta hook" }},
+  "economy": {{ "ahead": "one line on snowballing", "behind": "one line on stabilizing" }},
+  "caveats": "1 sentence: speculative, varies by matchup/patch"
+}}
+Limit: coreBuild 3-5 items, 2-4 situational entries. Use only roster ids."""
+
+
+def build_champion_prompt(champion: dict, build_items: list, patch: str) -> str:
+    info = champion.get("info", {}) or {}
+    item_lines = []
+    for it in build_items:
+        tags = "/".join(it.get("tags", [])) or "?"
+        effect = strip_html(it.get("description", ""))[:70]
+        item_lines.append(
+            f"{it.get('id')} | {it.get('name')} | {it.get('cost')}g | {tags} | {effect}"
+        )
+    system = _CHAMPION_SYSTEM.format(patch=patch, base_stats=_base_stat_table())
+    user = _CHAMPION_USER.format(
+        name=champion.get("name", "?"),
+        tags="/".join(champion.get("tags", [])) or "?",
+        resource=champion.get("resource", "?"),
+        range_type=champion.get("rangeType", "?"),
+        passive=champion.get("passive", ""),
+        spells=", ".join(champion.get("spells", [])) or "?",
+        attack=info.get("attack", "?"),
+        defense=info.get("defense", "?"),
+        magic=info.get("magic", "?"),
+        items="\n".join(item_lines),
     )
     return f"{system}\n\n{user}"

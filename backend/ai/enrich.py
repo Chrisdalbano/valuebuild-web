@@ -15,8 +15,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from .gemini_client import generate_json, is_configured, _model
 from .prompts import (
-    build_effect_prompt, build_digest_prompt, build_best_on_prompt,
-    EFFECT_PROMPT_VERSION, BEST_ON_PROMPT_VERSION, DIGEST_PROMPT_VERSION,
+    build_effect_prompt, build_digest_prompt, build_best_on_prompt, build_champion_prompt,
+    EFFECT_PROMPT_VERSION, BEST_ON_PROMPT_VERSION, DIGEST_PROMPT_VERSION, CHAMPION_PROMPT_VERSION,
 )
 
 logger = logging.getLogger("ai.enrich")
@@ -29,6 +29,10 @@ CALL_DELAY = float(os.getenv("AI_CALL_DELAY_SECONDS", "4"))
 # faster flash-lite model, with a shorter delay (lite has higher RPM headroom).
 BEST_ON_MODEL = os.getenv("AI_BEST_ON_MODEL", "gemini-flash-lite-latest")
 BEST_ON_CALL_DELAY = float(os.getenv("AI_BEST_ON_CALL_DELAY_SECONDS", "2"))
+
+# Per-champion itemization analysis — also flash-lite (lighter, ~170 champions).
+CHAMPION_MODEL = os.getenv("AI_CHAMPION_MODEL", "gemini-flash-lite-latest")
+CHAMPION_CALL_DELAY = float(os.getenv("AI_CHAMPION_CALL_DELAY_SECONDS", "2"))
 
 
 def _has_effect(item: dict) -> bool:
@@ -51,6 +55,7 @@ def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
 EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
 DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "16384"))
 BEST_ON_MAX_TOKENS = int(os.getenv("AI_BEST_ON_MAX_TOKENS", "3072"))
+CHAMPION_MAX_TOKENS = int(os.getenv("AI_CHAMPION_MAX_TOKENS", "3072"))
 
 
 async def _gen(prompt: str, max_output_tokens: int = 3072, model: str = None):
@@ -166,6 +171,74 @@ async def generate_research_digest(items, patch, ai_col, champions=None) -> bool
     return True
 
 
+def _is_support(item: dict) -> bool:
+    return "GoldPer" in (item.get("tags") or [])
+
+
+def select_build_items(items: list) -> list:
+    """Completed, BUILT Summoner's Rift items the champion analysis can recommend
+    from — mirrors the frontend budget-optimizer pool (built, non-support,
+    non-component) so the AI only picks real, buildable itemIds."""
+    pool = [
+        it for it in items
+        if it.get("from") and not it.get("into") and not _is_support(it)
+        and it.get("cost", 0) > 0
+    ]
+    pool.sort(key=lambda it: it.get("cost", 0), reverse=True)
+    return pool
+
+
+async def analyze_champions(champions, build_items, patch, champ_col) -> dict:
+    """Per-champion itemization guide (core build, build path, situational swaps,
+    one off-meta experiment, economy notes). Flash-lite, resumable (skips docs at
+    the current prompt version for this patch), idempotent $set. Mirrors best-on."""
+    if not champions:
+        return {"champions": 0, "championsSkipped": 0, "championsFailed": 0}
+    if not build_items:
+        logger.warning("champion analysis skipped: no buildable items")
+        return {"champions": 0, "championsSkipped": 0, "championsFailed": 0}
+    enriched = skipped = failed = 0
+    logger.info("AI champion analysis: %d champions for patch %s", len(champions), patch)
+    for champ in champions:
+        cid = champ.get("_id") or champ.get("name")
+        if not cid:
+            continue
+        if await champ_col.find_one(
+            {"_id": cid, "patch": patch, "version": CHAMPION_PROMPT_VERSION}
+        ):
+            skipped += 1
+            continue
+        result = await _gen(
+            build_champion_prompt(champ, build_items, patch), CHAMPION_MAX_TOKENS, CHAMPION_MODEL
+        )
+        if isinstance(result, dict) and result.get("coreBuild"):
+            await champ_col.replace_one(
+                {"_id": cid},
+                {
+                    "_id": cid,
+                    "championId": cid,
+                    "name": champ.get("name", ""),
+                    "patch": patch,
+                    "version": CHAMPION_PROMPT_VERSION,
+                    "model": CHAMPION_MODEL,
+                    "coreBuild": result.get("coreBuild", {}),
+                    "buildPath": result.get("buildPath", {}),
+                    "situational": result.get("situational", []),
+                    "experimental": result.get("experimental", {}),
+                    "economy": result.get("economy", {}),
+                    "caveats": result.get("caveats", ""),
+                    "generatedAt": datetime.utcnow(),
+                },
+                upsert=True,
+            )
+            enriched += 1
+        else:
+            failed += 1
+        await asyncio.sleep(CHAMPION_CALL_DELAY)
+    logger.info("AI champion analysis done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
+    return {"champions": enriched, "championsSkipped": skipped, "championsFailed": failed}
+
+
 async def run_ai_enrichment(mongo_uri: str) -> dict:
     """Top-level: enrich curated item effects + the patch digest. Mirrors run_etl_now."""
     if not is_configured():
@@ -185,6 +258,10 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         champions = await db["champions_cache"].find(
             {}, {"_id": 0, "name": 1, "tags": 1, "rangeType": 1}
         ).to_list(length=None)
+        # full champion docs (kit) for the per-champion itemization pass
+        champ_full = await db["champions_cache"].find({}).to_list(length=None)
+        champ_col = db["champion_analysis"]
+        build_items = select_build_items(items)
 
         # Digest first: a single Gemini call that only needs items_cache, so the
         # long (resumable) per-item passes can't starve it on a constrained worker.
@@ -195,9 +272,11 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         # quantitative comparisons) is the primary panel, so it converges first.
         effect_stats = await enrich_item_effects(items, patch, ai_col)
         best_on_stats = await generate_best_on(items, champions, patch, ai_col)
+        # champion analysis last (~170 calls, longest); resumable convergence.
+        champ_stats = await analyze_champions(champ_full, build_items, patch, champ_col)
 
         return {"status": "complete", "patch": patch, "digest": digest_ok,
-                **best_on_stats, **effect_stats}
+                **best_on_stats, **effect_stats, **champ_stats}
     except Exception as e:
         logger.warning("AI enrichment failed: %s", str(e)[:200])
         return {"status": "error", "error": str(e)[:200]}
