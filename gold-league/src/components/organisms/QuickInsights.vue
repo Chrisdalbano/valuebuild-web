@@ -36,7 +36,10 @@ function scrollCarousel(direction) {
         <p class="insights-subtitle">Popular item matchups analyzed instantly</p>
       </div>
       <button @click="$emit('shuffle')" class="btn-shuffle" title="Shuffle comparisons">
-        🔄 Shuffle
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7M21 16v5h-5M14 14l7 7M3 8V3h5M10 10L3 3"/>
+        </svg>
+        Shuffle
       </button>
     </div>
 
@@ -111,6 +114,7 @@ function scrollCarousel(direction) {
   gap: 0.5rem;
 }
 
+.btn-shuffle svg { width: 16px; height: 16px; }
 .btn-shuffle:hover { background: var(--accent-lead); border-color: var(--accent-lead); color: var(--bg-canvas); }
 
 .insights-grid {

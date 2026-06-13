@@ -1,38 +1,54 @@
 <script setup>
+import { computed } from 'vue'
 import EfficiencyBadge from '@/components/atoms/EfficiencyBadge.vue'
+import GoldValue from '@/components/atoms/GoldValue.vue'
 import ItemIcon from '@/components/atoms/ItemIcon.vue'
 
-defineProps({
+const props = defineProps({
   item: { type: Object, required: true },
   winner: { type: Boolean, default: false },
   showVs: { type: Boolean, default: false },
   goldIconUrl: { type: String, default: '' },
 })
+
+// efficiency bar on a 0–150% scale (100% = break-even), coloured by verdict
+const barPercent = computed(() => Math.min(100, Math.max(2, (props.item.goldEfficiency / 150) * 100)))
+const barColor = computed(() => {
+  const e = props.item.goldEfficiency
+  if (e >= 100) return 'var(--eff-positive)'
+  if (e >= 85) return 'var(--eff-neutral)'
+  return 'var(--eff-negative)'
+})
 </script>
 
 <template>
-  <div class="insight-item" :class="{ 'is-winner': winner }">
-    <div class="item-rank" :class="{ 'rank-winner': winner }">{{ winner ? '👑' : '💠' }}</div>
-    <ItemIcon :item="item" size="xl" :alt="item.name" class="insight-item-img" />
-    <div class="insight-item-details">
-      <div class="insight-item-name">{{ item.name }}</div>
-      <div class="insight-item-stats">
-        <EfficiencyBadge :value="item.goldEfficiency" class="insight-eff" />
-        <span class="insight-cost">
-          <img :src="goldIconUrl" alt="gold" class="gold-icon-inline" /> {{ item.cost }}
-        </span>
+  <div class="flash-item" :class="{ 'is-winner': winner }">
+    <div class="flash-rank" :class="{ 'rank-winner': winner }" aria-hidden="true">
+      <svg v-if="winner" viewBox="0 0 24 24" fill="currentColor" class="crown">
+        <path d="M5 16L3 5l5.5 4L12 4l3.5 5L21 5l-2 11H5zm0 2h14v2H5v-2z"/>
+      </svg>
+    </div>
+    <ItemIcon :item="item" size="xl" :alt="item.name" class="flash-img" />
+    <div class="flash-details">
+      <div class="flash-name">{{ item.name }}</div>
+      <div class="flash-bar-row">
+        <div class="flash-bar-track">
+          <div class="flash-bar-fill" :style="{ width: barPercent + '%', background: barColor }"></div>
+          <span class="flash-bar-mark" title="break-even"></span>
+        </div>
+        <EfficiencyBadge :value="item.goldEfficiency" class="flash-eff" />
       </div>
-      <div class="insight-item-value">
-        <span class="value-label">Value:</span>
-        <span class="value-amount">{{ item.totalGoldValue }}g</span>
+      <div class="flash-meta">
+        <span class="flash-meta-cell"><span class="meta-label">Cost</span><GoldValue :amount="item.cost" /></span>
+        <span class="flash-meta-cell"><span class="meta-label">Value</span><GoldValue :amount="item.totalGoldValue" /></span>
       </div>
     </div>
-    <div v-if="showVs" class="insight-vs">VS</div>
+    <div v-if="showVs" class="flash-vs">VS</div>
   </div>
 </template>
 
 <style scoped>
-.insight-item {
+.flash-item {
   display: flex;
   align-items: center;
   gap: 0.875rem;
@@ -41,93 +57,90 @@ defineProps({
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   position: relative;
-  transition: all 0.2s;
+  transition: border-color var(--dur-fast) var(--ease-standard), background var(--dur-fast) var(--ease-standard);
 }
 
-.insight-item.is-winner {
-  border-color: color-mix(in srgb, var(--fb-success) 30%, transparent);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--fb-success) 5%, transparent), transparent);
+.flash-item.is-winner {
+  border-color: color-mix(in srgb, var(--accent-lead) 45%, transparent);
+  background: linear-gradient(135deg, var(--accent-lead-tint), transparent 70%);
 }
 
-.insight-item:hover { border-color: var(--border-strong); background: var(--bg-overlay); }
+.flash-item:hover { border-color: var(--border-strong); background: var(--bg-overlay); }
 
-.item-rank {
+.flash-rank {
   position: absolute;
   top: -8px;
   left: -8px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-surface);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 50%;
-  font-size: 0.875rem;
   z-index: 1;
 }
 
-.item-rank.rank-winner {
-  /* legacy hand-picked greens, kept verbatim */
-  background: linear-gradient(135deg, #245536, #10b981);
-  border-color: var(--fb-success);
-  animation: pulse-winner 2s ease-in-out infinite;
+.flash-rank.rank-winner {
+  background: var(--accent-lead);
+  border-color: var(--accent-lead);
+  box-shadow: 0 0 0 3px var(--accent-lead-tint);
 }
+.crown { width: 15px; height: 15px; color: var(--accent-lead-foreground); }
 
-@keyframes pulse-winner { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-
-.insight-item-img {
+.flash-img {
   width: 56px;
   height: 56px;
   border-radius: var(--radius-sm);
-  border: 2px solid var(--border-strong);
+  border: 1px solid var(--border-strong);
   flex-shrink: 0;
+  object-fit: contain;
+  background: var(--bg-surface);
 }
 
-.insight-item-details { flex: 1; }
-.insight-item-name { color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.375rem; }
-.insight-item-stats { display: flex; gap: 0.75rem; align-items: center; }
-.insight-eff { font-weight: 700; font-size: 0.875rem; }
+.flash-details { flex: 1; min-width: 0; }
+.flash-name { color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.insight-cost {
-  color: var(--accent-lead);
-  font-family: 'Monaco', 'Courier New', monospace;
-  font-weight: 600;
-  font-size: 0.875rem;
+.flash-bar-row { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.5rem; }
+.flash-bar-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: var(--bg-canvas);
+  border-radius: 999px;
+  overflow: hidden;
 }
+.flash-bar-fill { height: 100%; border-radius: 999px; transition: width var(--dur-base) var(--ease-standard); }
+/* break-even tick at 100/150 = 66.6% of the track */
+.flash-bar-mark { position: absolute; top: -1px; bottom: -1px; left: 66.6%; width: 1px; background: var(--fg-muted); opacity: 0.5; }
+.flash-eff { font-weight: 700; font-size: 0.8125rem; flex-shrink: 0; }
 
-.insight-item-value { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.375rem; font-size: 0.8125rem; }
-.value-label { color: var(--fg-muted); font-weight: 500; }
-.value-amount { color: var(--accent-lead); font-family: 'Monaco', 'Courier New', monospace; font-weight: 700; }
+.flash-meta { display: flex; gap: 1.25rem; }
+.flash-meta-cell { display: flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 700; }
+.meta-label { color: var(--fg-muted); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 
-.insight-vs {
+.flash-vs {
   position: absolute;
   bottom: -0.875rem;
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent-lead);
-  color: var(--bg-canvas);
+  color: var(--accent-lead-foreground);
   padding: 0.25rem 0.625rem;
-  border-radius: 2rem;
+  border-radius: 999px;
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.05em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   z-index: 1;
 }
 
-.gold-icon-inline {
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 2px;
+@media (max-width: 768px) {
+  .flash-img { width: 48px; height: 48px; }
+  .flash-name { font-size: 0.875rem; }
 }
 
-@media (max-width: 768px) {
-  .insight-item-img { width: 48px; height: 48px; }
-  .insight-item-name { font-size: 0.875rem; }
-  .item-rank { width: 26px; height: 26px; font-size: 0.8125rem; }
+@media (prefers-reduced-motion: reduce) {
+  .flash-bar-fill { transition: none; }
 }
 </style>

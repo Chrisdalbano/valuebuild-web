@@ -116,15 +116,13 @@ function viewFullAnalysis() {
 .comparison-verdict {
   margin-bottom: 1.25rem;
   padding: 0.875rem;
-  background: linear-gradient(135deg,
-    color-mix(in srgb, var(--fb-success) 10%, transparent),
-    color-mix(in srgb, var(--eff-positive) 5%, transparent));
+  background: linear-gradient(135deg, var(--accent-lead-tint), transparent 75%);
   border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--fb-success) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-lead) 25%, transparent);
 }
 
 .verdict-winner { display: flex; align-items: center; gap: 0.625rem; color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; }
-.verdict-icon { width: 20px; height: 20px; color: var(--fb-success); flex-shrink: 0; }
+.verdict-icon { width: 20px; height: 20px; color: var(--accent-lead); flex-shrink: 0; }
 
 .verdict-badge {
   margin-left: auto;
@@ -132,14 +130,14 @@ function viewFullAnalysis() {
   border-radius: 2rem;
   font-size: 0.75rem;
   font-weight: 700;
-  background: color-mix(in srgb, var(--fb-success) 20%, transparent);
-  color: var(--fb-success);
-  border: 1px solid color-mix(in srgb, var(--fb-success) 30%, transparent);
+  background: color-mix(in srgb, var(--eff-positive) 20%, transparent);
+  color: var(--eff-positive);
+  border: 1px solid color-mix(in srgb, var(--eff-positive) 30%, transparent);
 }
 
-.quick-recommendation { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.875rem; background: color-mix(in srgb, var(--fb-info) 10%, transparent); border: 1px solid color-mix(in srgb, var(--fb-info) 20%, transparent); border-radius: var(--radius-md); margin-bottom: 1.25rem; }
+.quick-recommendation { display: flex; align-items: flex-start; gap: 0.625rem; padding: 0.875rem; background: var(--accent-support-tint); border: 1px solid color-mix(in srgb, var(--accent-support) 22%, transparent); border-radius: var(--radius-md); margin-bottom: 1.25rem; }
 
-.rec-icon { width: 18px; height: 18px; color: var(--fb-info); flex-shrink: 0; margin-top: 2px; }
+.rec-icon { width: 18px; height: 18px; color: var(--accent-support); flex-shrink: 0; margin-top: 2px; }
 .quick-recommendation span { color: var(--fg-secondary); font-size: 0.8125rem; line-height: 1.5; font-style: italic; }
 
 .insight-btn { width: 100%; background: linear-gradient(135deg, var(--accent-lead), var(--accent-warm)); color: white; border: none; padding: 0.875rem 1.5rem; border-radius: var(--radius-md); font-weight: 700; font-size: 0.9375rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 0.625rem; box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-lead) 30%, transparent); }
