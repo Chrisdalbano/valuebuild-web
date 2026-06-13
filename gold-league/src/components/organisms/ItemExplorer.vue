@@ -6,7 +6,7 @@ import SearchBar from '../molecules/SearchBar.vue'
 import ViewToggle from '../molecules/ViewToggle.vue'
 import FilterChips from '../molecules/FilterChips.vue'
 import SortControls from '../molecules/SortControls.vue'
-import RoleFilter from '../molecules/RoleFilter.vue'
+import TypeFilter from '../molecules/TypeFilter.vue'
 import ItemCard from '../molecules/ItemCard.vue'
 import ItemTableView from '../molecules/ItemTableView.vue'
 import PaginationBar from '../molecules/PaginationBar.vue'
@@ -32,7 +32,7 @@ const viewMode = ref('grid')
 const itemsRef = toRef(props, 'items')
 
 const {
-  search, sortKey, sortDir, tierFilter, roleFilter, itemsPerPage, failedImages,
+  search, sortKey, sortDir, tierFilter, typeFilter, excludeSupport, itemsPerPage, failedImages,
   filtered, displayedItems, hasMoreItems, remainingItems, sortBy, loadMore, markImageFailed,
 } = useItemFilters(itemsRef)
 
@@ -111,7 +111,7 @@ onUnmounted(() => window.removeEventListener('scroll', handleScroll))
           <FilterChips v-model="tierFilter" :options="tierOptions" />
           <SortControls v-model:sort-key="sortKey" v-model:sort-dir="sortDir" />
         </div>
-        <RoleFilter v-model="roleFilter" />
+        <TypeFilter v-model="typeFilter" v-model:exclude-support="excludeSupport" />
       </div>
 
       <div v-if="viewMode === 'grid'" class="items-grid">

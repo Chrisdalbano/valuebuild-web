@@ -1,16 +1,7 @@
 import { ref, computed, watch } from 'vue'
+import { matchesCategory, isSupport } from '@/utils/itemClassify'
 
 const PAGE_SIZE = 24
-
-const ROLE_STAT_MATCHERS = {
-  marksman: s => s.FlatPhysicalDamageMod || s.FlatCritChanceMod || s.PercentAttackSpeedMod,
-  mage: s => s.FlatMagicDamageMod || s.FlatMPPoolMod,
-  tank: s => s.FlatHPPoolMod || s.FlatArmorMod || s.FlatSpellBlockMod,
-  fighter: s =>
-    (s.FlatPhysicalDamageMod || s.PercentAttackSpeedMod) && (s.FlatHPPoolMod || s.FlatArmorMod),
-  assassin: s => s.FlatPhysicalDamageMod || s.FlatMagicDamageMod,
-  support: s => s.FlatHPPoolMod || s.FlatMPPoolMod || s.AbilityHaste,
-}
 
 function matchesTier(item, tier) {
   if (tier === 'legendary') return item.cost >= 2500 && (!item.into || item.into.length === 0)
@@ -20,14 +11,18 @@ function matchesTier(item, tier) {
   return true
 }
 
-// Search/tier/role filtering + sorting + load-more pagination for an item list.
+// Search/tier/type filtering + sorting + load-more pagination for an item list.
 // `itemsRef` is the source list; `failedImages` excludes items whose icons 404'd.
+// `typeFilter` matches Riot-tag-driven categories (see utils/itemClassify);
+// `excludeSupport` hides GoldPer support items by default (they distort efficiency
+// comparisons) unless the Support category is explicitly selected.
 export function useItemFilters(itemsRef) {
   const search = ref('')
   const sortKey = ref('goldEfficiency')
   const sortDir = ref(-1)
   const tierFilter = ref('all')
-  const roleFilter = ref('all')
+  const typeFilter = ref('all')
+  const excludeSupport = ref(true)
   const itemsPerPage = ref(PAGE_SIZE)
   const failedImages = ref(new Set())
 
@@ -36,16 +31,14 @@ export function useItemFilters(itemsRef) {
       if (failedImages.value.has(item.id)) return false
       if (!item.id || typeof item.id !== 'string') return false
 
+      // hide support items unless the Support category is the active filter
+      if (excludeSupport.value && typeFilter.value !== 'support' && isSupport(item)) return false
+
       const matchesSearch = item.name.toLowerCase().includes(search.value.toLowerCase())
       const tierOk = tierFilter.value === 'all' || matchesTier(item, tierFilter.value)
+      const typeOk = matchesCategory(item, typeFilter.value)
 
-      let roleOk = true
-      const matcher = ROLE_STAT_MATCHERS[roleFilter.value]
-      if (roleFilter.value !== 'all' && item.statBreakdown && matcher) {
-        roleOk = matcher(item.statBreakdown)
-      }
-
-      return matchesSearch && tierOk && roleOk
+      return matchesSearch && tierOk && typeOk
     })
 
     return result.sort((a, b) => {
@@ -82,7 +75,7 @@ export function useItemFilters(itemsRef) {
   }
 
   // Reset pagination when any filter changes
-  watch([search, tierFilter, roleFilter, sortKey], () => {
+  watch([search, tierFilter, typeFilter, excludeSupport, sortKey], () => {
     itemsPerPage.value = PAGE_SIZE
   })
 
@@ -93,7 +86,7 @@ export function useItemFilters(itemsRef) {
   })
 
   return {
-    search, sortKey, sortDir, tierFilter, roleFilter, itemsPerPage, failedImages,
+    search, sortKey, sortDir, tierFilter, typeFilter, excludeSupport, itemsPerPage, failedImages,
     filtered, displayedItems, hasMoreItems, remainingItems,
     sortBy, loadMore, markImageFailed,
   }

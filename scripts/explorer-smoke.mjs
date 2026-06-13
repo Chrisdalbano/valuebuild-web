@@ -96,6 +96,55 @@ await check('tier chip filters items', async () => {
   }
 })
 
+// Typing opens the search-suggestions dropdown (bound to the search value, not
+// focus) which floats over the filter row and intercepts chip/toggle clicks.
+// So: only click chips/toggles while the search box is EMPTY (dropdown closed),
+// and run searches only when the next step is a read.
+async function clearSearch() {
+  await page.locator('.search-input').fill('')
+  await page.waitForTimeout(150)
+}
+async function selectType(re) {
+  await clearSearch()
+  await page.locator('.type-filter-btn', { hasText: re }).click()
+  await page.waitForTimeout(300)
+}
+async function searchCount(term) {
+  await page.locator('.search-input').fill(term)
+  await page.waitForTimeout(400)
+  return page.locator('.item-card').count()
+}
+
+await check('type filter: Tank excludes Death\'s Dance (regression for support leak)', async () => {
+  // The old support matcher (FlatHPPoolMod||FlatMPPoolMod||AbilityHaste) put
+  // Death's Dance in "support"; the new tank matcher needs real resist AND HP,
+  // and Death's Dance has no HP — so Tank must filter it out.
+  await clearSearch()
+  await page.locator('.filter-chip', { hasText: 'Legendary' }).click() // clear active tier filter
+  await page.waitForTimeout(300)
+  if ((await searchCount("Death's Dance")) < 1) throw new Error("Death's Dance not found at all")
+  await selectType(/^Tank$/)
+  const after = await searchCount("Death's Dance")
+  if (after !== 0) throw new Error(`Death's Dance still shown under Tank (${after} cards)`)
+})
+
+await check('support items hidden by default, surfaced by the Support chip', async () => {
+  await selectType(/^All$/)
+  const hidden = await searchCount('atlas') // World Atlas (GoldPer support)
+  if (hidden !== 0) throw new Error(`support item visible by default (${hidden} cards)`)
+  await selectType(/^Support$/)
+  if ((await searchCount('atlas')) < 1) throw new Error('Support chip surfaced nothing')
+})
+
+await check('exclude-support toggle reveals support items', async () => {
+  await selectType(/^All$/)
+  if ((await searchCount('atlas')) !== 0) throw new Error('precondition: support already shown')
+  await clearSearch()
+  await page.locator('.support-toggle input').uncheck()
+  await page.waitForTimeout(300)
+  if ((await searchCount('atlas')) < 1) throw new Error('toggle did not reveal support item')
+})
+
 await browser.close()
 console.log(failures === 0 ? 'ALL PASS' : `${failures} FAILURES`)
 process.exit(failures === 0 ? 0 : 1)
