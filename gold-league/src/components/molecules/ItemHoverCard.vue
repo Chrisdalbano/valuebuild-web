@@ -16,6 +16,9 @@ const props = defineProps({
   // disable tap-to-open when the anchor lives inside a clickable row/card
   // (mobile tap should perform the parent action, not open the popover)
   mobileTap: { type: Boolean, default: true },
+  // when true, the anchor stops wiring its own hover events — the parent drives
+  // show()/hide() (e.g. so the WHOLE card is the trigger, anchored at the icon)
+  manualTrigger: { type: Boolean, default: false },
 })
 
 const isMobile = useIsMobile()
@@ -59,11 +62,18 @@ function hide() {
   open.value = false
 }
 
+// the anchor's own events no-op in manual mode (the parent calls show/hide so
+// its mouseleave onto the card body doesn't close a still-hovered card)
+function onAnchorEnter() { if (!props.manualTrigger) show() }
+function onAnchorLeave() { if (!props.manualTrigger) hide() }
+
 function onTap(e) {
   if (props.disabled || !isMobile.value || !props.mobileTap) return
   e.stopPropagation()
   open.value = !open.value
 }
+
+defineExpose({ show, hide })
 
 onBeforeUnmount(() => clearTimeout(intentTimer))
 </script>
@@ -72,10 +82,10 @@ onBeforeUnmount(() => clearTimeout(intentTimer))
   <span
     ref="anchor"
     class="hover-anchor"
-    @mouseenter="show"
-    @mouseleave="hide"
-    @focusin="show"
-    @focusout="hide"
+    @mouseenter="onAnchorEnter"
+    @mouseleave="onAnchorLeave"
+    @focusin="onAnchorEnter"
+    @focusout="onAnchorLeave"
     @click="onTap"
   >
     <slot>

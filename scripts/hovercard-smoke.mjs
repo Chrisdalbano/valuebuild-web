@@ -28,6 +28,14 @@ await check('hovering a grid icon floats THE stats card to <body>', async () => 
   if (!name.trim()) throw new Error('empty card')
 })
 
+await check('hovering the card BODY (not the icon) also floats the stats card', async () => {
+  await page.mouse.move(10, 700) // leave any open card
+  await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })
+  // hover the title/stats area, away from the icon, and confirm the popover opens
+  await page.locator('.item-card .card-title').first().hover()
+  await page.waitForSelector('body > .floating-card .item-stats-card', { timeout: 3000 })
+})
+
 await check('card hides on mouse leave', async () => {
   await page.mouse.move(10, 700)
   await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })

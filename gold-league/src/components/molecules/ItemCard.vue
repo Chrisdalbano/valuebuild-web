@@ -11,6 +11,10 @@ import { useItemDetail } from '@/composables/useItemDetail'
 
 const { openDetail } = useItemDetail()
 
+// the floating stats popover is anchored at the icon, but the WHOLE card is the
+// hover trigger (manualTrigger mode) so hovering anywhere on the card opens it
+const hoverCard = ref(null)
+
 defineProps({
   item: { type: Object, required: true },
   selected: { type: Boolean, default: false },
@@ -33,13 +37,15 @@ function onPointerMove(e) {
   <div
     @click="$emit('toggle', item)"
     @pointermove="onPointerMove"
+    @mouseenter="hoverCard?.show()"
+    @mouseleave="hoverCard?.hide()"
     :class="['item-card', { selected, selecting }]"
     :style="{ '--spot-x': spot.x, '--spot-y': spot.y }"
   >
     <BorderBeam v-if="beam" :duration="7" />
     <span class="spotlight" aria-hidden="true"></span>
     <div class="card-header">
-      <ItemHoverCard :item="item" :mobile-tap="false">
+      <ItemHoverCard ref="hoverCard" :item="item" :mobile-tap="false" manual-trigger>
         <ItemIcon :item="item" size="hero" :alt="item.name" class="card-img" @failed="$emit('image-failed', $event)" />
       </ItemHoverCard>
       <div class="card-checkbox">
