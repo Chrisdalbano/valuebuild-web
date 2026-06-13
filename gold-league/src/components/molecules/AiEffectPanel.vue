@@ -24,7 +24,7 @@ const formatAmount = n => (typeof n === 'number' ? Math.round(n) : n)
           <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4 2.5 5 .5.5.5 1 .5 2h8c0-1 0-1.5.5-2 1-1 2.5-2.5 2.5-5a7 7 0 0 0-7-7Z"/>
           <path d="M9 21h6"/>
         </svg>
-        AI Effect Analysis
+        Effect Analysis
       </h3>
       <span class="ai-disclaimer">Speculative estimate · not the efficiency number</span>
     </div>

@@ -25,7 +25,7 @@ const confidenceClass = c => ({ high: 'conf-high', medium: 'conf-med', low: 'con
         </svg>
         Best On
       </h3>
-      <span class="ai-disclaimer">Speculative synergy · AI estimate</span>
+      <span class="ai-disclaimer">Speculative synergy · estimated</span>
     </div>
 
     <div v-if="loading" class="ai-skeleton">

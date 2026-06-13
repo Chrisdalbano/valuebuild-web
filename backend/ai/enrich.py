@@ -191,8 +191,10 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         # Then best-on (the new feature) and effects — both resumable + idempotent,
         # so repeated /api/ai/refresh triggers converge.
         digest_ok = await generate_research_digest(items, patch, ai_col, champions)
-        best_on_stats = await generate_best_on(items, champions, patch, ai_col)
+        # effects before best-on: the per-item effect valuation (with the new
+        # quantitative comparisons) is the primary panel, so it converges first.
         effect_stats = await enrich_item_effects(items, patch, ai_col)
+        best_on_stats = await generate_best_on(items, champions, patch, ai_col)
 
         return {"status": "complete", "patch": patch, "digest": digest_ok,
                 **best_on_stats, **effect_stats}

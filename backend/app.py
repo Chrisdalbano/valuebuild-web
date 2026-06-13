@@ -188,9 +188,11 @@ async def get_item(item_id: str):
 async def get_item_ai(item_id: str):
     """Cached Gemini effect analysis for an item — only if it matches the current
     patch (else 'pending', so stale AI never shows against fresh items)."""
-    doc = await ai_collection.find_one({'_id': item_id}, {'_id': 0})
+    doc = await ai_collection.find_one({'_id': item_id}, {'_id': 0, 'model': 0})
     patch = await _current_patch()
     if doc and doc.get('patch') == patch:
+        if isinstance(doc.get('bestOn'), dict):
+            doc['bestOn'].pop('model', None)  # don't disclose the AI vendor/model
         return {'status': 'ready', **doc}
     return {'status': 'pending', 'configured': ai_is_configured()}
 
@@ -199,7 +201,7 @@ async def get_item_ai(item_id: str):
 async def get_research():
     """The current patch's AI research digest (outliers, effect spotlights,
     experimental builds). 'pending' until enrichment has run for this patch."""
-    doc = await ai_collection.find_one({'_id': 'research_digest'}, {'_id': 0})
+    doc = await ai_collection.find_one({'_id': 'research_digest'}, {'_id': 0, 'model': 0})
     patch = await _current_patch()
     if doc and doc.get('patch') == patch:
         return {'status': 'ready', **doc}

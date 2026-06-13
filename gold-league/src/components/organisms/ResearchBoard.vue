@@ -34,10 +34,10 @@ const hasContent = computed(() => {
   <div class="research-board">
     <header class="research-header">
       <div>
-        <h1>AI Research</h1>
+        <h1>Research Lab</h1>
         <p class="research-sub">
-          Gemini-generated discoveries for the current patch — mispriced items, what effects are really
-          worth, and builds the numbers say are worth testing.
+          Experimental discoveries for the current patch — mispriced items, what effects are really
+          worth, and builds the numbers suggest are worth testing.
         </p>
       </div>
       <div v-if="digest?.patch" class="patch-chip">
@@ -48,8 +48,8 @@ const hasContent = computed(() => {
     <div class="honesty-banner">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       <span>
-        These are <strong>AI-generated hypotheses</strong>, not ground truth. The gold-efficiency numbers
-        elsewhere in the app stay formula-only; nothing here changes them.
+        These are <strong>experimental estimates</strong> — hypotheses, not ground truth. The gold-efficiency
+        numbers elsewhere in the app stay formula-only; nothing here changes them.
       </span>
     </div>
 
@@ -62,12 +62,12 @@ const hasContent = computed(() => {
     <div v-else-if="pending || !hasContent" class="research-state">
       <h2>Not generated yet</h2>
       <p v-if="digest && digest.configured === false">
-        AI enrichment isn't enabled on the server yet. Once a Gemini key with available quota is
-        configured and enrichment runs, this patch's discoveries appear here.
+        Discovery generation isn't enabled on the server yet. Once it runs, this patch's findings
+        appear here.
       </p>
       <p v-else>
-        The research digest for patch <strong>{{ digest?.patch || 'current' }}</strong> is being
-        generated. Check back shortly.
+        Discoveries for patch <strong>{{ digest?.patch || 'current' }}</strong> are being generated.
+        Check back shortly.
       </p>
     </div>
 

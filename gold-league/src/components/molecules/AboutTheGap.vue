@@ -50,7 +50,7 @@ function openResearch() {
 
       <div class="gap-cta">
         <p class="gap-cta-copy">
-          This is where the research goes next: using AI to estimate the gold value of effects
+          This is where the research goes next: estimating the gold value of effects
           <em>in relation to base stats</em>, with the reasoning shown — never blended into the real
           efficiency number, always labeled as an estimate.
         </p>
@@ -59,7 +59,7 @@ function openResearch() {
             <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4 2.5 5 .5.5.5 1 .5 2h8c0-1 0-1.5.5-2 1-1 2.5-2.5 2.5-5a7 7 0 0 0-7-7Z"/>
             <path d="M9 21h6"/>
           </svg>
-          {{ researchLive ? 'Explore AI Research' : 'AI Research — coming soon' }}
+          {{ researchLive ? 'Explore the Research Lab' : 'Research Lab — coming soon' }}
         </button>
       </div>
     </div>

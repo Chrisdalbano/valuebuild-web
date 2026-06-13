@@ -1,7 +1,8 @@
 <script setup>
-// A speculative, AI-estimated gold value. Deliberately NOT gold and NOT shaped
-// like EfficiencyBadge/GoldValue — azure support accent + an "AI est." marker —
-// so an estimate can never be mistaken for the ground-truth efficiency number.
+// A speculative, model-estimated gold value. Deliberately NOT gold and NOT shaped
+// like EfficiencyBadge/GoldValue — azure support accent + an "est." marker — so an
+// estimate can never be mistaken for the ground-truth efficiency number. We don't
+// name the AI vendor anywhere user-facing.
 defineProps({
   value: { type: [Number, String], default: null },
   confidence: { type: String, default: '' }, // low | medium | high
@@ -10,7 +11,7 @@ defineProps({
 
 <template>
   <span class="ai-badge" :class="confidence ? `conf-${confidence}` : ''">
-    <span class="ai-marker">AI&nbsp;est.</span>
+    <span class="ai-marker">est.</span>
     <span v-if="value !== null" class="ai-value">≈ {{ value }}g</span>
     <span v-if="confidence" class="ai-conf">{{ confidence }}</span>
   </span>

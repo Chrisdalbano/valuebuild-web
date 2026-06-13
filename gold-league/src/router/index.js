@@ -31,7 +31,7 @@ const routes = [
     path: '/research',
     name: 'Research',
     component: ResearchBoard,
-    meta: { title: 'AI Research' },
+    meta: { title: 'Research Lab' },
     props: true
   },
   {
