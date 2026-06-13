@@ -2,10 +2,12 @@
 
 Reads GEMINI_API_KEY lazily (so app.py's load_dotenv runs first). Returns parsed
 JSON or None on ANY failure — callers degrade gracefully. The API key is never
-logged. Validated 2026-06-12: the AQ.-format key authenticates and
-gemini-2.0-flash / gemini-2.5-flash / gemini-flash-latest are all valid model ids
-(the live project's prepay credits were depleted, so calls 429 until topped up;
-this client surfaces that as None, not a crash).
+logged. Validated 2026-06-13: the AQ.-format key authenticates; the default
+model is gemini-flash-latest, which auto-tracks the current stable Flash so a
+retirement can't strand us again. (gemini-2.0-flash was retired at the generate
+endpoint — 404 NOT_FOUND — even though it still appears in models.list();
+gemini-2.5-flash and gemini-flash-latest both generate JSON fine.) Override with
+the GEMINI_MODEL env var. Any failure surfaces as None, not a crash.
 """
 
 import os
@@ -24,7 +26,7 @@ def _key() -> str:
 
 
 def _model() -> str:
-    return os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    return os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 
 
 def is_configured() -> bool:
