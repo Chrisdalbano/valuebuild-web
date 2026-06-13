@@ -55,7 +55,7 @@ def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
 EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
 DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "16384"))
 BEST_ON_MAX_TOKENS = int(os.getenv("AI_BEST_ON_MAX_TOKENS", "3072"))
-CHAMPION_MAX_TOKENS = int(os.getenv("AI_CHAMPION_MAX_TOKENS", "3072"))
+CHAMPION_MAX_TOKENS = int(os.getenv("AI_CHAMPION_MAX_TOKENS", "4096"))
 
 
 async def _gen(prompt: str, max_output_tokens: int = 3072, model: str = None):
@@ -207,7 +207,25 @@ def select_build_items(items: list) -> list:
     return pool
 
 
-async def analyze_champions(champions, build_items, patch, champ_col) -> dict:
+def _is_consumable(item: dict) -> bool:
+    tags = item.get("tags") or []
+    return "Consumable" in tags or "Trinket" in tags
+
+
+def select_component_items(items: list) -> list:
+    """Components the progression can name (basic + epic items that build INTO
+    something), so the AI can describe early-game build paths. Excludes
+    consumables/wards/support and trivial sub-300g bits."""
+    pool = [
+        it for it in items
+        if it.get("into") and not _is_consumable(it) and not _is_support(it)
+        and it.get("cost", 0) >= 300
+    ]
+    pool.sort(key=lambda it: it.get("cost", 0))
+    return pool
+
+
+async def analyze_champions(champions, build_items, component_items, patch, champ_col) -> dict:
     """Per-champion itemization guide (core build, build path, situational swaps,
     one off-meta experiment, economy notes). Flash-lite, resumable (skips docs at
     the current prompt version for this patch), idempotent $set. Mirrors best-on."""
@@ -228,7 +246,8 @@ async def analyze_champions(champions, build_items, patch, champ_col) -> dict:
             skipped += 1
             continue
         result = await _gen(
-            build_champion_prompt(champ, build_items, patch), CHAMPION_MAX_TOKENS, CHAMPION_MODEL
+            build_champion_prompt(champ, build_items, component_items, patch),
+            CHAMPION_MAX_TOKENS, CHAMPION_MODEL,
         )
         if isinstance(result, dict) and result.get("coreBuild"):
             await champ_col.replace_one(
@@ -241,7 +260,7 @@ async def analyze_champions(champions, build_items, patch, champ_col) -> dict:
                     "version": CHAMPION_PROMPT_VERSION,
                     "model": CHAMPION_MODEL,
                     "coreBuild": result.get("coreBuild", {}),
-                    "buildPath": result.get("buildPath", {}),
+                    "progression": result.get("progression", []),
                     "situational": result.get("situational", []),
                     "experimental": result.get("experimental", {}),
                     "economy": result.get("economy", {}),
@@ -281,6 +300,7 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         champ_full = await db["champions_cache"].find({}).to_list(length=None)
         champ_col = db["champion_analysis"]
         build_items = select_build_items(items)
+        component_items = select_component_items(items)
 
         # Digest first: a single Gemini call that only needs items_cache, so the
         # long (resumable) per-item passes can't starve it on a constrained worker.
@@ -292,7 +312,7 @@ async def run_ai_enrichment(mongo_uri: str) -> dict:
         effect_stats = await enrich_item_effects(items, patch, ai_col)
         best_on_stats = await generate_best_on(items, champions, patch, ai_col)
         # champion analysis last (~170 calls, longest); resumable convergence.
-        champ_stats = await analyze_champions(champ_full, build_items, patch, champ_col)
+        champ_stats = await analyze_champions(champ_full, build_items, component_items, patch, champ_col)
 
         return {"status": "complete", "patch": patch, "digest": digest_ok,
                 **best_on_stats, **effect_stats, **champ_stats}

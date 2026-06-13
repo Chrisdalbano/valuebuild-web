@@ -44,12 +44,16 @@ const tryBuild = ids => {
         <p v-if="analysis.coreBuild?.rationale" class="ca-text">{{ analysis.coreBuild.rationale }}</p>
       </div>
 
-      <div v-if="analysis.buildPath" class="ca-block">
-        <div class="ca-label">Build path</div>
-        <div class="ca-path">
-          <div v-for="stage in ['early', 'mid', 'late']" :key="stage" class="ca-stage">
-            <span class="stage-name">{{ stage }}</span>
-            <BuildItemRow :items="resolve(analysis.buildPath[stage])" />
+      <div v-if="analysis.progression?.length" class="ca-block">
+        <div class="ca-label">Build progression</div>
+        <div class="ca-progression">
+          <div v-for="(s, i) in analysis.progression" :key="i" class="prog-stage">
+            <div class="prog-head">
+              <span class="prog-name">{{ s.stage }}</span>
+              <span v-if="s.gold" class="prog-gold">{{ s.gold }}</span>
+            </div>
+            <BuildItemRow :items="resolve(s.itemIds)" />
+            <p v-if="s.note" class="ca-text">{{ s.note }}</p>
           </div>
         </div>
       </div>
@@ -97,9 +101,11 @@ const tryBuild = ids => {
 .ca-label { color: var(--fg-muted); font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
 .ca-text { color: var(--fg-secondary); font-size: 0.875rem; line-height: 1.55; margin: 0.625rem 0 0; }
 
-.ca-path { display: flex; flex-direction: column; gap: 0.75rem; }
-.ca-stage { display: flex; align-items: center; gap: 0.875rem; }
-.stage-name { width: 48px; flex-shrink: 0; color: var(--fg-muted); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.ca-progression { display: flex; flex-direction: column; gap: 0.875rem; }
+.prog-stage { padding: 0.75rem 0.875rem; background: var(--bg-surface); border: 1px solid var(--border); border-left: 3px solid var(--accent-lead); border-radius: var(--radius-sm); }
+.prog-head { display: flex; align-items: baseline; gap: 0.625rem; margin-bottom: 0.625rem; }
+.prog-name { color: var(--fg-primary); font-size: 0.875rem; font-weight: 700; }
+.prog-gold { color: var(--accent-lead); font-size: 0.75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .ca-sit { padding: 0.75rem; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 0.625rem; }
 .sit-when { display: inline-block; color: var(--accent-support); font-weight: 700; font-size: 0.8125rem; margin-bottom: 0.5rem; }

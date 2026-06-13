@@ -25,7 +25,11 @@ await page.route('**/api/champions/*/ai', route => route.fulfill({
   body: JSON.stringify({
     status: 'ready', patch: '16.11.1',
     coreBuild: { itemIds: ['3031', '3036'], rationale: 'core rationale' },
-    buildPath: { early: ['1055'], mid: ['3031'], late: ['3036'] },
+    progression: [
+      { stage: 'First back', gold: '~1300g', itemIds: ['1038'], note: 'B.F. Sword toward IE' },
+      { stage: 'First spike', gold: '~3500g', itemIds: ['3031'], note: 'finish Infinity Edge' },
+      { stage: 'Full build', gold: '~15000g', itemIds: ['3031', '3036'], note: 'complete it' },
+    ],
     situational: [{ when: 'vs tanks', itemIds: ['3036'], why: 'armor pen' }],
     experimental: { title: 'Off-meta idea', itemIds: ['3153'], rationale: 'why' },
     economy: { ahead: 'snowball', behind: 'stabilize' },
@@ -62,7 +66,7 @@ await check('selecting a champion opens the analysis with all sections', async (
   if (!/speculative/i.test(disc)) throw new Error(`disclaimer: ${disc}`)
   const labels = await page.locator('.champ-analysis .ca-label').allTextContents()
   const joined = labels.join('|').toLowerCase()
-  for (const need of ['core build', 'build path', 'situational', 'experimental']) {
+  for (const need of ['core build', 'build progression', 'situational', 'experimental']) {
     if (!joined.includes(need)) throw new Error(`missing section: ${need}`)
   }
 })

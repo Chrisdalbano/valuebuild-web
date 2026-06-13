@@ -16,7 +16,7 @@ from efficiency import STAT_VALUES  # noqa: E402
 EFFECT_PROMPT_VERSION = 2
 BEST_ON_PROMPT_VERSION = 1
 DIGEST_PROMPT_VERSION = 2
-CHAMPION_PROMPT_VERSION = 2  # v2: exclude tier-3 boot upgrades from the roster
+CHAMPION_PROMPT_VERSION = 3  # v3: component-aware staged build progression
 
 # Human-readable base-stat gold values for the prompt (per 1 point unless noted).
 _STAT_LABELS = {
@@ -229,22 +229,45 @@ def build_digest_prompt(items: list, patch: str, champions: list = None) -> str:
     return f"{system}\n\n{user}"
 
 
-_CHAMPION_SYSTEM = """You are a League of Legends itemization coach. Given ONE champion \
-and the current buildable-item roster, produce a focused, patch-{patch} itemization \
-guide for Summoner's Rift, grounded in the champion's kit (abilities, scalings, resource, \
-range) and the items' real stats/effects.
+# compact stat readout from the priced statBreakdown, so the model picks items by
+# what they actually give (not just by name) — reduces off-kit suggestions.
+_STAT_SHORT = {
+    "FlatPhysicalDamageMod": "AD", "FlatMagicDamageMod": "AP", "FlatArmorMod": "Armor",
+    "FlatSpellBlockMod": "MR", "FlatHPPoolMod": "HP", "FlatMPPoolMod": "Mana",
+    "PercentAttackSpeedMod": "AS", "PercentCritChanceMod": "Crit", "AbilityHaste": "AH",
+    "PercentLifeStealMod": "Lifesteal", "FlatMovementSpeedMod": "MS",
+}
+
+
+def _stat_summary(item: dict) -> str:
+    sb = item.get("statBreakdown") or {}
+    parts = []
+    for key, label in _STAT_SHORT.items():
+        node = sb.get(key)
+        amt = node.get("amount") if isinstance(node, dict) else None
+        if not amt:
+            continue
+        parts.append(f"{round(amt * 100)}% {label}" if key.startswith("Percent") else f"{round(amt)} {label}")
+    return ", ".join(parts) or "—"
+
+
+_CHAMPION_SYSTEM = """You are a League of Legends itemization coach. For ONE champion, \
+produce a focused, patch-{patch} Summoner's Rift itemization guide grounded in the \
+champion's kit (abilities, scalings, resource, range) and the items' real stats/effects.
 
 These base-stat gold values are the project's ground truth (context only):
 {base_stats}
 
 Rules:
-- Recommend ONLY itemIds that appear in the roster below. Use the exact ids.
-- Be specific to THIS champion's kit; avoid generic "build damage" filler.
-- Situational entries must name a real game situation (vs heavy AP, vs tanks, vs healing,
-  vs hard CC, when ahead, when behind) and the item that answers it.
-- experimental = one OFF-META idea the item numbers/kit suggest, not the standard build.
-- These are speculative suggestions, NOT ground truth, and must never restate or alter
-  the canonical gold-efficiency numbers.
+- Recommend ONLY itemIds that appear in the rosters below. Use the exact ids.
+- Be specific to THIS champion's kit and the items' stats; no generic "build damage" filler.
+- The PROGRESSION is the heart of it: show how the player builds up stage by stage. Early
+  stages (first back, first spike) should name the COMPONENT ids you buy and complete first
+  (e.g. the AD/AP/health components toward the first item); later stages name FINISHED items.
+- coreBuild = the ~5 FINISHED items of the standard full build.
+- Situational entries name a real situation (vs heavy AP, vs tanks, vs healing, vs hard CC).
+- experimental = one OFF-META idea the numbers/kit suggest, not the standard build.
+- Speculative suggestions, NOT ground truth; never restate or alter the canonical efficiency.
 - Output STRICT JSON only."""
 
 _CHAMPION_USER = """Champion: {name}
@@ -252,33 +275,52 @@ Class tags: {tags} | Resource: {resource} | Range: {range_type}
 Kit: passive "{passive}"; abilities {spells}
 Riot ratings (0-10): attack {attack}, defense {defense}, magic {magic}
 
-Buildable items (id | name | cost | tags | short effect):
+FINISHED items (id | name | cost | stats | effect):
 {items}
+
+COMPONENTS (id | name | cost | stats | builds toward):
+{components}
 
 Return JSON with this exact shape:
 {{
-  "coreBuild": {{ "itemIds": ["id", "id", "id"], "rationale": "1-2 sentences" }},
-  "buildPath": {{ "early": ["id"], "mid": ["id"], "late": ["id"] }},
+  "coreBuild": {{ "itemIds": ["finished id", ...], "rationale": "1-2 sentences" }},
+  "progression": [
+    {{ "stage": "First back" | "First spike" | "Mid game" | "Full build" | "...",
+       "gold": "approx gold for this stage, e.g. ~1300g",
+       "itemIds": ["id (components early, finished later)"],
+       "note": "what to buy now and why" }}
+  ],
   "situational": [
     {{ "when": "vs heavy AP" | "vs tanks" | "vs healing" | "vs hard CC" | "...",
-       "itemIds": ["id"], "why": "one line" }}
+       "itemIds": ["finished id"], "why": "one line" }}
   ],
-  "experimental": {{ "title": "name", "itemIds": ["id", "id"], "rationale": "off-meta hook" }},
+  "experimental": {{ "title": "name", "itemIds": ["finished id", ...], "rationale": "off-meta hook" }},
   "economy": {{ "ahead": "one line on snowballing", "behind": "one line on stabilizing" }},
   "caveats": "1 sentence: speculative, varies by matchup/patch"
 }}
-Limit: coreBuild 3-5 items, 2-4 situational entries. Use only roster ids."""
+Limit: coreBuild ~5 finished items, progression 4-5 stages, 2-4 situational. Only roster ids."""
 
 
-def build_champion_prompt(champion: dict, build_items: list, patch: str) -> str:
+def build_champion_prompt(champion: dict, build_items: list, component_items: list, patch: str) -> str:
     info = champion.get("info", {}) or {}
+    name_by_id = {it.get("id"): it.get("name") for it in (build_items + (component_items or []))}
+
     item_lines = []
     for it in build_items:
-        tags = "/".join(it.get("tags", [])) or "?"
-        effect = strip_html(it.get("description", ""))[:70]
+        effect = strip_html(it.get("description", ""))[:60]
         item_lines.append(
-            f"{it.get('id')} | {it.get('name')} | {it.get('cost')}g | {tags} | {effect}"
+            f"{it.get('id')} | {it.get('name')} | {it.get('cost')}g | {_stat_summary(it)} | {effect}"
         )
+
+    comp_lines = []
+    for it in (component_items or []):
+        into = (it.get("into") or [])
+        toward = name_by_id.get(into[0]) if into else None
+        toward = f"-> {toward}" if toward else ""
+        comp_lines.append(
+            f"{it.get('id')} | {it.get('name')} | {it.get('cost')}g | {_stat_summary(it)} | {toward}"
+        )
+
     system = _CHAMPION_SYSTEM.format(patch=patch, base_stats=_base_stat_table())
     user = _CHAMPION_USER.format(
         name=champion.get("name", "?"),
@@ -291,5 +333,6 @@ def build_champion_prompt(champion: dict, build_items: list, patch: str) -> str:
         defense=info.get("defense", "?"),
         magic=info.get("magic", "?"),
         items="\n".join(item_lines),
+        components="\n".join(comp_lines) or "(none)",
     )
     return f"{system}\n\n{user}"
