@@ -97,6 +97,21 @@ export const itemsApi = {
       console.error('Error fetching champions:', error)
       throw error
     }
+  },
+
+  /**
+   * Cached per-champion itemization analysis.
+   * Returns { status: 'ready' | 'pending', coreBuild?, buildPath?, situational?,
+   *   experimental?, economy?, caveats? }.
+   */
+  async getChampionAi(championId) {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/champions/${championId}/ai`)
+      return response.data
+    } catch (error) {
+      console.error(`Error fetching champion analysis for ${championId}:`, error)
+      throw error
+    }
   }
 }
 

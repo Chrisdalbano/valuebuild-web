@@ -8,6 +8,7 @@ import { itemsApi } from '@/api/items'
 const DDRAGON = 'https://ddragon.leagueoflegends.com/cdn'
 
 const byName = ref(new Map())
+const champions = ref([]) // the full roster list (for the Champions grid)
 const loaded = ref(false)
 let inflight = null
 
@@ -16,9 +17,11 @@ function load() {
   inflight = itemsApi
     .getChampions()
     .then(data => {
+      const list = data.champions || []
       const map = new Map()
-      for (const c of data.champions || []) map.set(c.name, c)
+      for (const c of list) map.set(c.name, c)
       byName.value = map
+      champions.value = list
       loaded.value = true
     })
     .catch(() => { /* names render without icons */ })
@@ -34,7 +37,13 @@ function championIcon(name) {
   return `${DDRAGON}/${c.patch}/img/champion/${c.id}.png`
 }
 
+// square portrait by champion id (used by the grid, which has the full doc)
+function iconById(id, patch) {
+  if (!id || !patch) return null
+  return `${DDRAGON}/${patch}/img/champion/${id}.png`
+}
+
 export function useChampions() {
   load()
-  return { championIcon, loaded }
+  return { champions, championIcon, iconById, loaded }
 }
