@@ -36,6 +36,10 @@ function onOpen(id) {
           <div class="spotlight-name">{{ s.name }}</div>
           <p class="spotlight-insight">{{ s.insight }}</p>
         </div>
+        <div v-if="typeof s.estimatedEffectGold === 'number'" class="spotlight-gold">
+          <span class="gold-num">{{ s.estimatedEffectGold }}g</span>
+          <span class="gold-label">effect value</span>
+        </div>
       </article>
     </div>
   </section>
@@ -63,6 +67,12 @@ function onOpen(id) {
 .spotlight-body { flex: 1; min-width: 0; }
 .spotlight-name { color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.25rem; }
 .spotlight-insight { color: var(--fg-secondary); font-size: 0.875rem; line-height: 1.6; margin: 0; }
+
+.spotlight-gold { flex-shrink: 0; text-align: right; display: flex; flex-direction: column; gap: 0.125rem; }
+.gold-num { color: var(--accent-lead); font-weight: 800; font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.gold-label { color: var(--fg-muted); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+@media (max-width: 600px) { .spotlight-gold { display: none; } }
 
 @media (prefers-reduced-motion: reduce) { .spotlight-row { transition: none; } }
 </style>

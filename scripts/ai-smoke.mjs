@@ -134,9 +134,9 @@ await rmock.route('**/api/research', route => route.fulfill({
   status: 200, contentType: 'application/json',
   body: JSON.stringify({
     status: 'ready', patch: '16.11.1', generatedAt: new Date(0).toISOString(),
-    outliers: [{ itemId: '3153', name: 'Blade of the Ruined King', claim: 'effect undervalued', direction: 'undervalued' }],
-    effectSpotlights: [{ itemId: '3157', name: "Zhonya's Hourglass", insight: 'Stasis is pure survival value' }],
-    experimentalBuilds: [{ title: 'On-hit bruiser', itemIds: ['3153', '3157'], rationale: 'test the synergy' }],
+    outliers: [{ itemId: '3153', name: 'Blade of the Ruined King', efficiency: 88, claim: 'effect undervalued', direction: 'undervalued' }],
+    effectSpotlights: [{ itemId: '3157', name: "Zhonya's Hourglass", estimatedEffectGold: 1000, insight: 'Stasis is pure survival value' }],
+    experimentalBuilds: [{ title: 'On-hit bruiser', forChampion: 'Jax', itemIds: ['3153', '3157'], rationale: 'test the synergy' }],
   }),
 }))
 
@@ -146,6 +146,17 @@ await check('ready-state renders outliers, spotlights, and experimental builds',
   await rmock.waitForSelector('.outlier-card', { timeout: 5000 })
   if (!(await rmock.locator('.spotlight-row').count())) throw new Error('no spotlights')
   if (!(await rmock.locator('.exp-build').count())) throw new Error('no experimental builds')
+})
+
+await check('research shows the mispricing chart + quantitative fields', async () => {
+  // efficiency chart canvas renders from outliers carrying a numeric efficiency
+  await rmock.waitForSelector('.research-board canvas', { timeout: 5000 })
+  const eff = await rmock.locator('.outlier-card .eff-num').first().textContent()
+  if (!/88%/.test(eff)) throw new Error(`outlier efficiency number missing: ${eff}`)
+  const gold = await rmock.locator('.spotlight-gold .gold-num').first().textContent()
+  if (!/1000g/.test(gold)) throw new Error(`effect gold missing: ${gold}`)
+  const champ = await rmock.locator('.exp-champ').first().textContent()
+  if (!/Jax/.test(champ)) throw new Error(`forChampion chip missing: ${champ}`)
 })
 
 await check('"Try this build" links into /builds?b=', async () => {

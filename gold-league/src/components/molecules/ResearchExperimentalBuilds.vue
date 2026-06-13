@@ -24,7 +24,10 @@ function tryBuild(ids) {
     <h3 class="research-h3">Experimental Builds <span class="hyp">try these</span></h3>
     <div class="build-grid">
       <article v-for="(b, i) in builds" :key="i" class="exp-build">
-        <div class="exp-title">{{ b.title }}</div>
+        <div class="exp-title-row">
+          <div class="exp-title">{{ b.title }}</div>
+          <span v-if="b.forChampion" class="exp-champ">{{ b.forChampion }}</span>
+        </div>
         <div class="exp-items">
           <ItemHoverCard v-for="item in resolveAll(b.itemIds)" :key="item.id" :item="item" :mobile-tap="false">
             <ItemIcon :item="item" size="lg" :alt="item.name" class="exp-icon" />
@@ -56,7 +59,14 @@ function tryBuild(ids) {
   border-radius: var(--radius-lg);
 }
 
-.exp-title { color: var(--fg-primary); font-weight: 700; font-size: 1.0625rem; margin-bottom: 1rem; }
+.exp-title-row { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.exp-title { color: var(--fg-primary); font-weight: 700; font-size: 1.0625rem; }
+.exp-champ {
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.03em;
+  color: var(--accent-support); background: var(--accent-support-tint);
+  border: 1px solid color-mix(in srgb, var(--accent-support) 25%, transparent);
+  padding: 0.2rem 0.625rem; border-radius: 999px; white-space: nowrap;
+}
 
 .exp-items { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .exp-icon { border: 1px solid var(--border-strong); }

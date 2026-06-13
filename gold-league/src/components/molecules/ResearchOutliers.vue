@@ -35,6 +35,7 @@ function onOpen(id) {
             <ItemIcon :item="resolve(o.itemId)" size="md" :alt="o.name" />
           </ItemHoverCard>
           <div class="outlier-name">{{ o.name }}</div>
+          <span v-if="typeof o.efficiency === 'number'" class="eff-num" :class="o.direction">{{ o.efficiency }}%</span>
           <span class="dir-badge" :class="o.direction">{{ o.direction }}</span>
         </div>
         <p class="outlier-claim">{{ o.claim }}</p>
@@ -65,8 +66,12 @@ function onOpen(id) {
 .outlier-card.overvalued { border-left-color: var(--eff-negative); }
 .outlier-card.overvalued:hover { border-color: var(--eff-negative); }
 
-.outlier-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
-.outlier-name { flex: 1; color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; }
+.outlier-head { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.outlier-name { flex: 1; color: var(--fg-primary); font-weight: 600; font-size: 0.9375rem; min-width: 0; }
+
+.eff-num { font-size: 0.875rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.eff-num.undervalued { color: var(--eff-positive); }
+.eff-num.overvalued { color: var(--eff-negative); }
 
 .dir-badge {
   font-size: 0.625rem;

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import ResearchEfficiencyChart from '../molecules/ResearchEfficiencyChart.vue'
 import ResearchOutliers from '../molecules/ResearchOutliers.vue'
 import ResearchEffectSpotlights from '../molecules/ResearchEffectSpotlights.vue'
 import ResearchExperimentalBuilds from '../molecules/ResearchExperimentalBuilds.vue'
@@ -71,6 +72,7 @@ const hasContent = computed(() => {
     </div>
 
     <template v-else>
+      <ResearchEfficiencyChart :outliers="digest.outliers || []" />
       <ResearchOutliers :outliers="digest.outliers || []" :all-items="allItems" />
       <ResearchEffectSpotlights :spotlights="digest.effectSpotlights || []" :all-items="allItems" />
       <ResearchExperimentalBuilds :builds="digest.experimentalBuilds || []" :all-items="allItems" />
