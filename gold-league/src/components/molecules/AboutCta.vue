@@ -27,10 +27,10 @@ const formatLastUpdate = (timestamp) => {
     <div class="section-container-narrow">
       <img src="https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/profile-icons/1111.jpg"
            alt="BuildValue" class="cta-icon" />
-      <h2>Ready to be the one who says 'Build Diff'?</h2>
-      <p>Explore efficient itemization with our gold efficiency calculations</p>
+      <h2>Go find what the numbers are hiding.</h2>
+      <p>Every item, priced and measured against the latest patch. Start exploring the data.</p>
       <button @click="$router.push('/')" class="btn-cta-large">
-        Browse Items Database
+        Browse the Database
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M5 12h14M12 5l7 7-7 7"/>
         </svg>
@@ -53,21 +53,19 @@ const formatLastUpdate = (timestamp) => {
 </template>
 
 <style scoped>
-/* Legacy raw colors kept verbatim (no token maps): rgb(220,148,21) gradient stop,
-   rgba(193,131,28,…) glows, #000 button text, rgba(255,255,255,0.02) disclaimer wash. */
 .section-cta { padding: 6rem 2rem; position: relative; }
 
 .section-container-narrow { max-width: 800px; margin: 0 auto; text-align: center; }
 
-.cta-icon { width: 80px; height: 80px; margin-bottom: 2rem; filter: drop-shadow(0 4px 16px rgba(193, 131, 28, 0.4)); }
+.cta-icon { width: 80px; height: 80px; margin-bottom: 2rem; filter: drop-shadow(0 4px 16px color-mix(in srgb, var(--accent-lead) 40%, transparent)); }
 
 .section-cta h2 { font-size: 2.5rem; font-weight: 700; color: var(--fg-primary); margin-bottom: 1rem; }
 
 .section-cta p { font-size: 1.125rem; color: var(--fg-secondary); margin-bottom: 2.5rem; }
 
-.btn-cta-large { display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 3rem; background: linear-gradient(135deg, var(--accent-lead), rgb(220, 148, 21)); color: #000; font-size: 1.25rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(193, 131, 28, 0.4); }
+.btn-cta-large { display: inline-flex; align-items: center; gap: 0.75rem; padding: 1.25rem 3rem; background: linear-gradient(135deg, var(--accent-lead), var(--accent-lead-press)); color: var(--accent-lead-foreground); font-size: 1.25rem; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px color-mix(in srgb, var(--accent-lead) 40%, transparent); }
 
-.btn-cta-large:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(193, 131, 28, 0.6); }
+.btn-cta-large:hover { transform: translateY(-2px); box-shadow: 0 6px 30px color-mix(in srgb, var(--accent-lead) 55%, transparent); }
 
 .btn-cta-large svg { width: 20px; height: 20px; }
 

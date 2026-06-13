@@ -7,8 +7,8 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
     <div class="section-container">
       <div class="formula-content">
         <div class="formula-left">
-          <h2>Understanding Gold Efficiency</h2>
-          <p>Gold efficiency is the cornerstone metric for evaluating item value in League of Legends. It represents the percentage of an item's cost that translates into raw stat value.</p>
+          <h2>Methodology: Measuring Gold Efficiency</h2>
+          <p>Gold efficiency is the cornerstone metric of this research — the percentage of an item's cost that converts into raw stat value. Every base stat is priced from League's own component items, so the baseline is reproducible, not opinion.</p>
 
           <div class="formula-box">
             <div class="formula-label">The Formula</div>
@@ -62,8 +62,6 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
 </template>
 
 <style scoped>
-/* Legacy raw colors kept verbatim (no token maps): rgba(234,179,8,…) highlight tints,
-   rgba(193,131,28,…) icon glow. */
 .section-formula { padding: 6rem 2rem; position: relative; }
 
 .section-container { max-width: 1200px; margin: 0 auto; }
@@ -90,7 +88,7 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
 
 .example-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
 
-.example-item-icon { width: 48px; height: 48px; border-radius: 6px; border: 2px solid var(--accent-lead); box-shadow: 0 2px 8px rgba(193, 131, 28, 0.3); }
+.example-item-icon { width: 48px; height: 48px; border-radius: 6px; border: 2px solid var(--accent-lead); box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-lead) 30%, transparent); }
 
 .example-header strong { color: var(--accent-lead); font-size: 1.125rem; }
 
@@ -98,7 +96,7 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
 
 .stat-line { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; background: var(--bg-elevated); border-radius: 6px; font-size: 0.9375rem; color: var(--fg-secondary); }
 
-.stat-line.highlight { background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); }
+.stat-line.highlight { background: var(--accent-lead-tint); border: 1px solid color-mix(in srgb, var(--accent-lead) 30%, transparent); }
 
 .stat-icon { font-size: 1.125rem; flex-shrink: 0; }
 
@@ -106,7 +104,7 @@ import AboutStatValuesTable from './AboutStatValuesTable.vue'
 
 .example-note { padding: 1rem; background: var(--bg-elevated); border-left: 3px solid var(--accent-lead); border-radius: 4px; font-size: 0.875rem; color: var(--fg-secondary); line-height: 1.6; font-style: italic; }
 
-.formula-note { padding: 1rem 1.5rem; background: rgba(234, 179, 8, 0.1); border-left: 3px solid var(--accent-lead); border-radius: 4px; font-size: 0.9375rem; color: var(--fg-secondary); line-height: 1.6; }
+.formula-note { padding: 1rem 1.5rem; background: var(--accent-lead-tint); border-left: 3px solid var(--accent-lead); border-radius: 4px; font-size: 0.9375rem; color: var(--fg-secondary); line-height: 1.6; }
 
 @media (max-width: 1024px) {
   .formula-content { grid-template-columns: 1fr; }

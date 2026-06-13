@@ -2,8 +2,8 @@
   <section class="section-tech">
     <div class="section-container">
       <div class="section-header">
-        <h2>Technical Architecture</h2>
-        <p>A production-grade full-stack application demonstrating modern web development practices</p>
+        <h2>The Research Pipeline</h2>
+        <p>How the data gets measured: a weekly extract from Riot's source, validated and priced, then served fast enough to explore in real time.</p>
       </div>
 
       <div class="tech-stack-visual">
@@ -89,7 +89,7 @@
 </template>
 
 <style scoped>
-/* Legacy raw badge colors (blue/green/violet rgba, #00ED64 Mongo leaf) kept verbatim — no token maps. */
+/* #00ED64 Mongo brand leaf kept verbatim (brand asset, no token map). */
 .section-tech { padding: 6rem 2rem; position: relative; background: var(--bg-surface); }
 
 .section-container { max-width: 1200px; margin: 0 auto; }
@@ -106,9 +106,9 @@
 
 .layer-badge { padding: 0.375rem 0.875rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.frontend-badge { background: rgba(59, 130, 246, 0.15); color: rgb(59, 130, 246); border: 1px solid rgba(59, 130, 246, 0.3); }
-.backend-badge { background: rgba(34, 197, 94, 0.15); color: rgb(34, 197, 94); border: 1px solid rgba(34, 197, 94, 0.3); }
-.database-badge { background: rgba(168, 85, 247, 0.15); color: rgb(168, 85, 247); border: 1px solid rgba(168, 85, 247, 0.3); }
+.frontend-badge { background: color-mix(in srgb, var(--accent-support) 15%, transparent); color: var(--accent-support); border: 1px solid color-mix(in srgb, var(--accent-support) 30%, transparent); }
+.backend-badge { background: color-mix(in srgb, var(--eff-positive) 15%, transparent); color: var(--eff-positive); border: 1px solid color-mix(in srgb, var(--eff-positive) 30%, transparent); }
+.database-badge { background: color-mix(in srgb, var(--p-violet-500) 15%, transparent); color: var(--p-violet-500); border: 1px solid color-mix(in srgb, var(--p-violet-500) 30%, transparent); }
 
 .layer-name { font-size: 1.125rem; font-weight: 600; color: var(--fg-primary); }
 

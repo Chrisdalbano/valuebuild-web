@@ -2,8 +2,8 @@
   <section class="section-showcase">
     <div class="section-container">
       <div class="section-header">
-        <h2>Project Highlights</h2>
-        <p>Key technical achievements and development decisions</p>
+        <h2>Engineering the Study</h2>
+        <p>The infrastructure decisions that keep the research honest, fresh, and fast</p>
       </div>
 
       <div class="showcase-grid">
@@ -33,7 +33,6 @@
 </template>
 
 <style scoped>
-/* Legacy raw colors kept verbatim (no token maps): rgb(220,148,21) gradient stop, #000 number text. */
 .section-showcase { padding: 6rem 2rem; position: relative; background: var(--bg-surface); }
 
 .section-container { max-width: 1200px; margin: 0 auto; }
@@ -48,8 +47,7 @@
 
 .showcase-card:hover { transform: translateY(-4px); border-color: var(--accent-lead); }
 
-/* Duplicate `display` kept verbatim from legacy (inline-block then flex; flex wins). */
-.showcase-number { display: inline-block; width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent-lead), rgb(220, 148, 21)); color: #000; font-size: 1.5rem; font-weight: 900; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+.showcase-number { width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent-lead), var(--accent-lead-press)); color: var(--accent-lead-foreground); font-size: 1.5rem; font-weight: 900; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
 
 .showcase-card h3 { font-size: 1.25rem; font-weight: 600; color: var(--fg-primary); margin-bottom: 1rem; }
 
