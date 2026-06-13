@@ -1,8 +1,27 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import FooterBrand from '../molecules/FooterBrand.vue'
 import FooterLinkList from '../molecules/FooterLinkList.vue'
+import { itemsApi } from '@/api/items'
 
 const currentYear = new Date().getFullYear()
+
+// dataset stats live here now (quiet), not blasted across the Items hero
+const itemCount = ref(0)
+const patch = ref('')
+const lastUpdate = ref('')
+onMounted(async () => {
+  try {
+    const meta = await itemsApi.getMetadata()
+    if (meta?.itemCount) itemCount.value = meta.itemCount
+    if (meta?.patch) patch.value = meta.patch
+    const ts = meta?.lastUpdated || meta?.lastUpdate
+    if (ts) {
+      const days = Math.floor((Date.now() - new Date(ts)) / 86400000)
+      lastUpdate.value = days <= 0 ? 'today' : `${days}d ago`
+    }
+  } catch { /* footer degrades gracefully without metadata */ }
+})
 
 const quickLinks = [
   { label: 'Browse Items', to: '/' },
@@ -17,11 +36,6 @@ const resources = [
   { label: 'Data Dragon API', href: 'https://ddragon.leagueoflegends.com/cdn/15.1.1/data/en_US/item.json' },
 ]
 
-const techStack = [
-  { label: 'Vue 3', href: 'https://vuejs.org/' },
-  { label: 'FastAPI Backend', href: 'https://fastapi.tiangolo.com/' },
-  { label: 'MongoDB', href: 'https://www.mongodb.com/' },
-]
 </script>
 
 <template>
@@ -31,7 +45,27 @@ const techStack = [
         <FooterBrand class="footer-column" />
         <FooterLinkList title="Quick Links" :links="quickLinks" />
         <FooterLinkList title="Resources" :links="resources" />
-        <FooterLinkList title="Tech Stack" :links="techStack" />
+        <div class="footer-dataset">
+          <h4 class="dataset-title">Dataset</h4>
+          <div class="dataset-stats">
+            <div class="dstat">
+              <span class="dstat-num">{{ itemCount || '—' }}</span>
+              <span class="dstat-cap">items analyzed</span>
+            </div>
+            <div class="dstat">
+              <span class="dstat-num">{{ patch || '—' }}</span>
+              <span class="dstat-cap">current patch</span>
+            </div>
+            <div class="dstat">
+              <span class="dstat-num">100%</span>
+              <span class="dstat-cap">computed math</span>
+            </div>
+            <div v-if="lastUpdate" class="dstat">
+              <span class="dstat-num">{{ lastUpdate }}</span>
+              <span class="dstat-cap">last updated</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="footer-bottom">
@@ -88,6 +122,20 @@ const techStack = [
   padding-bottom: 3rem;
   border-bottom: 1px solid color-mix(in srgb, var(--footer-accent) 15%, transparent);
 }
+
+.footer-dataset { display: flex; flex-direction: column; }
+.dataset-title {
+  color: var(--footer-accent-bright, #f0a829);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+}
+.dataset-stats { display: flex; flex-direction: column; gap: 0.875rem; }
+.dstat { display: flex; flex-direction: column; gap: 0.125rem; }
+.dstat-num { color: rgba(255, 255, 255, 0.85); font-size: 1.125rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.dstat-cap { color: rgba(255, 255, 255, 0.4); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
 
 .footer-bottom { display: flex; justify-content: space-between; align-items: center; gap: 2rem; padding-top: 2rem; }
 

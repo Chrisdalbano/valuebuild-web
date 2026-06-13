@@ -4,8 +4,6 @@ import AboutHero from '../molecules/AboutHero.vue'
 import AboutResearchAreas from '../molecules/AboutResearchAreas.vue'
 import AboutFormulaSection from '../molecules/AboutFormulaSection.vue'
 import AboutTheGap from '../molecules/AboutTheGap.vue'
-import AboutTechStack from '../molecules/AboutTechStack.vue'
-import AboutShowcase from '../molecules/AboutShowcase.vue'
 import AboutCta from '../molecules/AboutCta.vue'
 import { useChampionSplash } from '@/composables/useChampionSplash'
 import { itemsApi } from '@/api/items'
@@ -38,8 +36,6 @@ onMounted(async () => {
     <AboutResearchAreas />
     <AboutFormulaSection />
     <AboutTheGap />
-    <AboutTechStack />
-    <AboutShowcase />
     <AboutCta :last-update="lastUpdate" />
   </div>
 </template>
