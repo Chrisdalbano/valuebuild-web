@@ -50,16 +50,27 @@ const { floatingStyles } = useFloating(anchor, card, {
 })
 
 let intentTimer = null
+let closeTimer = null
 
 function show() {
   if (props.disabled || isMobile.value) return
+  clearTimeout(closeTimer)
   clearTimeout(intentTimer)
   intentTimer = setTimeout(() => (open.value = true), 150) // hover intent
 }
 
+// Deferred close so the pointer can cross the gap from the trigger to the
+// (teleported) popover — and, critically, so that when the popover flips to
+// overlap the card it doesn't steal the pointer, fire the card's mouseleave,
+// and oscillate open/close. The popover's own mouseenter cancels this close.
 function hide() {
   clearTimeout(intentTimer)
-  open.value = false
+  clearTimeout(closeTimer)
+  closeTimer = setTimeout(() => (open.value = false), 110)
+}
+
+function cancelClose() {
+  clearTimeout(closeTimer)
 }
 
 // the anchor's own events no-op in manual mode (the parent calls show/hide so
@@ -75,7 +86,7 @@ function onTap(e) {
 
 defineExpose({ show, hide })
 
-onBeforeUnmount(() => clearTimeout(intentTimer))
+onBeforeUnmount(() => { clearTimeout(intentTimer); clearTimeout(closeTimer) })
 </script>
 
 <template>
@@ -106,6 +117,8 @@ onBeforeUnmount(() => clearTimeout(intentTimer))
         ref="card"
         class="floating-card"
         :style="isMobile ? undefined : floatingStyles"
+        @mouseenter="cancelClose"
+        @mouseleave="hide"
         @click.stop
       >
         <div class="statscard-pop">

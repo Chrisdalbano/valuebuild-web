@@ -36,6 +36,23 @@ await check('hovering the card BODY (not the icon) also floats the stats card', 
   await page.waitForSelector('body > .floating-card .item-stats-card', { timeout: 3000 })
 })
 
+await check('whole-card hover stays open — no open/close oscillation', async () => {
+  // Regression: when the popover flips to overlap the card it stole the pointer,
+  // fired the card's mouseleave, and oscillated. Hover a top-row card (most
+  // likely to flip down over itself) and confirm it stays stably open.
+  await page.mouse.move(10, 700)
+  await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })
+  const card = page.locator('.item-card').first()
+  await card.hover()
+  await page.waitForSelector('body > .floating-card', { timeout: 3000 })
+  // sample stability over time: must remain exactly one open card, never 0
+  for (let i = 0; i < 6; i++) {
+    await page.waitForTimeout(120)
+    const n = await page.locator('body > .floating-card').count()
+    if (n !== 1) throw new Error(`popover oscillated — count ${n} at sample ${i}`)
+  }
+})
+
 await check('card hides on mouse leave', async () => {
   await page.mouse.move(10, 700)
   await page.waitForSelector('.floating-card', { state: 'detached', timeout: 3000 })
