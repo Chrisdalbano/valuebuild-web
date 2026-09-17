@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VgButton, VgBadge, VgMeter } from "../vantage";
+import { FzButton, FzBadge, FzMeter, FzIcon } from "../forza";
 import type { DemoItem } from "./data/items";
 defineProps<{ item: DemoItem; selected: boolean; disabled?: boolean }>();
 defineEmits<{ toggle: [id: string] }>();
@@ -11,11 +11,11 @@ defineEmits<{ toggle: [id: string] }>();
         class="item-icon"
         :class="item.category.toLowerCase()"
         aria-hidden="true"
-        >{{ item.symbol }}</span
+        ><FzIcon :name="item.icon" :size="22" /></span
       ><span class="mono item-number">/ {{ item.id }}</span
-      ><VgBadge :tone="selected ? 'positive' : 'neutral'">{{
+      ><FzBadge :tone="selected ? 'positive' : 'neutral'">{{
         selected ? "Selected" : item.category
-      }}</VgBadge>
+      }}</FzBadge>
     </div>
     <h3>{{ item.name }}</h3>
     <p class="item-description">
@@ -25,7 +25,7 @@ defineEmits<{ toggle: [id: string] }>();
       <strong>{{ item.efficiency }}<small>%</small></strong
       ><span>STAT<br />EFFICIENCY</span>
     </div>
-    <VgMeter
+    <FzMeter
       :value="item.efficiency"
       :max="150"
       :label="item.name + ' stat efficiency'"
@@ -33,13 +33,15 @@ defineEmits<{ toggle: [id: string] }>();
     <div class="item-statline">
       <span>{{ item.attack }} attack</span><span>{{ item.health }} health</span>
     </div>
-    <VgButton
+    <FzButton
       :variant="selected ? 'secondary' : 'ghost'"
       :disabled="disabled && !selected"
       :aria-pressed="selected"
       :aria-label="(selected ? 'Remove ' : 'Compare ') + item.name"
       @click="$emit('toggle', item.id)"
-      >{{ selected ? "In comparison" : "+ Compare item" }}</VgButton
+      ><FzIcon :name="selected ? 'check' : 'plus'" :size="15" />{{
+        selected ? "In comparison" : "Compare item"
+      }}</FzButton
     >
   </article>
 </template>

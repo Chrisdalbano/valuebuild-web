@@ -1,41 +1,44 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
-import { VgTabs, VgBadge } from "../../vantage";
+import { FzTabs, FzBadge, FzIcon } from "../../forza";
 const mode = shallowRef("vue");
 const examples = {
-  vue: `// Vue 3.5+ / local source imports
-import { VgButton, VgField } from './vantage'
-import './vantage/tokens.css'
+  vue: `// npm add reka-ui @lucide/vue @formkit/auto-animate
+// Vue 3.5+ / local source imports
+import { FzButton, FzField } from './forza'
+import './forza/tokens.css'
 
-<VgField v-model="name" label="Build name" />
-<VgButton @click="saveBuild">Save build</VgButton>`,
-  nuxt: `// Copy vantage/ into app/components/vantage/
+<FzField v-model="name" label="Build name" />
+<FzButton @click="saveBuild">Save build</FzButton>`,
+  nuxt: `// npm add reka-ui @lucide/vue @formkit/auto-animate
+// Copy forza/ into app/components/forza/
 // nuxt.config.ts
 export default defineNuxtConfig({
-  css: ['~/components/vantage/tokens.css']
+  css: ['~/components/forza/tokens.css']
 })
 
 // Explicit imports in a Nuxt page
-import { VgButton } from '~/components/vantage'
-// Wrap your layout in <div class="vg-theme">`,
+import { FzButton } from '~/components/forza'
+// Wrap your layout in <div class="fz-theme">`,
 };
 </script>
 <template>
   <section id="integration" class="section">
     <div class="section-heading">
       <div>
-        <span class="eyebrow">04 / UNDER THE SURFACE</span>
-        <h2>Designed to become your own.</h2>
+        <span class="eyebrow">For developers</span>
+        <h2>Built to work together.</h2>
       </div>
-      <VgBadge>Source-first / publication pending</VgBadge>
+      <FzBadge>Source-first / publication pending</FzBadge>
     </div>
     <div class="docs-grid">
       <div>
-        <h3 class="docs-title">A system, not a stylesheet.</h3>
+        <h3 class="docs-title">Typed components. Shared tokens.</h3>
         <p class="muted">
-          Nine typed primitives with explicit props, slots, and events. No
-          BuildValue API imports. No styling framework dependency. Copy the
-          source into Vue or Nuxt and own every detail.
+          Typed Vue primitives with explicit props, slots, and events. No
+          BuildValue API imports. Accessible behavior from Reka UI. List motion
+          from AutoAnimate. Copy the source into Vue or Nuxt and own every
+          detail.
         </p>
         <div class="architecture-row">
           <span>01</span><strong>Primitive tokens</strong
@@ -51,12 +54,12 @@ import { VgButton } from '~/components/vantage'
         </div>
         <p class="muted small-copy">
           Ink and Paper share a contract. Override semantic variables on a
-          <code>.vg-theme</code> wrapper. Fonts are host-owned; the preview
+          <code>.fz-theme</code> wrapper. Fonts are host-owned; the preview
           self-hosts open-source typefaces.
         </p>
       </div>
       <div class="code-panel">
-        <VgTabs
+        <FzTabs
           v-model="mode"
           label="Integration framework"
           :options="[
@@ -64,33 +67,66 @@ import { VgButton } from '~/components/vantage'
             { value: 'nuxt', label: 'Nuxt' },
           ]"
         >
-          <pre><code>{{examples[mode as keyof typeof examples]}}</code></pre></VgTabs
+          <pre><code>{{examples[mode as keyof typeof examples]}}</code></pre></FzTabs
         ><span class="code-caption"
           >LOCAL SOURCE PREVIEW / NO PUBLISHED PACKAGE YET</span
         >
       </div>
     </div>
+    <div class="motion-notes">
+      <h3>Motion that follows your input.</h3>
+      <p>
+        160ms for local feedback. 260ms for list changes. Dialogs arrive in
+        320ms and leave in 180ms. Transform and opacity handle movement;
+        reduced-motion preferences switch it off.
+      </p>
+      <div class="motion-contract">
+        <code
+          >&lt;FzList :items="builds" label="Saved builds"&gt;<br />
+          &lt;template #default="{ item }"&gt;<br />
+          &lt;BuildRow :build="item" @remove="remove(item.id)" /&gt;<br />
+          &lt;/template&gt;<br />&lt;/FzList&gt;</code
+        >
+      </div>
+      <p>
+        Stable item IDs preserve identity. Props carry data down; typed events
+        carry intent up. Override duration per list, or disable its motion
+        altogether.
+      </p>
+      <p>
+        <a href="https://reka-ui.com/docs/guides/animation"
+          >Reka UI animation</a
+        >
+        / <a href="https://auto-animate.formkit.com/">AutoAnimate</a> /
+        <a href="https://lucide.dev/">Lucide</a>
+      </p>
+    </div>
     <details class="research">
-      <summary>Design research & the original direction <span>+</span></summary>
+      <summary>
+        Design research & the original direction
+        <FzIcon name="chevronDown" :size="16" />
+      </summary>
       <div>
         <p>
           Riot’s designers describe adapting a shared visual language to
-          different products, with hierarchy driven by player needs. Vantage
+          different products, with hierarchy driven by player needs. Forza
           interprets that as quiet controls inside an expressive editorial
           frame.
         </p>
         <a
           href="https://www.riotgames.com/en/news/complementary-visual-design-in-spirit-blossom"
-          >Riot: Complementary Visual Design in Spirit Blossom &#8599;</a
-        >
+          >Riot: Complementary Visual Design in Spirit Blossom
+          <FzIcon name="arrowUpRight" :size="14"
+        /></a>
         <p>
           Stink Studios’ Riot identity connects many games through expressive
-          graphic rules. Vantage uses its own split-blade symbol, warm signal
-          palette, and condensed type pairing.
+          graphic rules. Forza uses its own F monogram, warm signal palette, and
+          condensed type pairing.
         </p>
         <a href="https://www.stinkstudios.com/work/riot-games-brand-evolution"
-          >Stink Studios: Riot Games Brand Evolution &#8599;</a
-        >
+          >Stink Studios: Riot Games Brand Evolution
+          <FzIcon name="arrowUpRight" :size="14"
+        /></a>
         <p>
           Riot’s Hextech engineering article describes self-contained UI units.
           Here, framework-independent tokens and Vue components stay separate
@@ -98,8 +134,9 @@ import { VgButton } from '~/components/vantage'
         </p>
         <a
           href="https://www.riotgames.com/en/news/under-hood-league-client%E2%80%99s-hextech-ui"
-          >Riot: Under the hood of the League Client’s Hextech UI &#8599;</a
-        >
+          >Riot: Under the hood of the League Client’s Hextech UI
+          <FzIcon name="arrowUpRight" :size="14"
+        /></a>
         <p>
           This is an independent study. No Riot logos, proprietary typefaces,
           character art, or source code are included. The working name and

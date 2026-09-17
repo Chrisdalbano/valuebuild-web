@@ -6,7 +6,7 @@ export interface DemoItem {
   efficiency: number;
   attack: number;
   health: number;
-  symbol: string;
+  icon: "swords" | "shield" | "zap" | "flame";
 }
 // Deliberately fictional fixtures. Not current League balance or recommendations.
 export const demoItems: readonly DemoItem[] = [
@@ -18,7 +18,7 @@ export const demoItems: readonly DemoItem[] = [
     efficiency: 118,
     attack: 65,
     health: 0,
-    symbol: "↗",
+    icon: "swords",
   },
   {
     id: "02",
@@ -28,7 +28,7 @@ export const demoItems: readonly DemoItem[] = [
     efficiency: 109,
     attack: 0,
     health: 500,
-    symbol: "◇",
+    icon: "shield",
   },
   {
     id: "03",
@@ -38,7 +38,7 @@ export const demoItems: readonly DemoItem[] = [
     efficiency: 104,
     attack: 30,
     health: 150,
-    symbol: "ϟ",
+    icon: "zap",
   },
   {
     id: "04",
@@ -48,6 +48,6 @@ export const demoItems: readonly DemoItem[] = [
     efficiency: 112,
     attack: 50,
     health: 250,
-    symbol: "⌁",
+    icon: "flame",
   },
 ];

@@ -1,31 +1,29 @@
 <script setup lang="ts">
-import { VgBadge } from "../../vantage";
+import { FzBadge, FzIcon } from "../../forza";
 </script>
 <template>
   <section class="hero">
     <div class="hero-copy">
-      <VgBadge tone="accent">Independent interface system / v0.1</VgBadge>
-      <h1>PRECISION.<br />WITH <em>TEETH.</em></h1>
+      <FzBadge tone="accent">Forza UI / Preview</FzBadge>
+      <h1>FORZA.<br /><em>IN MOTION.</em></h1>
       <p>
-        A sharp new language for tools that play seriously.<br
-          class="desktop-break"
-        />
-        Expressive by nature. Systematic by design.
+        Vue components with a little more force.<br class="desktop-break" />
+        Precise controls. Fluid feedback. Built for your next app.
       </p>
       <div class="hero-actions">
         <a class="action-link" href="#components"
-          >Explore the components <span>&#8599;</span></a
+          >Explore the components <FzIcon name="arrowUpRight" :size="18" /></a
         ><a class="text-link" href="#build-lab"
-          >Enter the build lab <span>&#8599;</span></a
-        >
+          >Enter the build lab <FzIcon name="arrowUpRight" :size="18"
+        /></a>
       </div>
       <div class="hero-note">
-        <span class="crosshair">+</span
-        ><span>BUILT FOR THE MOMENT<br />BETWEEN INSTINCT & DECISION.</span>
+        <span class="crosshair"><FzIcon name="plus" :size="20" /></span
+        ><span>ADD. COMPARE. REFINE.<br />NOTHING LOSES ITS PLACE.</span>
       </div>
     </div>
     <div class="hero-art" aria-hidden="true">
-      <span class="art-coordinate">FIG. 01 / THE ADVANTAGE</span
+      <span class="art-coordinate">FORZA / FORM STUDY</span
       ><svg viewBox="0 0 500 480" fill="none">
         <defs>
           <linearGradient
@@ -71,11 +69,11 @@ import { VgBadge } from "../../vantage";
           stroke-opacity=".25"
         />
         <path
-          d="M93 95H193L249 278L318 95H425L270 412H201Z"
+          d="M112 85H423L366 164H210V216H355L300 290H210V400H112Z"
           fill="url(#blade)"
         />
-        <path d="M93 95L201 412H270L163 95" fill="#101416" fill-opacity=".17" />
-        <path d="M202 45H233L327 348H296Z" fill="#f2efe6" />
+        <path d="M112 85H150V400H112Z" fill="#101416" fill-opacity=".17" />
+        <path d="M248 325H278L236 415H206Z" fill="#f2efe6" />
         <path d="M72 432H436" stroke="currentColor" stroke-opacity=".5" />
         <path d="M72 425V439M436 425V439" stroke="currentColor" />
         <text
@@ -89,7 +87,7 @@ import { VgBadge } from "../../vantage";
         </text>
       </svg>
       <div class="art-bottom">
-        <span>ANGULAR BY INTENT.</span><span>35&#176; &#8599;</span>
+        <span>FORCE, WITH CONTROL.</span>
       </div>
     </div>
   </section>

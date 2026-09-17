@@ -5,11 +5,11 @@ export default defineConfig({
   build: {
     outDir: "dist-kit",
     lib: {
-      entry: "src/vantage/index.ts",
-      name: "VantageUI",
+      entry: "src/forza/index.ts",
+      name: "ForzaUI",
       formats: ["es"],
-      fileName: "vantage",
+      fileName: "forza",
     },
-    rollupOptions: { external: ["vue"] },
+    rollupOptions: { external: ["vue", "reka-ui", "@lucide/vue", "@formkit/auto-animate"] },
   },
 });

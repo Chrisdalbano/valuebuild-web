@@ -25,19 +25,19 @@ const width = computed(() => (100 * safeValue.value) / safeMax.value);
     :aria-valuemax="safeMax"
   >
     <span
-      :style="{ width: width + '%', background: 'var(--vg-' + tone + ')' }"
+      :style="{ width: width + '%', background: 'var(--fz-' + tone + ')' }"
     />
   </div>
 </template>
 <style scoped>
 .meter {
   height: 5px;
-  background: var(--vg-raised);
+  background: var(--fz-raised);
   overflow: hidden;
 }
 .meter span {
   display: block;
   height: 100%;
-  transition: width var(--vg-duration);
+  transition: width var(--fz-duration);
 }
 </style>

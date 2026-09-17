@@ -8,7 +8,7 @@ const model = defineModel<boolean>({ required: true });
     role="switch"
     :aria-checked="model"
     :disabled="disabled"
-    class="vg-switch"
+    class="fz-switch"
     @click="model = !model"
   >
     <span class="track" :class="{ on: model }"><span /></span
@@ -16,37 +16,40 @@ const model = defineModel<boolean>({ required: true });
   </button>
 </template>
 <style scoped>
-.vg-switch {
+.fz-switch {
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 44px;
   border: 0;
   background: transparent;
-  color: var(--vg-text);
+  color: var(--fz-text);
   font-size: 12px;
 }
 .track {
   width: 34px;
   height: 20px;
-  background: var(--vg-raised);
-  border: 1px solid var(--vg-border);
+  background: var(--fz-raised);
+  border: 1px solid var(--fz-border);
   padding: 3px;
+  border-radius: 10px;
+  transition: background var(--fz-motion-fast);
   flex-shrink: 0;
 }
 .track span {
   display: block;
+  border-radius: 50%;
   width: 12px;
   height: 12px;
-  background: var(--vg-muted);
-  transition: transform var(--vg-duration);
+  background: var(--fz-muted);
+  transition: transform var(--fz-motion-layout) var(--fz-ease-out);
 }
 .on {
-  background: var(--vg-accent);
-  border-color: var(--vg-accent);
+  background: var(--fz-accent);
+  border-color: var(--fz-accent);
 }
 .on span {
-  background: var(--vg-on-accent);
+  background: var(--fz-on-accent);
   transform: translateX(14px);
 }
 button:disabled {

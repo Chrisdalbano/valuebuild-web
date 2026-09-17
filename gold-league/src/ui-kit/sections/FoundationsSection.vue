@@ -1,18 +1,18 @@
 <script setup lang="ts">
 const colors = [
-  { name: "Ink", hex: "#101416", token: "--vg-bg" },
-  { name: "Signal", hex: "#FF705B", token: "--vg-accent" },
-  { name: "Ivory", hex: "#F2EFE6", token: "--vg-text" },
-  { name: "Mint", hex: "#A8D6B5", token: "--vg-positive" },
-  { name: "Alloy", hex: "#E3C38C", token: "--vg-warning" },
+  { name: "Ink", hex: "#101416", token: "--fz-bg" },
+  { name: "Signal", hex: "#FF705B", token: "--fz-accent" },
+  { name: "Ivory", hex: "#F2EFE6", token: "--fz-text" },
+  { name: "Mint", hex: "#A8D6B5", token: "--fz-positive" },
+  { name: "Alloy", hex: "#E3C38C", token: "--fz-warning" },
 ];
 </script>
 <template>
   <section id="foundations" class="section">
     <div class="section-heading">
       <div>
-        <span class="eyebrow">01 / FOUNDATIONS</span>
-        <h2>Character, down to the token.</h2>
+        <span class="eyebrow">Foundations</span>
+        <h2>Color and typography.</h2>
       </div>
       <p>
         Editorial scale. Instrument-panel precision.<br />One signal color with
@@ -31,7 +31,7 @@ const colors = [
         </p>
       </div>
       <div class="type-specimen">
-        <span class="eyebrow">TYPE / THREE VOICES, ONE SYSTEM</span>
+        <span class="eyebrow">Typography</span>
         <div class="display-spec">MAKE YOUR<br /><span>ADVANTAGE.</span></div>
         <div class="type-bottom">
           <span>Barlow Condensed<br /><small>Display / 600-700</small></span

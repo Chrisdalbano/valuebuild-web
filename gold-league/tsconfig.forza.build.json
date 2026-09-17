@@ -1,11 +1,11 @@
 {
-  "extends": "./tsconfig.vantage.json",
+  "extends": "./tsconfig.forza.json",
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "dist-kit/types",
-    "rootDir": "src/vantage"
+    "rootDir": "src/forza"
   },
-  "include": ["src/vantage/**/*.ts", "src/vantage/**/*.vue"]
+  "include": ["src/forza/**/*.ts", "src/forza/**/*.vue"]
 }

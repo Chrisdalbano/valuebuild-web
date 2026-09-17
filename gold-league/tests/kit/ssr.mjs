@@ -13,7 +13,7 @@ try {
   const html = await renderToString(
     createSSRApp({ render: () => h(Showcase) }),
   );
-  assert.ok(html.includes("PRECISION."));
+  assert.ok(html.includes("FORZA."));
   assert.ok(html.includes("Sunbreaker"));
   assert.ok(html.includes("aria-labelledby"));
   assert.ok(!html.includes("[object Object]"));

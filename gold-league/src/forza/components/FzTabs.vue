@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useId } from "vue";
+import { useActiveIndicator } from "../composables/useActiveIndicator";
 const props = defineProps<{
   label: string;
   options: readonly { value: string; label: string }[];
 }>();
 const model = defineModel<string>({ required: true });
 const id = useId();
+const { track, indicator } = useActiveIndicator(model);
 function navigate(e: KeyboardEvent, index: number) {
   let target = index;
   if (e.key === "ArrowRight") target = (index + 1) % props.options.length;
@@ -17,15 +19,16 @@ function navigate(e: KeyboardEvent, index: number) {
   e.preventDefault();
   model.value = props.options[target].value;
   (
-    (e.currentTarget as HTMLElement).parentElement?.children[
+    (e.currentTarget as HTMLElement).parentElement?.querySelectorAll("button")[
       target
     ] as HTMLElement
   )?.focus();
 }
 </script>
 <template>
-  <div class="vg-tabs">
-    <div role="tablist" :aria-label="label" class="tablist">
+  <div class="fz-tabs">
+    <div ref="track" role="tablist" :aria-label="label" class="tablist">
+      <span class="tab-indicator" :style="indicator" aria-hidden="true" />
       <button
         v-for="(option, i) in options"
         :id="id + '-' + option.value"
@@ -47,15 +50,18 @@ function navigate(e: KeyboardEvent, index: number) {
       :aria-labelledby="id + '-' + model"
       tabindex="0"
     >
-      <slot :value="model" />
+      <Transition name="fz-state" mode="out-in"
+        ><div :key="model"><slot :value="model" /></div
+      ></Transition>
     </div>
   </div>
 </template>
 <style scoped>
 .tablist {
+  position: relative;
   display: flex;
   gap: 24px;
-  border-bottom: 1px solid var(--vg-border);
+  border-bottom: 1px solid var(--fz-border);
   margin-bottom: 24px;
   overflow-x: auto;
 }
@@ -64,12 +70,22 @@ function navigate(e: KeyboardEvent, index: number) {
   border: 0;
   border-bottom: 2px solid transparent;
   padding: 14px 0;
-  color: var(--vg-muted);
+  color: var(--fz-muted);
   white-space: nowrap;
   font-size: 12px;
 }
 .tablist button[aria-selected="true"] {
-  border-color: var(--vg-accent);
-  color: var(--vg-text);
+  border-color: transparent;
+  color: var(--fz-text);
+}
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--fz-accent);
+  transform-origin: left;
+  transition: transform var(--fz-motion-layout) var(--fz-ease-out);
 }
 </style>

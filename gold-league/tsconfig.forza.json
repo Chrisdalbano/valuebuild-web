@@ -10,8 +10,8 @@
     "types": ["vite/client"]
   },
   "include": [
-    "src/vantage/**/*.ts",
-    "src/vantage/**/*.vue",
+    "src/forza/**/*.ts",
+    "src/forza/**/*.vue",
     "src/ui-kit/**/*.ts",
     "src/ui-kit/**/*.vue"
   ]

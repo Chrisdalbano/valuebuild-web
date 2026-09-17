@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import {
-  VgButton,
-  VgPanel,
-  VgBadge,
-  VgField,
-  VgSwitch,
-  VgTabs,
-  VgDialog,
-  VgMeter,
-} from "../../vantage";
+  FzIcon,
+  FzButton,
+  FzPanel,
+  FzBadge,
+  FzField,
+  FzSwitch,
+  FzTabs,
+  FzDialog,
+  FzMeter,
+} from "../../forza";
+import SavedBuildList from "../SavedBuildList.vue";
+import { useSavedBuilds } from "../composables/useSavedBuilds";
+const builds = useSavedBuilds();
 const query = shallowRef("");
 const name = shallowRef("");
 const precise = shallowRef(true);
@@ -17,6 +21,13 @@ const alerts = shallowRef(false);
 const tab = shallowRef("overview");
 const open = shallowRef(false);
 const saved = shallowRef(false);
+const loading = shallowRef(false);
+function save() {
+  if (builds.add(name.value)) {
+    open.value = false;
+    name.value = "";
+  }
+}
 const tabs = [
   { value: "overview", label: "Overview" },
   { value: "stats", label: "Statistics" },
@@ -27,8 +38,8 @@ const tabs = [
   <section id="components" class="section">
     <div class="section-heading">
       <div>
-        <span class="eyebrow">02 / COMPONENT LIBRARY</span>
-        <h2>Small parts. Strong opinions.</h2>
+        <span class="eyebrow">Components</span>
+        <h2>Controls you can feel.</h2>
       </div>
       <p>
         Real Vue components. Try every state.<br />Keyboard, pointer, and touch
@@ -36,33 +47,44 @@ const tabs = [
       </p>
     </div>
     <div class="component-grid">
-      <VgPanel eyebrow="01 / ACTIONS" title="Commit to the click"
+      <FzPanel title="Buttons"
         ><div class="button-stack">
-          <VgButton @click="open = true"
-            >Save a build <template #trailing>&#8599;</template></VgButton
-          ><VgButton variant="secondary" @click="saved = !saved">{{
+          <FzButton @click="open = true"
+            >Save a build
+            <template #trailing
+              ><FzIcon name="arrowUpRight" :size="17" /></template></FzButton
+          ><FzButton variant="secondary" @click="saved = !saved">{{
             saved ? "Selected" : "Select variant"
-          }}</VgButton
-          ><VgButton variant="ghost" @click="saved = false"
-            >Reset selection &#8594;</VgButton
-          >
+          }}</FzButton
+          ><FzButton variant="ghost" @click="saved = false"
+            >Reset selection <FzIcon name="undo" :size="16"
+          /></FzButton>
         </div>
         <div class="state-row">
-          <VgButton size="sm" disabled>Unavailable</VgButton
-          ><VgButton size="sm" loading>Saving</VgButton>
+          <FzButton size="sm" disabled>Unavailable</FzButton
+          ><FzButton size="sm" :loading="loading" @click="loading = true">{{
+            loading ? "Working" : "Show loading"
+          }}</FzButton
+          ><FzButton
+            v-if="loading"
+            variant="ghost"
+            size="sm"
+            @click="loading = false"
+            >Stop</FzButton
+          >
         </div>
         <template #footer
           ><code>variant="primary | secondary | ghost"</code></template
-        ></VgPanel
-      ><VgPanel eyebrow="02 / INPUT" title="A clear way in"
-        ><VgField
+        ></FzPanel
+      ><FzPanel title="Text fields"
+        ><FzField
           v-model="query"
           label="Find an item"
           type="search"
           placeholder="Search your inventory..."
         />
         <div class="field-gap">
-          <VgField
+          <FzField
             v-model="name"
             label="Build name"
             placeholder="Give your build a name"
@@ -74,34 +96,35 @@ const tabs = [
         </div>
         <template #footer
           ><code>v-model + label + hint + error</code></template
-        ></VgPanel
-      ><VgPanel eyebrow="03 / FEEDBACK" title="Signals, not noise"
+        ></FzPanel
+      ><FzPanel title="Status & preferences"
         ><div class="badge-stack">
-          <VgBadge tone="positive">Synced</VgBadge
-          ><VgBadge tone="warning">Review needed</VgBadge
-          ><VgBadge tone="accent">Experimental</VgBadge>
+          <FzBadge tone="positive">Synced</FzBadge
+          ><FzBadge tone="warning">Review needed</FzBadge
+          ><FzBadge tone="accent">Experimental</FzBadge>
         </div>
-        <VgSwitch v-model="precise" label="Show precise values" /><VgSwitch
+        <FzSwitch v-model="precise" label="Show precise values" /><FzSwitch
           v-model="alerts"
           label="Enable patch alerts"
         />
         <div class="feedback-note" role="status">
-          {{
-            precise
-              ? "Precision enabled. Every decimal counts."
-              : "Rounded values. A quicker read."
-          }}
+          <Transition name="fz-state" mode="out-in"
+            ><span :key="String(precise)">
+              {{
+                precise
+                  ? "Precision enabled. Every decimal counts."
+                  : "Rounded values. A quicker read."
+              }}
+            </span></Transition
+          >
         </div>
         <template #footer
           ><code>Native states. Explicit labels.</code></template
-        ></VgPanel
+        ></FzPanel
       >
     </div>
-    <VgPanel
-      class="navigation-demo"
-      eyebrow="04 / NAVIGATION"
-      title="Stay in the flow"
-      ><VgTabs v-model="tab" label="Component example" :options="tabs"
+    <FzPanel class="navigation-demo" title="Tabs"
+      ><FzTabs v-model="tab" label="Component example" :options="tabs"
         ><div v-if="tab === 'overview'" class="tab-content">
           <span class="big-index">01</span>
           <div>
@@ -111,48 +134,56 @@ const tabs = [
               End.
             </p>
           </div>
-          <VgBadge tone="positive">Overview active</VgBadge>
+          <FzBadge tone="positive">Overview active</FzBadge>
         </div>
         <div v-else-if="tab === 'stats'" class="tab-content">
           <span class="big-index">02</span>
           <div class="grow">
             <h4>Efficiency threshold</h4>
-            <VgMeter :value="78" label="Example efficiency score" />
+            <FzMeter :value="78" label="Example efficiency score" />
             <p>78 / 100 / Illustrative data</p>
           </div>
         </div>
         <div v-else class="tab-content">
           <span class="big-index">03</span>
           <div>
-            <h4>A useful empty state.</h4>
+            <h4>Build history</h4>
             <p>
-              No saved changes yet. Save your first build to start a history.
+              {{ builds.items.value.length }} saved builds in this session.
+              {{ builds.message.value }}
             </p>
           </div>
-          <VgButton size="sm" @click="open = true">Save a build</VgButton>
-        </div></VgTabs
-      ></VgPanel
-    ><VgDialog v-model="open" title="Save your advantage"
-      ><p class="muted">
-        This is a component demo. Your build stays in this preview session.
-      </p>
-      <VgField
+          <FzButton size="sm" @click="open = true">Save a build</FzButton>
+        </div></FzTabs
+      ></FzPanel
+    ><FzDialog
+      v-model="open"
+      title="Save a build"
+      description="Give this build a name. It stays in this preview session."
+    >
+      <FzField
         v-model="name"
         label="Build name"
         placeholder="e.g. Late-game carry"
       /><template #footer
-        ><VgButton
-          :disabled="name.trim().length < 3"
-          @click="
-            saved = true;
-            open = false;
-          "
-          >Save build</VgButton
-        ><VgButton variant="secondary" @click="open = false"
-          >Cancel</VgButton
+        ><FzButton
+          :disabled="name.trim().length < 3 || builds.items.value.length >= 6"
+          @click="save"
+          >Save build</FzButton
+        ><FzButton variant="secondary" @click="open = false"
+          >Cancel</FzButton
         ></template
-      ></VgDialog
+      ></FzDialog
     >
+    <SavedBuildList
+      :items="builds.items.value"
+      :can-undo="!!builds.removed.value"
+      :message="builds.message.value"
+      @create="open = true"
+      @remove="builds.remove"
+      @undo="builds.undo"
+      @reorder="builds.reorder"
+    />
     <p v-if="saved" role="status" class="save-message">
       Saved: {{ name.trim() || "Variant" }} selected in this preview session.
     </p>
