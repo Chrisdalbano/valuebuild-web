@@ -42,3 +42,8 @@ coverage/
 .heroku/
 
 *.md
+# Vantage preview verification outputs
+gold-league/dist-kit/
+gold-league/test-results/
+gold-league/playwright-report/
+!gold-league/VANTAGE.md

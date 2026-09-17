@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.vantage.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist-kit/types",
+    "rootDir": "src/vantage"
+  },
+  "include": ["src/vantage/**/*.ts", "src/vantage/**/*.vue"]
+}

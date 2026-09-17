@@ -1,0 +1,10 @@
+import { createApp } from "vue";
+import "@fontsource/barlow-condensed/latin-600.css";
+import "@fontsource/barlow-condensed/latin-700.css";
+import "@fontsource/manrope/latin-400.css";
+import "@fontsource/manrope/latin-600.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "../vantage/tokens.css";
+import "./showcase.css";
+import Showcase from "./Showcase.vue";
+createApp(Showcase).mount("#app");

@@ -8,9 +8,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:prod": "vite build --mode production",
-    "serve": "vite preview --host"
+    "serve": "vite preview --host",
+    "typecheck:kit": "vue-tsc -p tsconfig.vantage.json",
+    "build:kit": "vite build --config vite.kit.config.ts && vue-tsc -p tsconfig.vantage.build.json",
+    "test:kit": "playwright test",
+    "test:kit:ssr": "node tests/kit/ssr.mjs"
   },
   "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/manrope": "^5.3.0",
     "axios": "^1.12.2",
     "chart.js": "^4.5.0",
     "vue": "^3.5.22",
@@ -18,7 +25,12 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.1.7"
+    "prettier": "^3.9.7",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7",
+    "vue-tsc": "^3.3.11"
   }
 }
