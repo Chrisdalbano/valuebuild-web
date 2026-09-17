@@ -1,7 +1,7 @@
 {
-  "name": "gold-league",
+  "name": "buildvalue",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,23 +9,20 @@
     "preview": "vite preview",
     "build:prod": "vite build --mode production",
     "serve": "vite preview --host",
-    "typecheck:kit": "vue-tsc -p tsconfig.forza.json",
-    "build:kit": "vite build --config vite.kit.config.ts && vue-tsc -p tsconfig.forza.build.json && node scripts/package-forza.mjs",
-    "test:kit": "playwright test",
-    "test:kit:ssr": "node tests/kit/ssr.mjs"
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "test:app": "playwright test -c playwright.app.config.ts",
+    "data:sync": "node scripts/sync-items.mjs"
   },
   "dependencies": {
+    "@chrisdalbano/forza-ui": "^0.3.3",
     "@fontsource/barlow-condensed": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/manrope": "^5.3.0",
     "@formkit/auto-animate": "^0.10.0",
     "@lucide/vue": "^1.47.0",
-    "axios": "^1.12.2",
-    "chart.js": "^4.5.0",
     "embla-carousel-vue": "^8.6.0",
     "reka-ui": "^2.10.4",
     "vue": "^3.5.22",
-    "vue-chartjs": "^5.3.2",
     "vue-router": "^4.2.5"
   },
   "devDependencies": {

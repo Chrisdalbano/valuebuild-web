@@ -41,9 +41,13 @@ coverage/
 # Heroku
 .heroku/
 
-*.md
 # Forza preview verification outputs
 gold-league/dist-kit/
 gold-league/test-results/
 gold-league/playwright-report/
 !gold-league/FORZA.md
+
+# Local validation artifacts
+gold-league/.smoke/
+gold-league/.*.py
+.netlify/
