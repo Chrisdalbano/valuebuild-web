@@ -51,3 +51,6 @@ gold-league/playwright-report/
 gold-league/.smoke/
 gold-league/.*.py
 .netlify/
+
+# Firebase deployment cache
+.firebase/
