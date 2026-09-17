@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import { FzTabs, FzBadge, FzIcon } from "../../forza";
+import ApiSection from "./ApiSection.vue";
 const mode = shallowRef("vue");
 const examples = {
-  vue: `// npm add reka-ui @lucide/vue @formkit/auto-animate
+  vue: `// npm add reka-ui @lucide/vue @formkit/auto-animate embla-carousel-vue
 // Vue 3.5+ / local source imports
 import { FzButton, FzField } from './forza'
 import './forza/tokens.css'
 
 <FzField v-model="name" label="Build name" />
 <FzButton @click="saveBuild">Save build</FzButton>`,
-  nuxt: `// npm add reka-ui @lucide/vue @formkit/auto-animate
+  nuxt: `// npm add reka-ui @lucide/vue @formkit/auto-animate embla-carousel-vue
 // Copy forza/ into app/components/forza/
 // nuxt.config.ts
 export default defineNuxtConfig({
@@ -27,7 +28,7 @@ import { FzButton } from '~/components/forza'
     <div class="section-heading">
       <div>
         <span class="eyebrow">For developers</span>
-        <h2>Built to work together.</h2>
+        <h2>A system you can build on.</h2>
       </div>
       <FzBadge>Source-first / publication pending</FzBadge>
     </div>
@@ -73,6 +74,7 @@ import { FzButton } from '~/components/forza'
         >
       </div>
     </div>
+    <ApiSection />
     <div class="motion-notes">
       <h3>Motion that follows your input.</h3>
       <p>

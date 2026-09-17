@@ -49,6 +49,7 @@ test("library interactions and keyboard contracts", async ({ page }) => {
 });
 for (const width of [390, 768, 1440]) {
   test(`responsive and accessible at ${width}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/ui-kit.html");
     await page.evaluate(() => document.fonts.ready);
@@ -74,6 +75,7 @@ for (const width of [390, 768, 1440]) {
   });
 }
 test("dialog accessibility and focus containment", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/ui-kit.html");
   await page.getByRole("button", { name: /^Save a build/ }).click();
   for (let i = 0; i < 8; i++) {

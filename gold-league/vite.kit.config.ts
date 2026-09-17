@@ -10,6 +10,14 @@ export default defineConfig({
       formats: ["es"],
       fileName: "forza",
     },
-    rollupOptions: { external: ["vue", "reka-ui", "@lucide/vue", "@formkit/auto-animate"] },
+    rollupOptions: {
+      external: [
+        "vue",
+        "reka-ui",
+        "@lucide/vue",
+        "@formkit/auto-animate",
+        "embla-carousel-vue",
+      ],
+    },
   },
 });

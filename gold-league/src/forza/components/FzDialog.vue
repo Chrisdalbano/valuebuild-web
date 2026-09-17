@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "reka-ui";
+import FzPortal from "../internal/FzPortal.vue";
 import FzButton from "./FzButton.vue";
 import FzIcon from "./FzIcon.vue";
 withDefaults(
@@ -14,8 +15,9 @@ withDefaults(
     title: string;
     description?: string;
     closeOnOutside?: boolean;
+    placement?: "center" | "right" | "bottom";
   }>(),
-  { closeOnOutside: true },
+  { closeOnOutside: true, placement: "center" },
 );
 const model = defineModel<boolean>({ required: true });
 const descriptionId = useId();
@@ -34,32 +36,34 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <DialogRoot v-model:open="model"
-    ><DialogOverlay class="fz-overlay" /><DialogContent
-      class="fz-dialog"
-      :aria-describedby="description ? descriptionId : undefined"
-      @close-auto-focus="restoreFocus"
-      @interact-outside="!closeOnOutside && $event.preventDefault()"
-      ><header class="dialog-header">
-        <DialogTitle class="dialog-title">{{ title }}</DialogTitle
-        ><FzButton
-          variant="ghost"
-          size="sm"
-          aria-label="Close dialog"
-          @click="model = false"
-          ><FzIcon name="close"
-        /></FzButton>
-      </header>
-      <DialogDescription
-        v-if="description"
-        :id="descriptionId"
-        class="dialog-description"
-        >{{ description }}</DialogDescription
-      ><slot :close="() => (model = false)" />
-      <footer v-if="$slots.footer" class="dialog-footer">
-        <slot
-          name="footer"
-          :close="() => (model = false)"
-        /></footer></DialogContent
+    ><FzPortal
+      ><DialogOverlay class="fz-overlay" /><DialogContent
+        class="fz-dialog"
+        :data-placement="placement"
+        :aria-describedby="description ? descriptionId : undefined"
+        @close-auto-focus="restoreFocus"
+        @interact-outside="!closeOnOutside && $event.preventDefault()"
+        ><header class="dialog-header">
+          <DialogTitle class="dialog-title">{{ title }}</DialogTitle
+          ><FzButton
+            variant="ghost"
+            size="sm"
+            aria-label="Close dialog"
+            @click="model = false"
+            ><FzIcon name="close"
+          /></FzButton>
+        </header>
+        <DialogDescription
+          v-if="description"
+          :id="descriptionId"
+          class="dialog-description"
+          >{{ description }}</DialogDescription
+        ><slot :close="() => (model = false)" />
+        <footer v-if="$slots.footer" class="dialog-footer">
+          <slot
+            name="footer"
+            :close="() => (model = false)"
+          /></footer></DialogContent></FzPortal
   ></DialogRoot>
 </template>
 <style scoped>
@@ -148,6 +152,66 @@ onBeforeUnmount(() => {
   to {
     opacity: 0;
     transform: translate(-50%, calc(-50% + 6px)) scale(0.985);
+  }
+}
+
+.fz-dialog[data-placement="right"] {
+  top: 0;
+  bottom: 0;
+  left: auto;
+  right: 0;
+  transform: none;
+  width: min(460px, 100%);
+  max-height: 100dvh;
+  border-radius: 0;
+  padding: 32px;
+}
+.fz-dialog[data-placement="bottom"] {
+  top: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: none;
+  max-height: 85dvh;
+  border-radius: 14px 14px 0 0;
+}
+.fz-dialog[data-placement="right"][data-state="open"] {
+  animation: drawer-right-in var(--fz-motion-enter) var(--fz-ease-out);
+}
+.fz-dialog[data-placement="right"][data-state="closed"] {
+  animation: drawer-right-out var(--fz-motion-exit) var(--fz-ease-in);
+}
+.fz-dialog[data-placement="bottom"][data-state="open"] {
+  animation: drawer-bottom-in var(--fz-motion-enter) var(--fz-ease-out);
+}
+.fz-dialog[data-placement="bottom"][data-state="closed"] {
+  animation: drawer-bottom-out var(--fz-motion-exit) var(--fz-ease-in);
+}
+@keyframes drawer-right-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes drawer-right-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes drawer-bottom-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes drawer-bottom-out {
+  to {
+    transform: translateY(100%);
   }
 }
 </style>

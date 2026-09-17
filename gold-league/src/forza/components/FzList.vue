@@ -24,9 +24,10 @@ watch(
       ?.querySelectorAll<HTMLElement>(":scope > [data-fz-key]")
       .forEach((element) => {
         const leaving = !active.has(element.dataset.fzKey!);
-        element.inert = leaving;
-        if (leaving) element.setAttribute("aria-hidden", "true");
-        else element.removeAttribute("aria-hidden");
+        if (leaving) {
+          element.inert = true;
+          element.setAttribute("aria-hidden", "true");
+        }
       });
   },
   { flush: "pre" },

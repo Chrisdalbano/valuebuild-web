@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import {
+  ArrowLeft,
+  Minus,
+  Info,
+  Settings2,
+  MoreHorizontal,
   ArrowUpRight,
   ArrowRight,
   Plus,
@@ -20,6 +25,11 @@ import {
   GripVertical,
 } from "@lucide/vue";
 const icons = {
+  arrowLeft: ArrowLeft,
+  minus: Minus,
+  info: Info,
+  settings: Settings2,
+  more: MoreHorizontal,
   arrowUpRight: ArrowUpRight,
   arrowRight: ArrowRight,
   plus: Plus,
