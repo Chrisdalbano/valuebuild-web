@@ -1,0 +1,335 @@
+"""AI enrichment orchestration: pick a curated subset of high-impact items, value
+their effects with Gemini, generate a per-patch research digest, and cache both in
+the `ai_analysis` collection. Decoupled from the core ETL so a Gemini outage (or
+depleted quota) never breaks item refresh. Resumable (skips items already enriched
+for the current patch); throttled to respect the API rate limit.
+"""
+
+import os
+import asyncio
+import logging
+from functools import partial
+from datetime import datetime
+
+from motor.motor_asyncio import AsyncIOMotorClient
+
+from .gemini_client import generate_json, is_configured, _model
+from .prompts import (
+    build_effect_prompt, build_digest_prompt, build_best_on_prompt, build_champion_prompt,
+    EFFECT_PROMPT_VERSION, BEST_ON_PROMPT_VERSION, DIGEST_PROMPT_VERSION, CHAMPION_PROMPT_VERSION,
+)
+
+logger = logging.getLogger("ai.enrich")
+
+CURATED_LIMIT = int(os.getenv("AI_CURATED_LIMIT", "80"))
+# seconds between Gemini calls — default respects ~15 RPM free-tier limits
+CALL_DELAY = float(os.getenv("AI_CALL_DELAY_SECONDS", "4"))
+
+# "Best on" is a lighter task (name champions + why) — route it to the cheaper,
+# faster flash-lite model, with a shorter delay (lite has higher RPM headroom).
+BEST_ON_MODEL = os.getenv("AI_BEST_ON_MODEL", "gemini-flash-lite-latest")
+BEST_ON_CALL_DELAY = float(os.getenv("AI_BEST_ON_CALL_DELAY_SECONDS", "2"))
+
+# Per-champion itemization analysis — also flash-lite (lighter, ~170 champions).
+CHAMPION_MODEL = os.getenv("AI_CHAMPION_MODEL", "gemini-flash-lite-latest")
+CHAMPION_CALL_DELAY = float(os.getenv("AI_CHAMPION_CALL_DELAY_SECONDS", "2"))
+
+# Cost control: route the digest + effects to flash-lite too (≈6× cheaper output
+# than flash-latest). Everything AI now runs on flash-lite by default.
+DIGEST_MODEL = os.getenv("AI_DIGEST_MODEL", "gemini-flash-lite-latest")
+EFFECT_MODEL = os.getenv("AI_EFFECT_MODEL", "gemini-flash-lite-latest")
+
+
+def _has_effect(item: dict) -> bool:
+    desc = (item.get("description") or "").lower()
+    return ("<passive" in desc) or ("<active" in desc)
+
+
+def select_curated_items(items: list, limit: int = CURATED_LIMIT) -> list:
+    """High-impact items whose effects matter: legendary/epic (cost >= 1300) with a
+    passive or active, most expensive first, capped at `limit`."""
+    pool = [it for it in items if it.get("cost", 0) >= 1300 and _has_effect(it)]
+    pool.sort(key=lambda it: it.get("cost", 0), reverse=True)
+    return pool[:limit]
+
+
+# Flash models spend "thinking" tokens out of max_output_tokens BEFORE emitting
+# JSON; at the old 2048 cap thinking (~2k) starved the response and it truncated
+# mid-string (finish_reason=MAX_TOKENS) -> parse failure -> None. Give thinking +
+# JSON real headroom: effects responses are small, the 80-item digest is large.
+EFFECT_MAX_TOKENS = int(os.getenv("AI_EFFECT_MAX_TOKENS", "3072"))
+DIGEST_MAX_TOKENS = int(os.getenv("AI_DIGEST_MAX_TOKENS", "16384"))
+BEST_ON_MAX_TOKENS = int(os.getenv("AI_BEST_ON_MAX_TOKENS", "3072"))
+CHAMPION_MAX_TOKENS = int(os.getenv("AI_CHAMPION_MAX_TOKENS", "4096"))
+
+
+async def _gen(prompt: str, max_output_tokens: int = 3072, model: str = None):
+    """Run the sync Gemini call off the event loop."""
+    fn = partial(generate_json, max_output_tokens=max_output_tokens, model=model)
+    return await asyncio.get_event_loop().run_in_executor(None, fn, prompt)
+
+
+async def enrich_item_effects(items, patch, ai_col) -> dict:
+    curated = select_curated_items(items)
+    enriched = skipped = failed = 0
+    logger.info("AI effect enrichment: %d curated items for patch %s", len(curated), patch)
+    for it in curated:
+        # skip only if effects exist AT THE CURRENT PROMPT VERSION (bumping the
+        # version in prompts.py forces a refresh of stale cached effects)
+        if await ai_col.find_one(
+            {"_id": it["id"], "patch": patch, "effectsVersion": EFFECT_PROMPT_VERSION}
+        ):
+            skipped += 1
+            continue
+        result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS, EFFECT_MODEL)
+        if isinstance(result, dict):
+            # $set (not replace) so a prior best-on field on this doc survives
+            await ai_col.update_one(
+                {"_id": it["id"]},
+                {"$set": {
+                    "itemId": it["id"],
+                    "name": it.get("name", ""),
+                    "patch": patch,
+                    "model": EFFECT_MODEL,
+                    "effects": result.get("effects", []),
+                    "effectsVersion": EFFECT_PROMPT_VERSION,
+                    "summary": result.get("summary", ""),
+                    "caveats": result.get("caveats", ""),
+                    "generatedAt": datetime.utcnow(),
+                }},
+                upsert=True,
+            )
+            enriched += 1
+        else:
+            failed += 1  # Gemini returned None (quota/parse/network) — logged in client
+        await asyncio.sleep(CALL_DELAY)
+    logger.info("AI effect enrichment done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
+    return {"enriched": enriched, "skipped": skipped, "failed": failed, "curated": len(curated)}
+
+
+async def generate_best_on(items, champions, patch, ai_col) -> dict:
+    """For each curated item, ask flash-lite which champions abuse it and why,
+    grounded in the champion roster. Resumable (skips docs that already have a
+    bestOn for this patch) and idempotent via $set so it composes with the
+    effects pass and converges across repeated /api/ai/refresh triggers."""
+    curated = select_curated_items(items)
+    if not champions:
+        logger.warning("best-on skipped: no champion roster (run champion ETL)")
+        return {"bestOn": 0, "bestOnSkipped": 0, "bestOnFailed": 0}
+    enriched = skipped = failed = 0
+    logger.info("AI best-on: %d curated items for patch %s", len(curated), patch)
+    for it in curated:
+        if await ai_col.find_one(
+            {"_id": it["id"], "patch": patch, "bestOn.version": BEST_ON_PROMPT_VERSION}
+        ):
+            skipped += 1
+            continue
+        result = await _gen(
+            build_best_on_prompt(it, champions, patch), BEST_ON_MAX_TOKENS, BEST_ON_MODEL
+        )
+        if isinstance(result, dict) and isinstance(result.get("champions"), list):
+            await ai_col.update_one(
+                {"_id": it["id"]},
+                {"$set": {
+                    "itemId": it["id"],
+                    "name": it.get("name", ""),
+                    "patch": patch,
+                    "bestOn": {
+                        "champions": result.get("champions", []),
+                        "caveats": result.get("caveats", ""),
+                        "version": BEST_ON_PROMPT_VERSION,
+                        "model": BEST_ON_MODEL,
+                        "generatedAt": datetime.utcnow(),
+                    },
+                }},
+                upsert=True,
+            )
+            enriched += 1
+        else:
+            failed += 1
+        await asyncio.sleep(BEST_ON_CALL_DELAY)
+    logger.info("AI best-on done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
+    return {"bestOn": enriched, "bestOnSkipped": skipped, "bestOnFailed": failed}
+
+
+async def generate_research_digest(items, patch, ai_col, champions=None) -> bool:
+    # Gate: only (re)generate when missing or stale (patch/version) — NOT on every
+    # /api/ai/refresh. The digest is a single expensive call and was the main cost
+    # leak (it re-ran on every trigger).
+    if await ai_col.find_one(
+        {"_id": "research_digest", "patch": patch, "version": DIGEST_PROMPT_VERSION}
+    ):
+        return True
+    curated = select_curated_items(items)
+    if not curated:
+        return False
+    digest = await _gen(build_digest_prompt(curated, patch, champions), DIGEST_MAX_TOKENS, DIGEST_MODEL)
+    if not isinstance(digest, dict):
+        return False
+    await ai_col.replace_one(
+        {"_id": "research_digest"},
+        {
+            "_id": "research_digest",
+            "patch": patch,
+            "model": DIGEST_MODEL,
+            "version": DIGEST_PROMPT_VERSION,
+            "outliers": digest.get("outliers", []),
+            "effectSpotlights": digest.get("effectSpotlights", []),
+            "experimentalBuilds": digest.get("experimentalBuilds", []),
+            "generatedAt": datetime.utcnow(),
+        },
+        upsert=True,
+    )
+    return True
+
+
+def _is_support(item: dict) -> bool:
+    return "GoldPer" in (item.get("tags") or [])
+
+
+def _is_tier3_boots(item: dict) -> bool:
+    """Tier-3 boot upgrades (Crimson Lucidity, Swiftmarch, …) are conditional
+    late upgrades, not build targets. Tell: tier-2 boots build from basic Boots
+    (1001); tier-3 upgrades build from a tier-2 boot, so `from` lacks 1001."""
+    if "Boots" not in (item.get("tags") or []):
+        return False
+    frm = item.get("from") or []
+    return bool(frm) and "1001" not in frm
+
+
+def select_build_items(items: list) -> list:
+    """Completed, BUILT Summoner's Rift items the champion analysis can recommend
+    from — mirrors the frontend budget-optimizer pool (built, non-support,
+    non-component, non-tier3-boots) so the AI only picks real, directly-buildable
+    itemIds."""
+    pool = []
+    for it in items:
+        if not it.get("from") or it.get("cost", 0) <= 0:
+            continue
+        if _is_support(it) or _is_tier3_boots(it):
+            continue
+        # tier-2 boots (build from basic Boots 1001) are complete build targets
+        # even though they have an `into` (the optional tier-3 upgrade); other
+        # items with `into` are components and are skipped.
+        is_t2_boots = "Boots" in (it.get("tags") or []) and "1001" in (it.get("from") or [])
+        if it.get("into") and not is_t2_boots:
+            continue
+        pool.append(it)
+    pool.sort(key=lambda it: it.get("cost", 0), reverse=True)
+    return pool
+
+
+def _is_consumable(item: dict) -> bool:
+    tags = item.get("tags") or []
+    return "Consumable" in tags or "Trinket" in tags
+
+
+def select_component_items(items: list) -> list:
+    """Components the progression can name (basic + epic items that build INTO
+    something), so the AI can describe early-game build paths. Excludes
+    consumables/wards/support and trivial sub-300g bits."""
+    pool = [
+        it for it in items
+        if it.get("into") and not _is_consumable(it) and not _is_support(it)
+        and it.get("cost", 0) >= 300
+    ]
+    pool.sort(key=lambda it: it.get("cost", 0))
+    return pool
+
+
+async def analyze_champions(champions, build_items, component_items, patch, champ_col) -> dict:
+    """Per-champion itemization guide (core build, build path, situational swaps,
+    one off-meta experiment, economy notes). Flash-lite, resumable (skips docs at
+    the current prompt version for this patch), idempotent $set. Mirrors best-on."""
+    if not champions:
+        return {"champions": 0, "championsSkipped": 0, "championsFailed": 0}
+    if not build_items:
+        logger.warning("champion analysis skipped: no buildable items")
+        return {"champions": 0, "championsSkipped": 0, "championsFailed": 0}
+    enriched = skipped = failed = 0
+    logger.info("AI champion analysis: %d champions for patch %s", len(champions), patch)
+    for champ in champions:
+        cid = champ.get("_id") or champ.get("name")
+        if not cid:
+            continue
+        if await champ_col.find_one(
+            {"_id": cid, "patch": patch, "version": CHAMPION_PROMPT_VERSION}
+        ):
+            skipped += 1
+            continue
+        result = await _gen(
+            build_champion_prompt(champ, build_items, component_items, patch),
+            CHAMPION_MAX_TOKENS, CHAMPION_MODEL,
+        )
+        if isinstance(result, dict) and result.get("coreBuild"):
+            await champ_col.replace_one(
+                {"_id": cid},
+                {
+                    "_id": cid,
+                    "championId": cid,
+                    "name": champ.get("name", ""),
+                    "patch": patch,
+                    "version": CHAMPION_PROMPT_VERSION,
+                    "model": CHAMPION_MODEL,
+                    "coreBuild": result.get("coreBuild", {}),
+                    "progression": result.get("progression", []),
+                    "situational": result.get("situational", []),
+                    "experimental": result.get("experimental", {}),
+                    "economy": result.get("economy", {}),
+                    "caveats": result.get("caveats", ""),
+                    "generatedAt": datetime.utcnow(),
+                },
+                upsert=True,
+            )
+            enriched += 1
+        else:
+            failed += 1
+        await asyncio.sleep(CHAMPION_CALL_DELAY)
+    logger.info("AI champion analysis done: %d enriched, %d skipped, %d failed", enriched, skipped, failed)
+    return {"champions": enriched, "championsSkipped": skipped, "championsFailed": failed}
+
+
+async def run_ai_enrichment(mongo_uri: str) -> dict:
+    """Top-level: enrich curated item effects + the patch digest. Mirrors run_etl_now."""
+    if not is_configured():
+        logger.warning("AI enrichment skipped: GEMINI_API_KEY not set")
+        return {"status": "skipped", "reason": "no_key"}
+
+    client = AsyncIOMotorClient(mongo_uri)
+    try:
+        db = client["gold_league"]
+        meta = await db["etl_metadata"].find_one({"_id": "latest"})
+        patch = (meta or {}).get("patch", "unknown")
+        items = await db["items_cache"].find(
+            {"isDeprecated": False, "imageValidated": True}, {"_id": 0}
+        ).to_list(length=None)
+        ai_col = db["ai_analysis"]
+        # compact roster for grounding best-on (name | tags | rangeType)
+        champions = await db["champions_cache"].find(
+            {}, {"_id": 0, "name": 1, "tags": 1, "rangeType": 1}
+        ).to_list(length=None)
+        # full champion docs (kit) for the per-champion itemization pass
+        champ_full = await db["champions_cache"].find({}).to_list(length=None)
+        champ_col = db["champion_analysis"]
+        build_items = select_build_items(items)
+        component_items = select_component_items(items)
+
+        # Digest first: a single Gemini call that only needs items_cache, so the
+        # long (resumable) per-item passes can't starve it on a constrained worker.
+        # Then best-on (the new feature) and effects — both resumable + idempotent,
+        # so repeated /api/ai/refresh triggers converge.
+        digest_ok = await generate_research_digest(items, patch, ai_col, champions)
+        # effects before best-on: the per-item effect valuation (with the new
+        # quantitative comparisons) is the primary panel, so it converges first.
+        effect_stats = await enrich_item_effects(items, patch, ai_col)
+        best_on_stats = await generate_best_on(items, champions, patch, ai_col)
+        # champion analysis last (~170 calls, longest); resumable convergence.
+        champ_stats = await analyze_champions(champ_full, build_items, component_items, patch, champ_col)
+
+        return {"status": "complete", "patch": patch, "digest": digest_ok,
+                **best_on_stats, **effect_stats, **champ_stats}
+    except Exception as e:
+        logger.warning("AI enrichment failed: %s", str(e)[:200])
+        return {"status": "error", "error": str(e)[:200]}
+    finally:
+        client.close()

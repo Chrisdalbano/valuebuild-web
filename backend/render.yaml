@@ -22,7 +22,10 @@ services:
       
       - key: CORS_ORIGINS
         sync: false # Set manually after deploying frontend
-      
+
+      - key: GEMINI_API_KEY
+        sync: false # Secret — set in Render dashboard only (AI features no-op until set)
+
       - key: PYTHON_VERSION
         value: 3.11.9
     

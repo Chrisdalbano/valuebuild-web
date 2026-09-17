@@ -1,13 +1,12 @@
-import { createApp } from 'vue';
-import '@fontsource/barlow-condensed/latin-700.css';
-import '@fontsource/barlow-condensed/latin-600.css';
-import '@fontsource/manrope/latin-400.css';
-import '@fontsource/manrope/latin-600.css';
-import '@fontsource/manrope/latin-700.css';
-import '@fontsource/ibm-plex-mono/latin-400.css';
-import '@chrisdalbano/forza-ui/style.css';
-import './app.css';
-import App from './App.vue';
-import router from './router';
-createApp(App).use(router).mount('#app');
-
+import { createApp } from "vue";
+import "@fontsource/barlow-condensed/latin-700.css";
+import "@fontsource/barlow-condensed/latin-600.css";
+import "@fontsource/manrope/latin-400.css";
+import "@fontsource/manrope/latin-600.css";
+import "@fontsource/manrope/latin-700.css";
+import "@fontsource/ibm-plex-mono/latin-400.css";
+import "@chrisdalbano/forza-ui/style.css";
+import "./app.css";
+import App from "./App.vue";
+import router from "./router";
+createApp(App).use(router).mount("#app");

@@ -13,16 +13,29 @@ load_dotenv()
 # Import ETL pipeline
 from etl.data_pipeline import ETLScheduler, run_etl_now
 
+# Import AI enrichment (Gemini effect valuation + research digest)
+from ai.enrich import run_ai_enrichment
+from ai.gemini_client import is_configured as ai_is_configured
+
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 
+# Allow the Firebase Hosting domains for this project (frontend moved off Netlify)
+# without needing a CORS_ORIGINS env change. Scoped to this project's domains +
+# the custom domain. Override/extend via CORS_ORIGINS env as before.
+CORS_ORIGIN_REGEX = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https://(buildvalue-b202d\.web\.app|buildvalue-b202d\.firebaseapp\.com|buildvalue\.chrisdalbano\.com)",
+)
+
 # CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +47,15 @@ mongo_client = AsyncIOMotorClient(MONGO_URI)
 db = mongo_client['gold_league']
 items_collection = db['items_cache']
 metadata_collection = db['etl_metadata']
+ai_collection = db['ai_analysis']
+champions_collection = db['champions_cache']
+champion_analysis_collection = db['champion_analysis']
+
+
+async def _current_patch():
+    """Patch of the latest ETL run, used to gate stale AI caches."""
+    meta = await metadata_collection.find_one({'_id': 'latest'})
+    return (meta or {}).get('patch')
 
 # ETL Scheduler instance
 etl_scheduler = None
@@ -66,7 +88,26 @@ async def startup_event():
             print("⚠️  Application will start, but no data is available yet.\n")
     else:
         print(f"✅ Found {item_count} cached items in MongoDB\n")
-    
+
+    # Bootstrap champion reference data if empty (best-effort; never blocks startup)
+    try:
+        champ_count = await champions_collection.count_documents({})
+        if champ_count == 0:
+            from etl.champion_pipeline import run_champion_etl_now
+            print("🦸 No champion data found. Fetching champion reference...")
+            n = await run_champion_etl_now(MONGO_URI)
+            print(f"🦸 Cached {n} champions.\n")
+        else:
+            print(f"🦸 Found {champ_count} cached champions in MongoDB\n")
+    except Exception as e:
+        print(f"⚠️  Champion bootstrap failed (non-fatal): {e}")
+
+    # AI enrichment status (no key = features serve 'pending' gracefully)
+    if ai_is_configured():
+        print("🤖 Gemini AI enrichment: configured (run POST /api/ai/refresh to populate)")
+    else:
+        print("🤖 Gemini AI enrichment: GEMINI_API_KEY not set — AI features will show 'pending'")
+
     # Start the ETL scheduler for weekly updates
     etl_scheduler = ETLScheduler(MONGO_URI)
     etl_scheduler.start()
@@ -151,6 +192,115 @@ async def get_item(item_id: str):
         raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
     
     return item
+
+
+@app.get("/api/items/{item_id}/ai")
+async def get_item_ai(item_id: str):
+    """Cached Gemini effect analysis for an item — only if it matches the current
+    patch (else 'pending', so stale AI never shows against fresh items)."""
+    doc = await ai_collection.find_one({'_id': item_id}, {'_id': 0, 'model': 0})
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        if isinstance(doc.get('bestOn'), dict):
+            doc['bestOn'].pop('model', None)  # don't disclose the AI vendor/model
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured()}
+
+
+@app.get("/api/research")
+async def get_research():
+    """The current patch's AI research digest (outliers, effect spotlights,
+    experimental builds). 'pending' until enrichment has run for this patch."""
+    doc = await ai_collection.find_one({'_id': 'research_digest'}, {'_id': 0, 'model': 0})
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured(), 'patch': patch}
+
+
+@app.get("/api/champions")
+async def get_champions():
+    """Compact champion reference data (id, name, tags, resource, range, spells).
+    Used to ground the AI 'Best on' feature + resolve champion portrait icons."""
+    docs = await champions_collection.find(
+        {}, {'name': 1, 'key': 1, 'tags': 1, 'rangeType': 1, 'patch': 1}
+    ).to_list(length=None)
+    champions = [{'id': d.pop('_id'), **d} for d in docs]
+    return {'champions': champions, 'count': len(champions)}
+
+
+@app.get("/api/research/champions")
+async def get_research_champions():
+    """Champion-derived research signals — DETERMINISTIC (no Gemini call): the
+    most-built items across champion core builds this patch + a sample of the
+    off-meta champion experiments. Aggregated from champion_analysis."""
+    from collections import Counter
+    patch = await _current_patch()
+    docs = await champion_analysis_collection.find({'patch': patch}).to_list(length=None)
+    if not docs:
+        return {'status': 'pending', 'configured': ai_is_configured()}
+    counts = Counter()
+    experiments = []
+    for d in docs:
+        for iid in ((d.get('coreBuild') or {}).get('itemIds') or []):
+            counts[iid] += 1
+        exp = d.get('experimental') or {}
+        if exp.get('itemIds'):
+            experiments.append({
+                'champion': d.get('name', d.get('_id')),
+                'title': exp.get('title', ''),
+                'itemIds': exp.get('itemIds', []),
+                'rationale': exp.get('rationale', ''),
+            })
+    return {
+        'status': 'ready',
+        'patch': patch,
+        'championCount': len(docs),
+        'topItems': [{'itemId': i, 'count': c} for i, c in counts.most_common(12)],
+        'experiments': experiments[:12],
+    }
+
+
+@app.get("/api/champions/{champion_id}/ai")
+async def get_champion_ai(champion_id: str):
+    """Cached per-champion itemization analysis — only if it matches the current
+    patch (else 'pending'). Patch-gated + model stripped, like the item AI."""
+    doc = await champion_analysis_collection.find_one(
+        {'_id': champion_id}, {'_id': 0, 'model': 0}
+    )
+    patch = await _current_patch()
+    if doc and doc.get('patch') == patch:
+        return {'status': 'ready', **doc}
+    return {'status': 'pending', 'configured': ai_is_configured()}
+
+
+# in-process guard so spamming /api/ai/refresh can't launch overlapping
+# enrichment jobs (the only generation trigger; key stays backend-only)
+_ai_enrichment_running = False
+
+
+async def _run_ai_enrichment_guarded(mongo_uri: str):
+    global _ai_enrichment_running
+    if _ai_enrichment_running:
+        return
+    _ai_enrichment_running = True
+    try:
+        await run_ai_enrichment(mongo_uri)
+    finally:
+        _ai_enrichment_running = False
+
+
+@app.post("/api/ai/refresh")
+async def refresh_ai(background_tasks: BackgroundTasks):
+    """Trigger AI enrichment in the background (mirrors /api/items/refresh).
+    No-ops gracefully if GEMINI_API_KEY is unset or quota is exhausted. Guarded
+    against overlapping runs so repeated calls can't spawn concurrent jobs."""
+    if not ai_is_configured():
+        return {'status': 'skipped', 'reason': 'GEMINI_API_KEY not set'}
+    if _ai_enrichment_running:
+        return {'status': 'already_running', 'note': 'enrichment in progress; poll /api/research'}
+    background_tasks.add_task(_run_ai_enrichment_guarded, MONGO_URI)
+    return {'status': 'processing', 'note': 'AI enrichment started; poll /api/research'}
 
 
 @app.get("/api/metadata")

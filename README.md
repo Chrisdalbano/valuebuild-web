@@ -1,126 +1,66 @@
-# BuildValue - League of Legends Gold Efficiency Tracker
+# BuildValue
 
-A full-stack web application that analyzes gold efficiency for all League of Legends items with automated weekly updates from Riot's DDragon API.
+League of Legends item research, built with Forza UI.
 
-Live: https://buildvalue.chrisdalbano.com/
+[Open BuildValue](https://buildvalue.chrisdalbano.com) · [Forza integration guide](https://forzaui.chrisdalbano.com/guide/buildvalue)
 
-## Quick Start
+BuildValue brings item exploration, comparisons, six-slot drafts, champion studies, and a budget planner into one workspace. The interface uses the published `@chrisdalbano/forza-ui` package.
 
-**New to the project?** Read [`START_HERE.md`](START_HERE.md)
+## Run locally
 
-**Ready to deploy?** Follow [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md)
-
-## Tech Stack
-
-**Frontend:** Vue 3, Vite, Chart.js, Axios (Netlify)  
-**Backend:** FastAPI, Python 3.11, Uvicorn (Render)  
-**Database:** MongoDB Atlas (Cloud)  
-**ETL:** APScheduler (weekly automated sync)
-
-## Features
-
-- Real-time gold efficiency calculations for all items
-- Compare up to 6 items side-by-side with detailed breakdowns
-- Build optimizer for 6-item builds
-- Interactive efficiency charts
-- Flash comparisons for quick decisions
-- Automated weekly updates from Riot API
-- Fully responsive (desktop, tablet, mobile)
-
-## Architecture
-
-```
-Frontend (Vue 3) → Backend (FastAPI) → Database (MongoDB Atlas)
-    Netlify             Render              Cloud
-                                              ↓
-                                        DDragon API
-                                        (Weekly ETL)
-```
-
-## Cost
-
-All services run on free tiers:
-- MongoDB Atlas: Free (M0, 512MB)
-- Render: Free or $7/mo (Starter for always-on)
-- Netlify: Free (100GB bandwidth/month)
-
-## Deployment
-
-1. Create MongoDB Atlas cluster (free M0)
-2. Deploy backend to Render (connect GitHub repo)
-3. Deploy frontend to Netlify (connect GitHub repo)
-4. Set environment variables on both platforms
-
-See [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) for full instructions.
-
-## Documentation
-
-- [`START_HERE.md`](START_HERE.md) - Project overview
-- [`RENDER_DEPLOY_GUIDE.md`](RENDER_DEPLOY_GUIDE.md) - Deployment guide
-- [`QUICK_COMMANDS.md`](QUICK_COMMANDS.md) - Command reference
-- [`ETL_TRIGGER_GUIDE.md`](ETL_TRIGGER_GUIDE.md) - ETL pipeline details
-
-## Local Development
-
-**Backend:**
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-python app.py
-```
-
-**Frontend:**
 ```bash
 cd gold-league
-npm install
+npm ci
 npm run dev
 ```
 
-## Project Structure
+The frontend uses the existing hosted API by default. Set `VITE_API_BASE_URL` to use a local backend. A captured, patch-labeled API response keeps the basic workspace available when requests fail.
 
-```
-backend/          # FastAPI backend
-  app.py          # Main API
-  efficiency.py   # Gold calculations
-  etl/            # Data pipeline
-gold-league/      # Vue 3 frontend
-  src/
-    components/   # Vue components
-    api/          # API client
+```bash
+npm run typecheck
+npm run test:app
+npm run build
+npm run preview
 ```
 
-## Environment Variables
+Install the test browser once with `npx playwright install chromium`. The production-build offline check is `node ../scripts/pwa-smoke.mjs http://localhost:4173` from `gold-league`.
 
-**Backend (Render):**
-- `MONGO_URI` - MongoDB connection string
-- `ENVIRONMENT` - production
-- `CORS_ORIGINS` - Frontend URL
+## Application
 
-**Frontend (Netlify):**
-- `VITE_API_BASE_URL` - Backend URL
-- `VITE_ENVIRONMENT` - production
+- `/`: interactive landing and purchase studies.
+- `/items`: search, category and budget filters, pagination, item drawer, and persistent build tray.
+- `/compare`: up to six items with a baseline, cost differences, stats, and effect descriptions.
+- `/builds`: named drafts, undo, saved builds, share links, composition bars, and a constrained budget planner.
+- `/champions`: cached champion itemization, progression, situational choices, and illustrative gold timing.
+- `/research`: cached hypotheses and patterns across champion studies.
+- `/about`: data sources, formula boundaries, AI disclosure, and methodology.
 
-## API Endpoints
+Previous `?b=` share links and `bv:saved-builds` records remain supported. New share links contain item IDs only. Browser storage is local, not an account or cloud backup.
 
-- `GET /api/items` - All items with gold efficiency
-- `GET /api/items/{id}` - Single item details
-- `GET /api/metadata` - ETL status and last update
-- `POST /api/items/refresh` - Manual ETL trigger
+## Architecture
 
-## ETL Pipeline
+`src/views` composes feature components. `src/state/workspace.ts` owns the shared catalog and draft state. `src/domain` adapts backend records and provides pure aggregation and budget functions. `src/composables/useRemote.ts` handles cancelable research requests. Forza owns generic controls; BuildValue owns game-specific behavior.
 
-- Runs every Monday at 2:00 AM UTC
-- Fetches from DDragon API
-- Validates images and filters deprecated items
-- Updates database with new efficiency calculations
+GSAP is lazy-loaded by landing components only. Application interactions use Forza and Vue. The old embedded kit, Tailwind/Inspira layer, and legacy global styles have been removed from the frontend.
 
-## License
+The FastAPI/MongoDB backend and its scheduled ETL remain in `backend/`. This redesign does not change the backend calculation constants or trigger new AI generation. `npm run data:sync` captures the backend's current item response for the offline fallback.
 
-MIT License - see [LICENSE](LICENSE) file
+## Data limits
 
-## Disclaimer
+Gold efficiency measures priced base stats using the backend's maintained constants. It does not price every effect, simulate combat, enforce every item restriction, or predict win rates. Budget optimization maximizes that stat-value model, not in-game performance. AI-generated studies are explicitly speculative and remain separate from calculated totals.
 
-BuildValue is not endorsed by Riot Games. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
+## Deployment
 
+Firebase Hosting project `buildvalue-b202d` serves `gold-league/dist`. After building and verifying:
+
+```bash
+firebase deploy --only hosting --project buildvalue-b202d
+```
+
+The existing workflow runs build and browser checks on `main`; frontend hosting is deployed separately. Netlify configuration is historical.
+
+## Credits
+
+Independent work by Chrisdalbano, developed with AI assistance across implementation, research, visual iteration, and documentation. AI assistance includes generated code and copy. Review and test changes before relying on them.
+
+BuildValue is not endorsed by Riot Games. League of Legends and its game assets belong to Riot Games. Project code is MIT licensed; that license does not grant rights to Riot's assets. Forza UI is independently available as an open-source library.

@@ -1,1 +1,9 @@
-<template><svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M7 8h19l8 8-8 8 8 8-8 8H7l8-8h9l3-3-5-5h-7l-8-8h17l3-3H12Z" fill="currentColor"/><path d="m35 8 7 8-7 8-7-8Z" fill="currentColor" opacity=".55"/></svg></template>
+<template>
+  <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+    <path
+      d="M7 8h19l8 8-8 8 8 8-8 8H7l8-8h9l3-3-5-5h-7l-8-8h17l3-3H12Z"
+      fill="currentColor"
+    />
+    <path d="m35 8 7 8-7 8-7-8Z" fill="currentColor" opacity=".55" />
+  </svg>
+</template>

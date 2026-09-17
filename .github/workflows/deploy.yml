@@ -59,10 +59,53 @@ jobs:
           echo "Frontend tests would run here"
           # npm test
 
+  # Real user-flow smoke tests against a preview of the production build
+  smoke-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./gold-league
+        run: npm ci
+
+      - name: Build against production API
+        working-directory: ./gold-league
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://valuebuild-web.onrender.com
+
+      - name: Serve preview
+        working-directory: ./gold-league
+        run: npm run preview &
+
+      - name: Warm production API (Render free-tier cold start)
+        run: curl -s -m 90 https://valuebuild-web.onrender.com/api/health || true
+
+      - name: Run smoke suites
+        working-directory: ./gold-league
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: |
+          node ../scripts/explorer-smoke.mjs http://localhost:4173
+          node ../scripts/compare-smoke.mjs http://localhost:4173
+          node ../scripts/builds-smoke.mjs http://localhost:4173
+          node ../scripts/hovercard-smoke.mjs http://localhost:4173
+          node ../scripts/nav-smoke.mjs http://localhost:4173
+          node ../scripts/popover-stability.mjs http://localhost:4173
+          node ../scripts/ai-smoke.mjs http://localhost:4173
+          node ../scripts/features-smoke.mjs http://localhost:4173
+          node ../scripts/pwa-smoke.mjs http://localhost:4173
+
   # Deploy notification
   notify-deploy:
     runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend]
+    needs: [test-backend, test-frontend, smoke-frontend]
     if: github.ref == 'refs/heads/production' || github.ref == 'refs/heads/main'
     steps:
       - name: Deployment Status
