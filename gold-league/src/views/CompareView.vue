@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../state/workspace";
+import ComparisonInsights from "../components/analysis/ComparisonInsights.vue";
 import ComparisonBoard from "../components/workspace/ComparisonBoard.vue";
 const { comparison, compareIds } = useWorkspace();
 </script>
@@ -36,6 +37,7 @@ const { comparison, compareIds } = useWorkspace();
         >Explore items <FzIcon name="arrowRight"
       /></RouterLink>
     </div>
+    <ComparisonInsights :items="comparison" />
     <p class="method-note">
       A higher percentage is not a recommendation. Consider the item's effects
       and your champion. <RouterLink to="/about">Read the method ↗</RouterLink>

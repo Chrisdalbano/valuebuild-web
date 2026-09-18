@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ItemPreview from "../workspace/ItemPreview.vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
@@ -23,15 +24,13 @@ function load() {
 </script>
 <template>
   <div class="analysis-item-set">
-    <button
-      v-for="item in resolved"
-      :key="item.id"
+    <ItemPreview v-for="item in resolved" :key="item.id" :item="item"><button
       :aria-label="`Inspect ${item.name}`"
       @click="inspect(item)"
     >
       <ItemArtwork :name="item.name" :src="item.imageUrl" /><span>{{
         item.name
-      }}</span></button
+      }}</span></button></ItemPreview
     ><FzButton
       v-if="tryable"
       variant="secondary"

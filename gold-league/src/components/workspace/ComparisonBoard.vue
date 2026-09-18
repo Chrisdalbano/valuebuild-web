@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ItemSwap from "./ItemSwap.vue";
+import ItemPreview from "./ItemPreview.vue";
 import { computed } from "vue";
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
@@ -30,13 +32,13 @@ const baseline = computed(() => comparison.value[0]);
             <span class="comparison-label">{{
               i === 0 ? "Baseline" : `Option ${i + 1}`
             }}</span
-            ><button class="compare-identity" @click="inspect(item)">
+            ><ItemPreview :item="item"><button class="compare-identity" @click="inspect(item)">
               <ItemArtwork
                 :src="item.imageUrl"
                 :name="item.name"
                 large
               /><strong>{{ item.name }}</strong></button
-            ><FzButton
+            ></ItemPreview><ItemSwap :item="item" target="comparison" /><FzButton
               size="sm"
               variant="ghost"
               :aria-label="`Remove ${item.name} from comparison`"

@@ -389,5 +389,109 @@ test("effect study displays the backend estimate and reasoning", async ({ page }
   await page.getByRole("button", { name: /^Inspect / }).first().click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText(/Estimated effect value: 450 G/)).toBeVisible();
-  await expect(dialog.getByText("First explanation. Second explanation.")).toBeVisible();
+  await expect(dialog.getByText("First explanation.", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Second explanation.", { exact: true })).toBeVisible();
+});
+
+
+test("hover preview is stable, dismissible, and makes no AI request", async ({ page }) => {
+  let requests = 0;
+  await page.route("**/api/items/*/ai", route => { requests++; return route.fulfill({json:{status:"pending",configured:true}}); });
+  await open(page, "/items");
+  const card = page.locator('.catalog-item').filter({has:page.getByRole('button',{name:'Inspect Infinity Edge',exact:true})});
+  const before = await page.locator('.site-header').boundingBox();
+  await card.hover();
+  const preview = page.getByRole('tooltip');
+  await expect(preview).toContainText('Infinity Edge');
+  await expect(preview).toContainText('Stat value');
+  const box = await preview.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(1440);
+  await preview.hover();
+  await page.waitForTimeout(350);
+  await expect(preview).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(preview).not.toBeVisible();
+  expect(requests).toBe(0);
+  expect((await page.locator('.site-header').boundingBox())!.width).toBe(before!.width);
+  await page.mouse.move(0,0);
+  await page.getByRole('button',{name:'Inspect Infinity Edge',exact:true}).focus();
+  await expect(preview).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(preview).not.toBeVisible();
+});
+
+test("AI estimates include equivalents, confidence and champion synergies", async ({page}) => {
+  await page.route('**/api/items/*/ai',r=>r.fulfill({json:{status:'ready',patch:snapshot.version,
+    effects:[{name:'Test passive',estimatedGoldValue:450,confidence:'low',reasoning:['Depends on target armor.'],comparisons:[{stat:'Armor',amount:22.5,gold:450}]}],
+    bestOn:{champions:[{name:'Vayne',why:'Repeated attacks.',synergyStat:'OnHit',confidence:'medium'}],caveats:'Matchup dependent.'}
+  }}));
+  await open(page,'/items');await page.getByRole('button',{name:'Inspect Infinity Edge',exact:true}).click();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog.getByText('23 Armor',{exact:true})).toBeVisible();
+  await expect(dialog.getByText('450 G equivalent')).toBeVisible();
+  await expect(dialog.getByText('low confidence',{exact:true})).toBeVisible();
+  await expect(dialog.getByRole('heading',{name:'Vayne',exact:true})).toBeVisible();
+  await expect(dialog.getByText('OnHit',{exact:true})).toBeVisible();
+  await expect(dialog.getByText('Matchup dependent.')).toBeVisible();
+  const audit=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();
+  expect(audit.violations.map(v=>v.id)).toEqual([]);
+});
+
+test("AI pending, retry error and ready-without-effects states are distinct", async ({page}) => {
+  let phase=0;
+  await page.route('**/api/items/*/ai',r=>phase===0?r.fulfill({json:{status:'pending',configured:true}}):phase===1?r.fulfill({status:503}):r.fulfill({json:{status:'ready',effects:[]}}));
+  await open(page,'/items');await page.getByRole('button',{name:'Inspect Infinity Edge',exact:true}).click();
+  const dialog=page.getByRole('dialog');await expect(dialog.getByText('Not analyzed for this patch yet',{exact:true})).toBeVisible();
+  phase=1;await dialog.getByRole('button',{name:'Check again'}).click();await expect(dialog.getByRole('alert')).toBeVisible();
+  phase=2;await dialog.getByRole('button',{name:'Retry analysis'}).click();await expect(dialog.getByText('No non-stat effects were valued in this analysis.')).toBeVisible();
+});
+
+test("table view and stat-keyword search preserve actions", async ({page}) => {
+  await open(page,'/items');await page.getByRole('searchbox',{name:'Find an item'}).fill('ap');
+  await page.getByRole('button',{name:'Table',exact:true}).click();
+  await expect(page.locator('.catalog-table tbody tr')).not.toHaveCount(0);
+  await page.getByRole('searchbox',{name:'Find an item'}).fill("Rabadon's Deathcap");
+  await expect(page.locator('.catalog-table tbody tr')).toHaveCount(1);
+  await page.getByRole('button',{name:"Add Rabadon's Deathcap to build",exact:true}).click();
+  await expect(page.locator('.build-tray')).toContainText("Rabadon's Deathcap");
+});
+
+test("swap preserves slot and undo, while saved rename survives reload", async ({page}) => {
+  await open(page,'/builds?items=3031,3072');
+  await page.getByRole('button',{name:'Swap Infinity Edge',exact:true}).click();
+  await page.getByRole('searchbox',{name:'Find a replacement'}).fill("Rabadon's Deathcap");
+  await page.getByRole('dialog').getByRole('button',{name:/Rabadon's Deathcap/}).click();
+  await expect(page.locator('.build-slot').first()).toContainText("Rabadon's Deathcap");
+  await expect(page.locator('.build-slot').nth(1)).toContainText('Bloodthirster');
+  await page.locator('.editor-footer').getByRole('button',{name:'Undo',exact:true}).click();
+  await expect(page.locator('.build-slot').first()).toContainText('Infinity Edge');
+  await page.getByRole('button',{name:'Save build',exact:true}).click();
+  await page.getByRole('button',{name:'Rename Untitled build',exact:true}).click();
+  await page.getByRole('textbox',{name:'Saved build name',exact:true}).fill('Renamed study');
+  await page.getByRole('button',{name:'Save name',exact:true}).click();
+  await page.reload();await expect(page.locator('.saved-load')).toHaveCount(1);await expect(page.locator('.saved-load')).toContainText('Renamed study');
+});
+
+test("role suggestions and compared-item handoff are available", async ({page}) => {
+  await open(page,'/items');await page.getByRole('button',{name:'Compare Infinity Edge',exact:true}).click();
+  await page.goto('/builds');await page.getByRole('button',{name:'Add compared items',exact:true}).click();
+  await expect(page.locator('.build-slot')).toHaveCount(1);
+  await page.getByRole('combobox',{name:'Suggested role',exact:true}).click();await page.getByRole('option',{name:'Mage',exact:true}).click();
+  await expect(page.locator('.build-suggestions .catalog-item')).not.toHaveCount(0);
+});
+
+test("touch inspection needs one tap and populated build stays within mobile viewport", async ({browser}) => {
+  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true,serviceWorkers:'block'});
+  const page=await context.newPage();
+  await page.route('**/api/items',r=>r.fulfill({json:{items:Object.values(snapshot.data)}}));
+  await page.route('**/api/metadata',r=>r.fulfill({json:{patch:snapshot.version}}));
+  await page.route('**/api/items/*/ai',r=>r.fulfill({json:{status:'pending',configured:true}}));
+  await page.goto((process.env.BV_BASE_URL || 'http://localhost:5198')+'/builds?items=3031,3072,3089,3157,3153,3036');
+  await expect(page.locator('.build-slot')).toHaveCount(6);
+  expect(await page.locator('.build-slot').evaluateAll(slots => slots.every(slot => [...slot.querySelectorAll('button')].every(button => {const a=slot.getBoundingClientRect(),b=button.getBoundingClientRect();return b.left>=a.left && b.right<=a.right && b.bottom<=a.bottom;})))).toBe(true);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.locator('.slot-inspect').first().tap();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('tooltip')).not.toBeVisible();
+  await context.close();
 });

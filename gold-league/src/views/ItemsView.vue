@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../state/workspace";
+import QuickComparison from "../components/workspace/QuickComparison.vue";
 import ItemExplorer from "../components/workspace/ItemExplorer.vue";
 import BuildTray from "../components/workspace/BuildTray.vue";
 const { dataset, source, refresh, loading } = useWorkspace();
@@ -26,6 +27,6 @@ const { dataset, source, refresh, loading } = useWorkspace();
       <span class="status-dot" />Patch {{ dataset.version
       }}<span>{{ source }}</span>
     </div>
-    <div class="workspace-columns"><ItemExplorer /><BuildTray /></div>
+    <div class="workspace-columns"><div><ItemExplorer /><QuickComparison /></div><BuildTray /></div>
   </div>
 </template>

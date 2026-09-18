@@ -129,6 +129,26 @@ function createWorkspace() {
     name.value = label;
     announce("Build loaded into your draft. Undo is available.");
   }
+  function renameSaved(id: string, label: string) {
+    const entry = saved.value.find(entry => entry.id === id);
+    if (!entry || !label.trim()) return;
+    entry.name = label.trim().slice(0, 80);
+    announce(`Renamed saved build to ${entry.name}.`);
+  }
+  function swapItem(target: 'build' | 'comparison', id: string, replacement: Item) {
+    const ids = target === 'build' ? buildIds : compareIds;
+    if (!ids.value.includes(id) || ids.value.includes(replacement.id)) return;
+    if (target === 'build') undoIds.value = [...buildIds.value];
+    ids.value = ids.value.map(value => value === id ? replacement.id : value);
+    announce(`Replaced item with ${replacement.name}.`);
+  }
+  function addCompared() {
+    undoIds.value = [...buildIds.value];
+    const missing = compareIds.value.filter(id => !buildIds.value.includes(id));
+    const count = Math.min(missing.length, 6 - buildIds.value.length);
+    buildIds.value = [...buildIds.value, ...missing.slice(0, count)];
+    announce(`Added ${count} compared items.${count < missing.length ? ' The six-slot limit left some items out.' : ''}`);
+  }
   function discard(id: string) {
     saved.value = saved.value.filter((entry) => entry.id !== id);
     announce("Saved build deleted.");
@@ -281,6 +301,9 @@ function createWorkspace() {
     save,
     load,
     discard,
+    renameSaved,
+    swapItem,
+    addCompared,
     shareUrl,
     refresh,
     announce,

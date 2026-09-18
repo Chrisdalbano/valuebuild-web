@@ -20,6 +20,7 @@ export interface Champion {
 }
 export interface Analysis {
   status: string;
+  configured?: boolean;
   patch?: string;
   generatedAt?: string;
   caveats?: string;
@@ -65,7 +66,7 @@ export interface Analysis {
   }[];
   summary?: string;
   bestOn?: {
-    champions: { name: string; why: string; confidence?: string }[];
+    champions: { name: string; why: string; synergyStat?: string; confidence?: string }[];
     caveats?: string;
   };
 }

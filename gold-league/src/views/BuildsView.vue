@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BuildSuggestions from "../components/workspace/BuildSuggestions.vue";
 import BudgetPlanner from "../components/workspace/BudgetPlanner.vue";
 import BuildEditor from "../components/workspace/BuildEditor.vue";
 import SavedBuilds from "../components/workspace/SavedBuilds.vue";
@@ -14,7 +15,7 @@ import ItemExplorer from "../components/workspace/ItemExplorer.vue";
     </div>
     <div class="workspace-columns">
       <div>
-        <BuildEditor /><BudgetPlanner />
+        <BuildEditor /><BudgetPlanner /><BuildSuggestions />
         <section id="build-explorer" class="build-browser">
           <h2>Find the next piece.</h2>
           <ItemExplorer compact />

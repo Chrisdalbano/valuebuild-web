@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ItemPreview from "./ItemPreview.vue";
 import { FzButton, FzIcon, FzList } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
 import ItemArtwork from "./ItemArtwork.vue";
@@ -15,11 +16,11 @@ const { build, remove, inspect, clear } = useWorkspace();
     <FzList :items="build" label="Current build"
       ><template #default="{ item }"
         ><div class="build-row">
-          <button class="item-identity" @click="inspect(item)">
+          <ItemPreview :item="item"><button class="item-identity" @click="inspect(item)">
             <ItemArtwork :src="item.imageUrl" :name="item.name" /><span
               >{{ item.name }}<small>{{ number(item.cost) }} G</small></span
             ></button
-          ><FzButton
+          ></ItemPreview><FzButton
             size="sm"
             variant="ghost"
             :aria-label="`Remove ${item.name}`"

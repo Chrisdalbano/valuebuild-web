@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
-import { FzButton, FzIcon, FzDialog, FzList } from "@chrisdalbano/forza-ui";
+import { FzButton, FzIcon, FzDialog, FzList, FzField } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
-const { saved, load, discard } = useWorkspace();
+const { saved, load, discard, renameSaved } = useWorkspace();
+const renaming = shallowRef(false), renameId = shallowRef(""), renameName = shallowRef("");
 const pending = shallowRef(""),
   confirm = shallowRef(false);
 function requestDelete(id: string) {
@@ -27,7 +28,7 @@ function requestDelete(id: string) {
             ><small
               >{{ item.items.length }} items · Patch {{ item.patch }}</small
             ></button
-          ><FzButton
+          ><FzButton variant="ghost" size="sm" :aria-label="`Rename ${item.name}`" @click="renameId = item.id; renameName = item.name; renaming = true">Rename</FzButton><FzButton
             variant="ghost"
             size="sm"
             :aria-label="`Delete ${item.name}`"
@@ -54,5 +55,6 @@ function requestDelete(id: string) {
         ></template
       ></FzDialog
     >
+    <FzDialog v-model="renaming" title="Rename saved build" description="Update its name without creating another saved copy."><FzField v-model="renameName" label="Saved build name" :maxlength="80" /><template #footer><FzButton :disabled="!renameName.trim()" @click="renameSaved(renameId, renameName); renaming = false">Save name</FzButton></template></FzDialog>
   </aside>
 </template>

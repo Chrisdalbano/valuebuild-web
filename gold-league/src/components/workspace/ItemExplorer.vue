@@ -10,6 +10,8 @@ import {
   FzSegmented,
 } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
+import CatalogTable from "./CatalogTable.vue";
+import { matchesQuery, matchesTier } from "../../domain/discovery";
 import CatalogItem from "./CatalogItem.vue";
 const props = withDefaults(defineProps<{ compact?: boolean }>(), {
   compact: false,
@@ -19,6 +21,8 @@ const search = shallowRef(""),
   category = shallowRef("all"),
   sort = shallowRef("cost-desc"),
   maxCost = shallowRef("all");
+const view = shallowRef("grid"), tier = shallowRef("all"), hideSupport = shallowRef(false);
+const tiers = [{value:"all",label:"All tiers"},{value:"legendary",label:"Legendary"},{value:"epic",label:"Epic"},{value:"component",label:"Components"},{value:"basic",label:"Basic"}];
 const completed = shallowRef(false),
   page = shallowRef(1);
 const categories = [
@@ -28,6 +32,15 @@ const categories = [
   { value: "Armor", label: "Defense" },
   { value: "Health", label: "Health" },
   { value: "Boots", label: "Boots" },
+  { value: "GoldPer", label: "Support" },
+  { value: "SpellBlock", label: "Magic resist" },
+  { value: "AttackSpeed", label: "Attack speed" },
+  { value: "CriticalStrike", label: "Critical strike" },
+  { value: "ArmorPenetration", label: "Lethality" },
+  { value: "MagicPenetration", label: "Magic penetration" },
+  { value: "OnHit", label: "On-hit" },
+  { value: "CooldownReduction", label: "Ability haste" },
+  { value: "Consumable", label: "Consumables" },
 ];
 const sorts = [
   { value: "cost-desc", label: "Cost: high to low" },
@@ -47,10 +60,8 @@ const filtered = computed(() =>
     .filter((item) => {
       const query = search.value.trim().toLowerCase();
       return (
-        (!query ||
-          `${item.name} ${item.plaintext} ${item.colloq}`
-            .toLowerCase()
-            .includes(query)) &&
+        matchesQuery(item, query) && matchesTier(item, tier.value) &&
+        (!hideSupport.value || !item.tags.includes("GoldPer") || category.value === "GoldPer") &&
         (category.value === "all" || item.tags.includes(category.value)) &&
         (maxCost.value === "all" || item.cost <= Number(maxCost.value)) &&
         (!completed.value ||
@@ -76,12 +87,13 @@ const visible = computed(() =>
     page.value * pageSize.value,
   ),
 );
-watch([search, category, sort, maxCost, completed], () => (page.value = 1));
+watch([search, category, sort, maxCost, completed, tier, hideSupport], () => (page.value = 1));
 function reset() {
   search.value = "";
   category.value = "all";
   maxCost.value = "all";
   completed.value = false;
+  tier.value = "all"; hideSupport.value = false;
 }
 </script>
 <template>
@@ -112,13 +124,15 @@ function reset() {
       </div>
       <FzCheckbox v-model="completed" label="Final items only" />
     </div>
+    <div class="catalog-options"><FzSelect v-model="tier" label="Item tier" :options="tiers" /><FzCheckbox v-model="hideSupport" label="Hide gold-income items" /><FzSegmented v-model="view" label="Catalog view" :options="[{value:'grid',label:'Cards'},{value:'table',label:'Table'}]" /></div>
     <div class="result-heading">
       <span
         >{{ filtered.length }} items
         <span class="muted">/ Summoner's Rift</span></span
       ><span class="muted">Efficiency = priced stats / cost</span>
     </div>
-    <div class="item-grid">
+    <CatalogTable v-if="view === 'table'" :items="visible" :build-ids="buildIds" :compare-ids="compareIds" @inspect="inspect" @compare="compare" @add="add" />
+    <div v-else class="item-grid">
       <CatalogItem
         v-for="item in visible"
         :key="item.id"

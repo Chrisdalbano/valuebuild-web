@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useTemplateRef } from "vue";
 import { FzDrawer, FzButton, FzBadge } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
 import { number, statAmount } from "../../domain/items";
@@ -15,6 +15,10 @@ const {
   compareIds,
   inspect,
 } = useWorkspace();
+const analysisPanel = useTemplateRef<HTMLElement>("analysisPanel");
+function showAnalysis() {
+  analysisPanel.value?.scrollIntoView({ block: "start" });
+}
 const recipe = computed(() =>
   items.value.filter((item) => selected.value?.from?.includes(item.id)),
 );
@@ -36,6 +40,7 @@ const upgrades = computed(() =>
         </div>
         <FzBadge>{{ number(selected.efficiency) }}% stats</FzBadge>
       </div>
+      <FzButton size="sm" variant="secondary" @click="showAnalysis">AI effect analysis &amp; champion synergies</FzButton>
       <p class="item-description">{{ selected.text }}</p>
       <h3>Priced base stats</h3>
       <dl class="stat-lines">
@@ -54,6 +59,7 @@ const upgrades = computed(() =>
       <p class="fineprint">
         This estimate excludes passives and unsupported stats.
       </p>
+      <div ref="analysisPanel"><ItemAnalysis :key="selected.id" :id="selected.id" /></div>
       <template
         v-for="group in [
           { title: 'Builds from', entries: recipe },
@@ -73,7 +79,7 @@ const upgrades = computed(() =>
             >
           </button>
         </div></template
-      ><ItemAnalysis :key="selected.id" :id="selected.id" /></template
+      ></template
     ><template #footer
       ><FzButton
         v-if="selected"

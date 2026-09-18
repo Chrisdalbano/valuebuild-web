@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ItemPreview from "./ItemPreview.vue";
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { number, type Item } from "../../domain/items";
 import ItemArtwork from "./ItemArtwork.vue";
@@ -15,7 +16,7 @@ defineEmits<{
 }>();
 </script>
 <template>
-  <article class="catalog-item" :class="{ 'in-build': inBuild }">
+  <ItemPreview :item="item"><article class="catalog-item" :class="{ 'in-build': inBuild }">
     <button
       class="item-open"
       :aria-label="`Inspect ${item.name}`"
@@ -60,5 +61,5 @@ defineEmits<{
         }}</FzButton
       >
     </div>
-  </article>
+  </article></ItemPreview>
 </template>

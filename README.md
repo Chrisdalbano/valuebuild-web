@@ -64,3 +64,8 @@ The existing workflow runs build and browser checks on `main`; frontend hosting 
 Independent work by Chrisdalbano, developed with AI assistance across implementation, research, visual iteration, and documentation. AI assistance includes generated code and copy. Review and test changes before relying on them.
 
 BuildValue is not endorsed by Riot Games. League of Legends and its game assets belong to Riot Games. Project code is MIT licensed; that license does not grant rights to Riot's assets. Forza UI is independently available as an open-source library.
+
+
+### Restored workspace interactions
+
+Item hover previews show cost, stat value, stats, and effects without requesting AI. Open an item for the full AI effect breakdown and champion estimates. The explorer includes card/table views and stat-keyword search. Build and comparison slots support swaps; saved builds support rename. Role suggestions, comparison handoffs, and quick comparisons are available. See [feature parity](docs/design/FORZA-FEATURE-PARITY.md) for the audit and remaining presentation differences.

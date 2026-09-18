@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ItemSwap from "./ItemSwap.vue";
+import ItemPreview from "./ItemPreview.vue";
 import { shallowRef } from "vue";
 import {
   FzField,
@@ -10,10 +12,13 @@ import {
 import { useWorkspace } from "../../state/workspace";
 import { number } from "../../domain/items";
 import ItemArtwork from "./ItemArtwork.vue";
+import BuildInsights from "../analysis/BuildInsights.vue";
 import BuildComposition from "../analysis/BuildComposition.vue";
 import StatSummary from "./StatSummary.vue";
 const {
   build,
+  compareIds,
+  addCompared,
   name,
   add,
   remove,
@@ -62,14 +67,14 @@ async function copy() {
       ><template #default="{ item, index }"
         ><div class="build-slot">
           <span class="slot-number">0{{ index + 1 }}</span
-          ><button class="slot-inspect" @click="inspect(item)">
+          ><ItemPreview :item="item"><button class="slot-inspect" @click="inspect(item)">
             <ItemArtwork
               :name="item.name"
               :src="item.imageUrl"
               large
             /><strong>{{ item.name }}</strong
             ><span class="gold">{{ number(item.cost) }} G</span></button
-          ><FzButton
+          ></ItemPreview><ItemSwap :item="item" target="build" /><FzButton
             size="sm"
             variant="ghost"
             :aria-label="`Remove ${item.name}`"
@@ -97,10 +102,11 @@ async function copy() {
         ><FzIcon name="plus" /><span>Add an item</span></a
       >
     </div>
-    <StatSummary :items="build" /><BuildComposition
+    <BuildInsights :items="build" /><StatSummary :items="build" /><BuildComposition
       v-if="build.length"
       :items="build"
     />
+    <FzButton variant="secondary" size="sm" :disabled="!compareIds.length || build.length >= 6" @click="addCompared">Add compared items</FzButton>
     <div class="editor-footer">
       <span class="fineprint"
         >Draft autosaves on this device. Six unique items maximum.</span

@@ -27,3 +27,8 @@ Type checking, production builds, user-flow tests, responsive/axe checks, API im
 ## Presentation
 
 Forza documentation includes a BuildValue integration guide with the component mapping, state and persistence boundaries, and actual UI screenshot. BuildValue links back to Forza. Neither project claims Riot endorsement. No outreach or social posts are sent as part of this implementation.
+
+
+## Feature parity correction
+
+The first release retained routes and backend services but did not preserve every interaction. See `FORZA-FEATURE-PARITY.md` for the source comparison, restored capabilities, deliberate presentation differences, and regression coverage. Future redesign acceptance must include this checklist, not only tests for the new implementation.
