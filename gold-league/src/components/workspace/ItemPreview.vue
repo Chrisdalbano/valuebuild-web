@@ -32,7 +32,7 @@ const id = useId();
         :side-offset="12"
         :collision-padding="16"
         :avoid-collisions="true"
-        @escape-key-down="open = false"
+        @escape-key-down.prevent.stop="open = false"
       >
         <header class="preview-heading">
           <ItemArtwork :name="item.name" :src="item.imageUrl" />
@@ -68,7 +68,7 @@ const id = useId();
 </template>
 <style>
 .item-preview {
-  z-index: 70;
+  z-index: 110;
   width: min(350px, calc(100vw - 32px));
   max-height: min(560px, var(--reka-hover-card-content-available-height));
   overflow: auto;

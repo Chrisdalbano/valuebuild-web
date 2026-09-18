@@ -398,6 +398,7 @@ test("hover preview is stable, dismissible, and makes no AI request", async ({ p
   let requests = 0;
   await page.route("**/api/items/*/ai", route => { requests++; return route.fulfill({json:{status:"pending",configured:true}}); });
   await open(page, "/items");
+  await page.getByRole('searchbox',{name:'Find an item'}).fill('Infinity Edge');
   const card = page.locator('.catalog-item').filter({has:page.getByRole('button',{name:'Inspect Infinity Edge',exact:true})});
   const before = await page.locator('.site-header').boundingBox();
   await card.hover();
@@ -413,6 +414,7 @@ test("hover preview is stable, dismissible, and makes no AI request", async ({ p
   await page.keyboard.press('Escape');
   await expect(preview).not.toBeVisible();
   expect(requests).toBe(0);
+  await expect(page.getByRole('searchbox',{name:'Find an item'})).toHaveValue('Infinity Edge');
   expect((await page.locator('.site-header').boundingBox())!.width).toBe(before!.width);
   await page.mouse.move(0,0);
   await page.getByRole('button',{name:'Inspect Infinity Edge',exact:true}).focus();
