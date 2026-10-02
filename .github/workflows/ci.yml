@@ -7,8 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  backend:
-    name: Backend tests
+  test-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,8 +30,7 @@ jobs:
         working-directory: ./backend
         run: python -c "import app"
 
-  frontend:
-    name: Frontend typecheck, build and browser tests
+  test-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,8 +62,7 @@ jobs:
         run: npm run test:app
 
   # User-flow smoke checks against a preview of the production build
-  smoke:
-    name: Production-build smoke checks
+  smoke-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
