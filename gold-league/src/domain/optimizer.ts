@@ -1,4 +1,5 @@
 import type { Item } from "./items";
+import { isBuildTarget } from "./eligibility";
 export function optimizeBuild(
   items: readonly Item[],
   budget: number,
@@ -9,12 +10,7 @@ export function optimizeBuild(
     (i) =>
       i.cost > 0 &&
       i.value > 0 &&
-      i.from?.length &&
-      !i.into?.length &&
-      !i.tags.some((tag) =>
-        ["Consumable", "Trinket", "GoldPer"].includes(tag),
-      ) &&
-      !(i.tags.includes("Boots") && !i.from.includes("1001")) &&
+      isBuildTarget(i) &&
       (category === "all" || i.tags.includes(category)),
   );
   type Cell = { value: number; items: Item[] };

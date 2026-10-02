@@ -9,6 +9,11 @@ const snapshot = JSON.parse(
 );
 import { optimizeBuild } from "../../src/domain/optimizer";
 import {
+  isBuildTarget,
+  isTierThreeBoots,
+  isTierTwoBoots,
+} from "../../src/domain/eligibility";
+import {
   normalizeItems,
   totals,
   parseIds,
@@ -123,6 +128,18 @@ test("backend values stay authoritative and totals are additive", () => {
   expect(result.length).toBeLessThanOrEqual(6);
   expect(totals(result).cost).toBeLessThanOrEqual(12000);
   expect(new Set(result.map((i) => i.id)).size).toBe(result.length);
+  // Regression: "skip anything that still upgrades" dropped tier-two boots
+  // and let their tier-three upgrades through.
+  const boots = items.filter((i) => i.tags.includes("Boots"));
+  const tierTwo = boots.filter(isTierTwoBoots);
+  const tierThree = boots.filter(isTierThreeBoots);
+  expect(tierTwo.length).toBeGreaterThan(0);
+  expect(tierTwo.every(isBuildTarget)).toBe(true);
+  expect(tierThree.some(isBuildTarget)).toBe(false);
+  const cheapest = Math.min(...tierTwo.map((i) => i.cost));
+  const onlyBoots = optimizeBuild(boots, cheapest);
+  expect(onlyBoots.length).toBe(1);
+  expect(isTierTwoBoots(onlyBoots[0]!)).toBe(true);
 });
 test("search, build, undo, save, reload, and share", async ({ page }) => {
   await open(page, "/items");

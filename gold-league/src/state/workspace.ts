@@ -188,7 +188,10 @@ function createWorkspace() {
       if (selected.value)
         selected.value = byId.value.get(selected.value.id) || null;
     } catch {
-      source.value = "Bundled snapshot · offline fallback";
+      // Keep the label truthful: a failed refresh after a successful load
+      // still shows live data, not the bundled snapshot.
+      if (source.value !== "BuildValue API")
+        source.value = "Bundled snapshot · offline fallback";
     } finally {
       loading.value = false;
     }
