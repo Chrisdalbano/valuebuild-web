@@ -1,74 +1,80 @@
-name: Deploy to Production
+name: CI
 
 on:
   push:
-    branches:
-      - main  # Only deploy on main branch
+    branches: [main]
   pull_request:
-    branches:
-      - main  # Test PRs before merging
+    branches: [main]
 
 jobs:
-  # Backend Tests (Optional - add when you have tests)
-  test-backend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Run backend tests
-        working-directory: ./backend
-        run: |
-          echo "Backend tests would run here"
-          # pytest tests/ --cov=./ --cov-report=xml
-
-  # Frontend Tests and Build
-  test-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      
-      - name: Install dependencies
-        working-directory: ./gold-league
-        run: npm ci
-      
-      - name: Build frontend
-        working-directory: ./gold-league
-        run: npm run build
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-      
-      - name: Run frontend tests (if any)
-        working-directory: ./gold-league
-        run: |
-          echo "Frontend tests would run here"
-          # npm test
-
-  # Real user-flow smoke tests against a preview of the production build
-  smoke-frontend:
+  backend:
+    name: Backend tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: pip install -r requirements-dev.txt
+
+      - name: Unit tests (efficiency formula, item filters, build selection, refresh guards)
+        working-directory: ./backend
+        run: python -m pytest -q
+
+      - name: Application imports cleanly
+        working-directory: ./backend
+        run: python -c "import app"
+
+  frontend:
+    name: Frontend typecheck, build and browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: gold-league/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./gold-league
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: ./gold-league
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: ./gold-league
+        run: npm run build
+
+      - name: Install test browser
+        working-directory: ./gold-league
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (full workspace suite)
+        working-directory: ./gold-league
+        run: npm run test:app
+
+  # User-flow smoke checks against a preview of the production build
+  smoke:
+    name: Production-build smoke checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: gold-league/package-lock.json
 
       - name: Install dependencies
         working-directory: ./gold-league
@@ -84,7 +90,7 @@ jobs:
         working-directory: ./gold-league
         run: npm run preview &
 
-      - name: Warm production API (Render free-tier cold start)
+      - name: Warm production API (free-tier cold start)
         run: curl -s -m 90 https://valuebuild-web.onrender.com/api/health || true
 
       - name: Run smoke suites
@@ -101,17 +107,3 @@ jobs:
           node ../scripts/ai-smoke.mjs http://localhost:4173
           node ../scripts/features-smoke.mjs http://localhost:4173
           node ../scripts/pwa-smoke.mjs http://localhost:4173
-
-  # Deploy notification
-  notify-deploy:
-    runs-on: ubuntu-latest
-    needs: [test-backend, test-frontend, smoke-frontend]
-    if: github.ref == 'refs/heads/production' || github.ref == 'refs/heads/main'
-    steps:
-      - name: Deployment Status
-        run: |
-          echo "✅ All tests passed!"
-          echo "🚀 Ready for deployment"
-          echo "📦 Backend: Deploy to Heroku manually or via Heroku CLI"
-          echo "🌐 Frontend: Netlify will auto-deploy from this push"
-

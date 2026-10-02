@@ -1,0 +1,34 @@
+name: Weekly refresh backstop
+
+# The backend schedules its own ETL for Monday 02:00 UTC. On a host that sleeps
+# when idle, an in-process scheduler can miss its slot. This job wakes the API
+# shortly after and starts a run only if the catalog is more than six days old.
+
+on:
+  schedule:
+    - cron: '20 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      API: https://valuebuild-web.onrender.com
+      ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+    steps:
+      - name: Wake the API
+        run: curl -s -m 120 "$API/api/health" || true
+
+      - name: Refresh if the catalog is stale
+        run: |
+          age_days=$(curl -s -m 60 "$API/api/metadata" | python3 -c "
+          import json, sys
+          from datetime import datetime
+          last = json.load(sys.stdin).get('lastUpdated')
+          print(999 if not last else (datetime.utcnow() - datetime.fromisoformat(last[:19])).days)")
+          echo "Catalog age: ${age_days} day(s)"
+          if [ "$age_days" -ge 6 ]; then
+            curl -s -m 60 -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" "$API/api/items/refresh"
+          else
+            echo "Fresh enough; nothing to do."
+          fi

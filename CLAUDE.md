@@ -16,7 +16,7 @@ Current checks: `npm run typecheck`, `npm run test:app`, `npm run build`, produc
 - `backend/` — **FastAPI** (`app.py` entry), `efficiency.py` (gold-per-stat constants + formula), `etl/data_pipeline.py` (DDragon fetch → validate → calc → MongoDB, APScheduler weekly Mon 02:00 UTC), `db.py`, MongoDB collections `items_cache` + `etl_metadata`.
 - `firebase.json` + `.firebaserc` — **frontend host: Firebase Hosting** (project `buildvalue-b202d`, serves `gold-league/dist`, SPA rewrite, immutable `/assets`, no-cache `sw.js`/`index.html`). Deployed MANUALLY via `firebase deploy --only hosting` (see deploy model). `netlify.toml` is legacy/unused — Netlify ran out of credits 2026-06; migrated to Firebase.
 - `backend/render.yaml` — backend deploy IaC (Render web service, branch `main`, uvicorn, healthCheckPath `/api/health`, autoDeploy).
-- `.github/workflows/deploy.yml` — CI build checks on push/PR to `main` (no deploy logic).
+- `.github/workflows/ci.yml` — CI on push/PR to `main`: backend pytest + import, frontend typecheck + build + full Playwright suite, production-build smoke checks (no deploy logic).
 - Root `*.md` guides — historical docs (DEPLOY_TO_PRODUCTION, ETL_TRIGGER_GUIDE, START_BACKEND_GUIDE, etc.). Treat as reference, not doctrine; THIS file wins on conflict.
 - `docs/UI-MIGRATION-INSPIRA-ATOMIC.md` — the active UI migration plan (Inspira UI + atomic architecture). Read it before any frontend design/build work.
 
@@ -39,7 +39,7 @@ curl -X POST https://valuebuild-web.onrender.com/api/items/refresh   # trigger (
 curl https://valuebuild-web.onrender.com/api/metadata                # verify lastUpdated/status/patch
 ```
 
-Local backend needs `MONGO_URI` in `backend/.env` (see `.env.example` files). The frontend API base is automatic: `VITE_API_BASE_URL` overrides if set, else dev hits `http://localhost:8000` and **production builds default to the live Render API in code** (`src/api/items.js`), so the hosted bundle is always correct without any host env var. **Never commit or print secret values.** Secret NAMES: `MONGO_URI`, `CORS_ORIGINS`, `GEMINI_API_KEY` (Render dashboard, `sync:false`).
+Local backend needs `MONGO_URI` in `backend/.env` (see `.env.example` files). The frontend API base is automatic: `VITE_API_BASE_URL` overrides if set, else dev hits `http://localhost:8000` and **production builds default to the live Render API in code** (`src/api/items.js`), so the hosted bundle is always correct without any host env var. **Never commit or print secret values.** Secret NAMES: `MONGO_URI`, `CORS_ORIGINS`, `GEMINI_API_KEY`, `ADMIN_TOKEN` (Render dashboard, `sync:false`). When `ADMIN_TOKEN` is set, the two refresh routes require it in an `X-Admin-Token` header; both routes also run one job at a time with a 15-minute cooldown (`backend/refresh_gate.py`).
 
 ## Branch + deploy model
 
@@ -59,7 +59,7 @@ NOT covered (ask first): changing Render/Firebase service config or env vars, Mo
 
 ### Verification gate (before any `main` push)
 
-1. `npm run build` passes in `gold-league/` (zero errors).
+1. `npm run build` passes in `gold-league/` (zero errors), and `python -m pytest` passes in `backend/`.
 2. Backend imports clean: `python -c "import app"` in `backend/` (catches syntax/dep breaks; full server boot needs Mongo).
 3. If frontend behavior changed: screenshot-QA the affected screens against a local `npm run preview` (playwright headless is fine) before deploying — visual bugs that build fine are the known failure mode.
 4. If efficiency math changed: trigger prod ETL after deploy and confirm `/api/metadata` shows a fresh successful run; spot-check one known item's efficiency on the live site.
