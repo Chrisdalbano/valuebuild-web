@@ -26,7 +26,7 @@ STAT_VALUES = {
     "PercentLifeStealMod": 5355,        # Lifesteal: 53.55g per 1%, API gives decimal, so 5355g per 1.0 (100%)
     
     # Ability Haste (introduced in Season 11, replaces CDR)
-    "AbilityHaste": 50,                 # Ability Haste: 25g per 1 AH (10 AH = 250g from Kindlegem)
+    "AbilityHaste": 50,                 # Ability Haste: 50g per 1 AH (Glowing Mote: 5 AH for 250g)
 }
 
 # Additional stat mappings for Data Dragon API response

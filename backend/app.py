@@ -1,4 +1,5 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, Header, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from datetime import datetime
@@ -16,6 +17,7 @@ from etl.data_pipeline import ETLScheduler, run_etl_now
 # Import AI enrichment (Gemini effect valuation + research digest)
 from ai.enrich import run_ai_enrichment
 from ai.gemini_client import is_configured as ai_is_configured
+from refresh_gate import RefreshGate, is_authorized
 
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
@@ -36,8 +38,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_origin_regex=CORS_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -59,6 +61,37 @@ async def _current_patch():
 
 # ETL Scheduler instance
 etl_scheduler = None
+
+# Guards for the endpoints that start background work (see refresh_gate.py).
+# Set ADMIN_TOKEN in the host environment to require an X-Admin-Token header.
+ADMIN_TOKEN = os.getenv("ADMIN_TOKEN")
+etl_gate = RefreshGate()
+ai_gate = RefreshGate()
+
+
+def _require_admin(token):
+    if not is_authorized(token, ADMIN_TOKEN):
+        raise HTTPException(status_code=401, detail="Missing or invalid X-Admin-Token")
+
+
+def _gate_response(state, gate):
+    """429 body for a refresh that is not allowed to start right now."""
+    if state == "running":
+        return JSONResponse(status_code=429, content={"status": "already_running"})
+    return JSONResponse(
+        status_code=429,
+        content={"status": "cooldown", "retryAfterSeconds": gate.retry_after()},
+        headers={"Retry-After": str(gate.retry_after())},
+    )
+
+
+async def _run_etl_gated(mongo_uri):
+    try:
+        await run_etl_now(mongo_uri)
+    except Exception as e:
+        print(f"ETL refresh failed: {e}")
+    finally:
+        etl_gate.finish()
 
 
 @app.on_event("startup")
@@ -135,26 +168,9 @@ def root():
 
 
 @app.get("/api/items")
-async def get_items(force_refresh: bool = False):
-    """
-    Get all items from MongoDB cache
-    
-    Args:
-        force_refresh: If True, triggers ETL pipeline to fetch fresh data
-        
-    Returns:
-        Dict with items array
-    """
-    # Force refresh if requested
-    if force_refresh:
-        print("🔄 Force refresh requested, running ETL...")
-        try:
-            await run_etl_now(MONGO_URI)
-            print("✅ Force refresh complete")
-        except Exception as e:
-            print(f"❌ Force refresh failed: {e}")
-            raise HTTPException(status_code=500, detail=f"ETL refresh failed: {str(e)}")
-    
+async def get_items():
+    """All current items from the MongoDB cache. Reading never starts an ETL
+    run; use POST /api/items/refresh for that."""
     # Fetch from MongoDB
     items = await items_collection.find(
         {'isDeprecated': False, 'imageValidated': True},
@@ -165,18 +181,37 @@ async def get_items(force_refresh: bool = False):
 
 
 @app.post("/api/items/refresh")
-async def refresh_items(background_tasks: BackgroundTasks):
-    """
-    Force refresh items from DDragon API (runs ETL pipeline)
-    Returns immediately and runs ETL in background
-    """
-    # Run ETL in background to avoid timeout
-    background_tasks.add_task(run_etl_now, MONGO_URI)
-    
+async def refresh_items(background_tasks: BackgroundTasks, x_admin_token: str = Header(default=None)):
+    """Start the ETL pipeline in the background and return immediately.
+    One run at a time, with a cooldown between runs."""
+    _require_admin(x_admin_token)
+    state = etl_gate.try_start()
+    if state != "started":
+        return _gate_response(state, etl_gate)
+    background_tasks.add_task(_run_etl_gated, MONGO_URI)
     return {
         "message": "ETL pipeline started in background",
         "status": "processing",
         "note": "Check /api/metadata for completion status"
+    }
+
+
+@app.get("/api/items/metadata")
+async def get_items_metadata():
+    """
+    Get items metadata for footer display
+    Returns item count and last update timestamp
+    """
+    # Get item count
+    item_count = await items_collection.count_documents({'isDeprecated': False, 'imageValidated': True})
+    
+    # Get last update from ETL metadata
+    metadata = await metadata_collection.find_one({'_id': 'latest'})
+    last_update = metadata.get('lastUpdated') if metadata else None
+    
+    return {
+        "itemCount": item_count,
+        "lastUpdate": last_update
     }
 
 
@@ -276,29 +311,27 @@ async def get_champion_ai(champion_id: str):
 
 # in-process guard so spamming /api/ai/refresh can't launch overlapping
 # enrichment jobs (the only generation trigger; key stays backend-only)
-_ai_enrichment_running = False
 
 
 async def _run_ai_enrichment_guarded(mongo_uri: str):
-    global _ai_enrichment_running
-    if _ai_enrichment_running:
-        return
-    _ai_enrichment_running = True
     try:
         await run_ai_enrichment(mongo_uri)
+    except Exception as e:
+        print(f"AI enrichment failed: {e}")
     finally:
-        _ai_enrichment_running = False
+        ai_gate.finish()
 
 
 @app.post("/api/ai/refresh")
-async def refresh_ai(background_tasks: BackgroundTasks):
-    """Trigger AI enrichment in the background (mirrors /api/items/refresh).
-    No-ops gracefully if GEMINI_API_KEY is unset or quota is exhausted. Guarded
-    against overlapping runs so repeated calls can't spawn concurrent jobs."""
+async def refresh_ai(background_tasks: BackgroundTasks, x_admin_token: str = Header(default=None)):
+    """Start AI enrichment in the background. No-ops when GEMINI_API_KEY is
+    unset. One run at a time, with a cooldown between runs."""
+    _require_admin(x_admin_token)
     if not ai_is_configured():
         return {'status': 'skipped', 'reason': 'GEMINI_API_KEY not set'}
-    if _ai_enrichment_running:
-        return {'status': 'already_running', 'note': 'enrichment in progress; poll /api/research'}
+    state = ai_gate.try_start()
+    if state != "started":
+        return _gate_response(state, ai_gate)
     background_tasks.add_task(_run_ai_enrichment_guarded, MONGO_URI)
     return {'status': 'processing', 'note': 'AI enrichment started; poll /api/research'}
 
@@ -320,42 +353,22 @@ async def get_metadata():
     return metadata
 
 
-@app.get("/api/items/metadata")
-async def get_items_metadata():
-    """
-    Get items metadata for footer display
-    Returns item count and last update timestamp
-    """
-    # Get item count
-    item_count = await items_collection.count_documents({'isDeprecated': False, 'imageValidated': True})
-    
-    # Get last update from ETL metadata
-    metadata = await metadata_collection.find_one({'_id': 'latest'})
-    last_update = metadata.get('lastUpdated') if metadata else None
-    
-    return {
-        "itemCount": item_count,
-        "lastUpdate": last_update
-    }
-
-
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint for monitoring"""
-    # Check MongoDB connection
+    """Health check for monitoring. Always answers; the body says whether the
+    database is reachable and the catalog is loaded."""
+    db_status = "connected"
+    item_count = 0
+    last_update = None
     try:
         await mongo_client.admin.command('ping')
-        db_status = "connected"
+        item_count = await items_collection.count_documents({})
+        metadata = await metadata_collection.find_one({'_id': 'latest'})
+        last_update = metadata.get('lastUpdated') if metadata else None
     except Exception as e:
-        db_status = f"error: {str(e)}"
-    
-    # Check cache
-    item_count = await items_collection.count_documents({})
-    
-    # Get last update info
-    metadata = await metadata_collection.find_one({'_id': 'latest'})
-    last_update = metadata.get('lastUpdated') if metadata else None
-    
+        print(f"Health check: database error: {e}")
+        db_status = "unavailable"
+
     return {
         "status": "healthy" if db_status == "connected" and item_count > 0 else "unhealthy",
         "database": db_status,

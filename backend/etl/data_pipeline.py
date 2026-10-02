@@ -18,7 +18,32 @@ from typing import List, Dict, Optional
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from efficiency import calculate_efficiency
-from etl.deprecated_items import is_item_deprecated, DEPRECATED_ITEM_IDS
+from etl.deprecated_items import is_item_deprecated
+from etl.item_filters import is_eligible_item
+
+
+ETL_WEEKDAY = 0   # Monday
+ETL_HOUR_UTC = 2
+
+# A run that keeps fewer than this share of the previous run's items is treated
+# as suspect: its results are stored, but nothing is retired on its say-so.
+MIN_SHARE_OF_PREVIOUS_RUN = 0.8
+
+
+def next_weekly_run(now: datetime) -> datetime:
+    """The next Monday 02:00 UTC strictly after `now`."""
+    candidate = now.replace(hour=ETL_HOUR_UTC, minute=0, second=0, microsecond=0)
+    candidate += timedelta(days=(ETL_WEEKDAY - now.weekday()) % 7)
+    if candidate <= now:
+        candidate += timedelta(days=7)
+    return candidate
+
+
+def should_retire_stale_items(valid_count: int, previous_count: Optional[int]) -> bool:
+    """Whether a finished run may flag items it did not see as retired."""
+    if not previous_count:
+        return True
+    return valid_count >= previous_count * MIN_SHARE_OF_PREVIOUS_RUN
 
 
 class DDragonETL:
@@ -42,8 +67,9 @@ class DDragonETL:
             print(f"📦 Latest patch: {latest}")
             return latest
         except Exception as e:
-            print(f"❌ Error fetching patch version: {e}")
-            return "14.20.1"  # Fallback
+            # Do not guess a patch. Failing here aborts the run before anything
+            # is written, so the previous catalog keeps being served.
+            raise RuntimeError(f"Could not read the latest patch from Data Dragon: {e}") from e
     
     async def validate_image(self, item_id: str, patch: str) -> bool:
         """
@@ -93,67 +119,10 @@ class DDragonETL:
             return False
     
     def should_include_item(self, item: Dict) -> bool:
-        """
-        Determine if item should be included based on Riot's data
-        Matches backend/riot_client.py logic
-        """
-        name = item.get("name", "")
-        gold = item.get("gold", {})
-        maps_data = item.get("maps", {})
-        stats = item.get("stats", {})
-        item_id = str(item.get("id", ""))
-        description = item.get("description", "")
-        
-        # Check against deprecated items blacklist
-        if item_id in DEPRECATED_ITEM_IDS:
-            return False
-        
-        # Exclude items with "mythic" in description
-        if "mythic" in description.lower():
-            return False
-        
-        # Exclude items with specific deprecated keywords
-        # NOTE: Removed "old" keyword - causes false positives (e.g., items with "gold" in description)
-        deprecated_keywords = ["removed", "mythic", "deprecated", "legacy"]
-        name_lower = name.lower()
-        if any(keyword in name_lower for keyword in deprecated_keywords):
-            return False
+        """Eligibility rules live in etl/item_filters.py so they can be tested
+        without MongoDB or the network."""
+        return is_eligible_item(item)
 
-        # ARAM-exclusive "Guardian's X" line (DDragon mis-marks them SR-available;
-        # "Guardian Angel" has no apostrophe-s so it is kept)
-        if name_lower.startswith("guardian's "):
-            return False
-
-        # Exclude Arena mode items (special ID prefixes for 5+ digit IDs)
-        # Arena items: 223094, 326672, etc. (5+ digits)
-        # Regular items: 3094, 6672, etc. (4 digits or less)
-        if len(item_id) >= 5 and (
-            item_id.startswith("22") or 
-            item_id.startswith("32") or 
-            item_id.startswith("44") or
-            item_id.startswith("88") or
-            item_id.startswith("99")
-        ):
-            return False
-        
-        # Must be available on Summoner's Rift (map ID "11")
-        if not maps_data.get("11", False):
-            return False
-        
-        # Must be purchasable
-        if not gold.get("purchasable", False):
-            return False
-        
-        # Must have a total cost > 0
-        if gold.get("total", 0) <= 0:
-            return False
-        
-        # Include if it has any stats OR effects (description)
-        if stats or (description and len(description) > 20):
-            return True
-        
-        return False
-    
     async def extract_and_transform(self) -> int:
         """
         Main ETL process: Extract from DDragon, Transform, Load to MongoDB
@@ -286,15 +255,21 @@ class DDragonETL:
                 # flagged isDeprecated so the API (which queries isDeprecated:False)
                 # stops serving it. Non-destructive (a flag, not a delete).
                 valid_ids = [it['_id'] for it in valid_items]
-                retired = await self.items_collection.update_many(
-                    {'_id': {'$nin': valid_ids}, 'isDeprecated': {'$ne': True}},
-                    {'$set': {'isDeprecated': True}},
-                )
-                if retired.modified_count:
-                    log(f"  🧹 Retired {retired.modified_count} stale item(s) (incl. ARAM/Guardian's)")
+                previous = await self.metadata_collection.find_one({'_id': 'latest'})
+                previous_count = (previous or {}).get('itemCount')
+                if should_retire_stale_items(len(valid_items), previous_count):
+                    retired = await self.items_collection.update_many(
+                        {'_id': {'$nin': valid_ids}, 'isDeprecated': {'$ne': True}},
+                        {'$set': {'isDeprecated': True}},
+                    )
+                    if retired.modified_count:
+                        log(f"  🧹 Retired {retired.modified_count} stale item(s) (incl. ARAM/Guardian's)")
+                else:
+                    log(f"  ⚠️  Kept {len(valid_items)} items against {previous_count} last run; "
+                        "not retiring anything on a run this much smaller")
 
                 # Update metadata
-                next_update = datetime.utcnow() + timedelta(days=7)
+                next_update = next_weekly_run(datetime.utcnow())
                 metadata = {
                     '_id': 'latest',
                     'patch': patch,
@@ -346,7 +321,7 @@ class ETLScheduler:
     def __init__(self, mongo_uri: str = "mongodb://localhost:27017"):
         self.mongo_uri = mongo_uri
         self.etl = DDragonETL(mongo_uri)
-        self.scheduler = AsyncIOScheduler()
+        self.scheduler = AsyncIOScheduler(timezone="UTC")
     
     async def run_etl_job(self):
         """Wrapper to run ETL job, then (best-effort) refresh AI enrichment for the
@@ -379,7 +354,7 @@ class ETLScheduler:
         # Schedule: Every Monday at 2:00 AM UTC
         self.scheduler.add_job(
             self.run_etl_job,
-            CronTrigger(day_of_week='mon', hour=2, minute=0),
+            CronTrigger(day_of_week='mon', hour=ETL_HOUR_UTC, minute=0, timezone="UTC"),
             id='weekly_ddragon_update',
             name='Weekly DDragon Data Update',
             replace_existing=True
