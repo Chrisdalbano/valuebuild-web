@@ -51,11 +51,13 @@ class RefreshGate:
         remaining = self.cooldown_seconds - (self._clock() - self._last_started)
         return max(0, int(remaining + 0.999))
 
-    def try_start(self) -> str:
-        """Claim the gate. Returns "started", "running" or "cooldown"."""
+    def try_start(self, ignore_cooldown: bool = False) -> str:
+        """Claim the gate. Returns "started", "running" or "cooldown".
+        Scheduled runs pass ignore_cooldown: they must not be skipped because
+        someone triggered a manual run a few minutes earlier."""
         if self._running:
             return "running"
-        if self.retry_after() > 0:
+        if not ignore_cooldown and self.retry_after() > 0:
             return "cooldown"
         self._running = True
         self._last_started = self._clock()
@@ -63,3 +65,16 @@ class RefreshGate:
 
     def finish(self) -> None:
         self._running = False
+
+
+async def run_and_release(gate: RefreshGate, job, on_error=None):
+    """Await `job()` for a gate that was already claimed, and release the gate
+    whether the job finishes or raises."""
+    try:
+        return await job()
+    except Exception as e:  # background work: report, never propagate
+        if on_error:
+            on_error(e)
+        return None
+    finally:
+        gate.finish()

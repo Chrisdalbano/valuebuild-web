@@ -17,7 +17,8 @@ from etl.data_pipeline import ETLScheduler, run_etl_now
 # Import AI enrichment (Gemini effect valuation + research digest)
 from ai.enrich import run_ai_enrichment
 from ai.gemini_client import is_configured as ai_is_configured
-from refresh_gate import RefreshGate, is_authorized
+from refresh_gate import RefreshGate, is_authorized, run_and_release
+from ai.cache_keys import current_sections
 
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
@@ -85,13 +86,19 @@ def _gate_response(state, gate):
     )
 
 
+async def _refresh_reference_data(mongo_uri):
+    """Items, then the champion roster that the studies are grounded in."""
+    await run_etl_now(mongo_uri)
+    from etl.champion_pipeline import run_champion_etl_now
+    await run_champion_etl_now(mongo_uri)
+
+
 async def _run_etl_gated(mongo_uri):
-    try:
-        await run_etl_now(mongo_uri)
-    except Exception as e:
-        print(f"ETL refresh failed: {e}")
-    finally:
-        etl_gate.finish()
+    await run_and_release(
+        etl_gate,
+        lambda: _refresh_reference_data(mongo_uri),
+        on_error=lambda e: print(f"ETL refresh failed: {e}"),
+    )
 
 
 @app.on_event("startup")
@@ -142,7 +149,7 @@ async def startup_event():
         print("🤖 Gemini AI enrichment: GEMINI_API_KEY not set — AI features will show 'pending'")
 
     # Start the ETL scheduler for weekly updates
-    etl_scheduler = ETLScheduler(MONGO_URI)
+    etl_scheduler = ETLScheduler(MONGO_URI, etl_gate=etl_gate, ai_gate=ai_gate)
     etl_scheduler.start()
 
 
@@ -235,9 +242,10 @@ async def get_item_ai(item_id: str):
     patch (else 'pending', so stale AI never shows against fresh items)."""
     doc = await ai_collection.find_one({'_id': item_id}, {'_id': 0, 'model': 0})
     patch = await _current_patch()
-    if doc and doc.get('patch') == patch:
+    doc = current_sections(doc, patch)  # drop any section generated for another patch
+    if doc:
         if isinstance(doc.get('bestOn'), dict):
-            doc['bestOn'].pop('model', None)  # don't disclose the AI vendor/model
+            doc['bestOn'] = {k: v for k, v in doc['bestOn'].items() if k != 'model'}  # don't disclose the AI vendor/model
         return {'status': 'ready', **doc}
     return {'status': 'pending', 'configured': ai_is_configured()}
 
@@ -314,12 +322,11 @@ async def get_champion_ai(champion_id: str):
 
 
 async def _run_ai_enrichment_guarded(mongo_uri: str):
-    try:
-        await run_ai_enrichment(mongo_uri)
-    except Exception as e:
-        print(f"AI enrichment failed: {e}")
-    finally:
-        ai_gate.finish()
+    await run_and_release(
+        ai_gate,
+        lambda: run_ai_enrichment(mongo_uri),
+        on_error=lambda e: print(f"AI enrichment failed: {e}"),
+    )
 
 
 @app.post("/api/ai/refresh")

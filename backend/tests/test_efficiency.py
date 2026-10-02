@@ -94,3 +94,18 @@ class TestStatsFromDescription:
     def test_haste_in_description_is_priced(self):
         item = make_item(7, "Glowing Mote", 250, {}, "<stats>5 Ability Haste</stats>")
         assert calculate_efficiency(item)["goldEfficiency"] == 100.0
+
+
+    def test_numbers_inside_a_passive_are_not_priced(self):
+        description = (
+            "<mainText><stats>40 Attack Damage</stats><br>"
+            "<passive>Surge</passive> Takedowns grant 20 Ability Haste for 6 seconds.</mainText>"
+        )
+        assert parse_stats_from_description(description) == {}
+
+    def test_haste_in_the_stats_section_is_still_read(self):
+        description = (
+            "<mainText><stats>40 Attack Damage<br>15 Ability Haste</stats><br>"
+            "<passive>Surge</passive> Takedowns grant 20 Ability Haste for 6 seconds.</mainText>"
+        )
+        assert parse_stats_from_description(description) == {"AbilityHaste": 15}

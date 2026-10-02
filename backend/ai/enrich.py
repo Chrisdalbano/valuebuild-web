@@ -14,6 +14,7 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .gemini_client import generate_json, is_configured, _model
+from .cache_keys import best_on_fresh_query, effects_fresh_query
 from .prompts import (
     build_effect_prompt, build_digest_prompt, build_best_on_prompt, build_champion_prompt,
     EFFECT_PROMPT_VERSION, BEST_ON_PROMPT_VERSION, DIGEST_PROMPT_VERSION, CHAMPION_PROMPT_VERSION,
@@ -76,9 +77,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
     for it in curated:
         # skip only if effects exist AT THE CURRENT PROMPT VERSION (bumping the
         # version in prompts.py forces a refresh of stale cached effects)
-        if await ai_col.find_one(
-            {"_id": it["id"], "patch": patch, "effectsVersion": EFFECT_PROMPT_VERSION}
-        ):
+        if await ai_col.find_one(effects_fresh_query(it["id"], patch, EFFECT_PROMPT_VERSION)):
             skipped += 1
             continue
         result = await _gen(build_effect_prompt(it), EFFECT_MAX_TOKENS, EFFECT_MODEL)
@@ -93,6 +92,7 @@ async def enrich_item_effects(items, patch, ai_col) -> dict:
                     "model": EFFECT_MODEL,
                     "effects": result.get("effects", []),
                     "effectsVersion": EFFECT_PROMPT_VERSION,
+                    "effectsPatch": patch,
                     "summary": result.get("summary", ""),
                     "caveats": result.get("caveats", ""),
                     "generatedAt": datetime.utcnow(),
@@ -119,9 +119,7 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
     enriched = skipped = failed = 0
     logger.info("AI best-on: %d curated items for patch %s", len(curated), patch)
     for it in curated:
-        if await ai_col.find_one(
-            {"_id": it["id"], "patch": patch, "bestOn.version": BEST_ON_PROMPT_VERSION}
-        ):
+        if await ai_col.find_one(best_on_fresh_query(it["id"], patch, BEST_ON_PROMPT_VERSION)):
             skipped += 1
             continue
         result = await _gen(
@@ -138,6 +136,7 @@ async def generate_best_on(items, champions, patch, ai_col) -> dict:
                         "champions": result.get("champions", []),
                         "caveats": result.get("caveats", ""),
                         "version": BEST_ON_PROMPT_VERSION,
+                        "patch": patch,
                         "model": BEST_ON_MODEL,
                         "generatedAt": datetime.utcnow(),
                     },

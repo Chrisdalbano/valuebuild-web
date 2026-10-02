@@ -1,7 +1,9 @@
 """The refresh endpoints start an ETL run or an AI enrichment run. These tests
 cover the guards that keep them from being stacked or called by anyone."""
 
-from refresh_gate import RefreshGate, is_authorized
+import asyncio
+
+from refresh_gate import RefreshGate, is_authorized, run_and_release
 
 
 class FakeClock:
@@ -62,3 +64,42 @@ class TestRefreshGate:
         etl, ai = RefreshGate(clock=clock), RefreshGate(clock=clock)
         assert etl.try_start() == "started"
         assert ai.try_start() == "started"
+
+    def test_scheduled_run_ignores_the_cooldown_but_not_a_running_job(self):
+        clock = FakeClock()
+        gate = RefreshGate(cooldown_seconds=900, clock=clock)
+        gate.try_start()
+        assert gate.try_start(ignore_cooldown=True) == "running"
+        gate.finish()
+        assert gate.try_start() == "cooldown"
+        assert gate.try_start(ignore_cooldown=True) == "started"
+
+
+class TestRunAndRelease:
+    def test_gate_is_released_when_the_job_raises(self):
+        clock = FakeClock()
+        gate = RefreshGate(cooldown_seconds=900, clock=clock)
+        errors = []
+
+        async def failing_job():
+            raise RuntimeError("database went away")
+
+        assert gate.try_start() == "started"
+        asyncio.run(run_and_release(gate, failing_job, on_error=errors.append))
+        assert not gate.running
+        assert len(errors) == 1
+        # The failed run still counts for the cooldown...
+        assert gate.try_start() == "cooldown"
+        # ...and a new one is allowed once it has passed.
+        clock.now += 900
+        assert gate.try_start() == "started"
+
+    def test_result_is_returned_and_gate_released_on_success(self):
+        gate = RefreshGate(clock=FakeClock())
+
+        async def job():
+            return 42
+
+        gate.try_start()
+        assert asyncio.run(run_and_release(gate, job)) == 42
+        assert not gate.running

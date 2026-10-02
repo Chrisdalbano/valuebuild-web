@@ -29,6 +29,8 @@ ETL_HOUR_UTC = 2
 # as suspect: its results are stored, but nothing is retired on its say-so.
 MIN_SHARE_OF_PREVIOUS_RUN = 0.8
 
+IMAGE_CHECK_CONCURRENCY = 8
+
 
 def next_weekly_run(now: datetime) -> datetime:
     """The next Monday 02:00 UTC strictly after `now`."""
@@ -60,7 +62,7 @@ class DDragonETL:
         """Get latest patch version from DDragon"""
         try:
             url = f"{self.ddragon_base}/api/versions.json"
-            response = requests.get(url, timeout=10)
+            response = await asyncio.to_thread(requests.get, url, timeout=10)
             response.raise_for_status()
             versions = response.json()
             latest = versions[0]
@@ -72,6 +74,11 @@ class DDragonETL:
             raise RuntimeError(f"Could not read the latest patch from Data Dragon: {e}") from e
     
     async def validate_image(self, item_id: str, patch: str) -> bool:
+        """Check an item image off the event loop, so API requests keep being
+        served while the ETL runs."""
+        return await asyncio.to_thread(self._validate_image_blocking, item_id, patch)
+
+    def _validate_image_blocking(self, item_id: str, patch: str) -> bool:
         """
         STRICT image validation - ensures image exists and is valid
         This prevents frontend from showing broken images
@@ -149,7 +156,7 @@ class DDragonETL:
             url = f"{self.ddragon_base}/cdn/{patch}/data/en_US/item.json"
             
             log(f"📥 Fetching items from: {url}")
-            response = requests.get(url, timeout=30)
+            response = await asyncio.to_thread(requests.get, url, timeout=30)
             response.raise_for_status()
             raw_data = response.json()
             raw_items = raw_data.get('data', {})
@@ -167,27 +174,38 @@ class DDragonETL:
             }
             
             log("🔍 Processing items...")
+            candidates = []
             for item_id, item_data in raw_items.items():
                 item_data['id'] = item_id
-                
+
                 # Check Riot's inclusion criteria
                 if not self.should_include_item(item_data):
                     filtered_counts['riot_filter'] += 1
                     continue
-                
+
                 # Check if deprecated (our custom filter)
                 if is_item_deprecated(item_data):
                     log(f"  ⛔ Filtered deprecated: {item_data.get('name')} (ID: {item_id})")
                     filtered_counts['deprecated'] += 1
                     continue
-                
-                # Validate image exists
-                has_image = await self.validate_image(item_id, patch)
+
+                candidates.append((item_id, item_data))
+
+            # Validate images a few at a time instead of one after another.
+            limiter = asyncio.Semaphore(IMAGE_CHECK_CONCURRENCY)
+
+            async def check(item_id):
+                async with limiter:
+                    return await self.validate_image(item_id, patch)
+
+            image_ok = await asyncio.gather(*(check(item_id) for item_id, _ in candidates))
+
+            for (item_id, item_data), has_image in zip(candidates, image_ok):
                 if not has_image:
                     log(f"  🖼️  Filtered (no image): {item_data.get('name')} (ID: {item_id})")
                     filtered_counts['no_image'] += 1
                     continue
-                
+
                 # Calculate gold efficiency using existing backend logic
                 try:
                     efficiency_result = calculate_efficiency(item_data)
@@ -257,7 +275,8 @@ class DDragonETL:
                 valid_ids = [it['_id'] for it in valid_items]
                 previous = await self.metadata_collection.find_one({'_id': 'latest'})
                 previous_count = (previous or {}).get('itemCount')
-                if should_retire_stale_items(len(valid_items), previous_count):
+                complete = should_retire_stale_items(len(valid_items), previous_count)
+                if complete:
                     retired = await self.items_collection.update_many(
                         {'_id': {'$nin': valid_ids}, 'isDeprecated': {'$ne': True}},
                         {'$set': {'isDeprecated': True}},
@@ -275,10 +294,14 @@ class DDragonETL:
                     'patch': patch,
                     'lastUpdated': datetime.utcnow(),
                     'processingTime': (datetime.utcnow() - start_time).total_seconds(),
-                    'itemCount': len(valid_items),
+                    # A suspect run does not move the baseline the next run is
+                    # compared against, or two bad runs in a row would retire
+                    # most of the catalog.
+                    'itemCount': len(valid_items) if complete else previous_count,
+                    'keptThisRun': len(valid_items),
                     'filteredCounts': filtered_counts,
                     'nextScheduledUpdate': next_update,
-                    'status': 'success'
+                    'status': 'success' if complete else 'partial'
                 }
                 
                 await self.metadata_collection.replace_one(
@@ -300,16 +323,17 @@ class DDragonETL:
         except Exception as e:
             print(f"\n❌ ETL Pipeline Failed: {e}")
             
-            # Store error in metadata
-            await self.metadata_collection.replace_one(
+            # Record the failure without discarding what the last good run
+            # stored (patch, item count, last update), which the API and the
+            # front end still rely on.
+            await self.metadata_collection.update_one(
                 {'_id': 'latest'},
-                {
-                    '_id': 'latest',
-                    'lastUpdated': datetime.utcnow(),
+                {'$set': {
                     'status': 'error',
-                    'error': str(e)
-                },
-                upsert=True
+                    'error': str(e),
+                    'lastErrorAt': datetime.utcnow(),
+                }},
+                upsert=True,
             )
             
             raise
@@ -318,19 +342,29 @@ class DDragonETL:
 class ETLScheduler:
     """Manages scheduled ETL jobs"""
     
-    def __init__(self, mongo_uri: str = "mongodb://localhost:27017"):
+    def __init__(self, mongo_uri: str = "mongodb://localhost:27017", etl_gate=None, ai_gate=None):
         self.mongo_uri = mongo_uri
+        # The same gates the refresh endpoints use, so a scheduled run and a
+        # manual one cannot overlap.
+        self.etl_gate = etl_gate
+        self.ai_gate = ai_gate
         self.etl = DDragonETL(mongo_uri)
         self.scheduler = AsyncIOScheduler(timezone="UTC")
     
     async def run_etl_job(self):
         """Wrapper to run ETL job, then (best-effort) refresh AI enrichment for the
         new patch. AI failures never affect the item ETL."""
+        if self.etl_gate and self.etl_gate.try_start(ignore_cooldown=True) != "started":
+            print("⏭️  Scheduled ETL skipped: a refresh is already running")
+            return
         try:
             await self.etl.extract_and_transform()
         except Exception as e:
             print(f"❌ Scheduled ETL job failed: {e}")
             return
+        finally:
+            if self.etl_gate:
+                self.etl_gate.finish()
 
         # Refresh champion reference data (best-effort; never breaks items or AI)
         try:
@@ -343,9 +377,16 @@ class ETLScheduler:
             from ai.gemini_client import is_configured
             from ai.enrich import run_ai_enrichment
             if is_configured():
-                print("🤖 ETL done — refreshing AI enrichment for the new patch...")
-                result = await run_ai_enrichment(self.mongo_uri)
-                print(f"🤖 AI enrichment: {result}")
+                if self.ai_gate and self.ai_gate.try_start(ignore_cooldown=True) != "started":
+                    print("⏭️  Scheduled AI enrichment skipped: one is already running")
+                    return
+                try:
+                    print("🤖 ETL done — refreshing AI enrichment for the new patch...")
+                    result = await run_ai_enrichment(self.mongo_uri)
+                    print(f"🤖 AI enrichment: {result}")
+                finally:
+                    if self.ai_gate:
+                        self.ai_gate.finish()
         except Exception as e:
             print(f"⚠️  AI enrichment after ETL failed (item data is unaffected): {e}")
     

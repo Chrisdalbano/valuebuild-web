@@ -57,6 +57,14 @@ def parse_stats_from_description(description):
     if not description:
         return stats
     
+    # Data Dragon wraps an item's base stats in <stats>...</stats>. Read only
+    # that section when it exists, so a number inside a passive's text (for
+    # example "grants 20 Ability Haste for 6 seconds") is never priced as a
+    # base stat. Plain text without the tag is parsed whole.
+    stats_section = re.search(r'<stats>(.*?)</stats>', description, re.S)
+    if stats_section:
+        description = stats_section.group(1)
+
     # Remove HTML tags for cleaner parsing
     clean_desc = re.sub(r'<[^>]+>', ' ', description)
     
