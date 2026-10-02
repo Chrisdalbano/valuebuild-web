@@ -24,7 +24,7 @@ flowchart LR
 1. **Extract.** A scheduled job reads the latest patch's `item.json` from Data Dragon.
 2. **Filter.** Only items a player can buy on Summoner's Rift are kept: no Arena or ARAM copies, no removed items ([`etl/item_filters.py`](backend/etl/item_filters.py), [`etl/deprecated_items.py`](backend/etl/deprecated_items.py)).
 3. **Price.** Each base stat is valued from a reference item, and the item's efficiency is that value divided by its cost ([`efficiency.py`](backend/efficiency.py)).
-4. **Load.** Results are upserted into MongoDB. Items that disappeared are flagged, not deleted, and a run that comes back much smaller than the last one retires nothing.
+4. **Load.** Results are upserted into MongoDB. Items that disappeared are flagged, not deleted. A run that comes back much smaller than the last good one is marked partial: it retires nothing and does not become the new baseline. A failed run keeps the last good metadata.
 5. **Serve.** The API reads from the cache. The front end also ships a captured, patch-labelled snapshot so the workspace still opens when the API is asleep or unreachable.
 
 ### The formula
@@ -98,7 +98,7 @@ The back-end tests are pure unit tests: no network and no database. The browser 
 | `GET /api/metadata` | Patch, last run, item counts, next scheduled run |
 | `GET /api/health` | Database and cache status |
 | `GET /api/champions`, `GET /api/research` | Cached champion and research studies |
-| `POST /api/items/refresh` | Start the ETL in the background |
+| `POST /api/items/refresh` | Start the item and champion refresh in the background |
 | `POST /api/ai/refresh` | Start the AI enrichment in the background |
 
 The two `POST` routes run one job at a time with a cooldown between runs. Set `ADMIN_TOKEN` in the host environment to also require an `X-Admin-Token` header.

@@ -27,8 +27,17 @@ jobs:
           last = json.load(sys.stdin).get('lastUpdated')
           print(999 if not last else (datetime.utcnow() - datetime.fromisoformat(last[:19])).days)")
           echo "Catalog age: ${age_days} day(s)"
-          if [ "$age_days" -ge 6 ]; then
-            curl -s -m 60 -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" "$API/api/items/refresh"
-          else
+          if [ "$age_days" -lt 6 ]; then
             echo "Fresh enough; nothing to do."
+            exit 0
           fi
+          # --fail makes an HTTP error fail the job instead of passing silently.
+          curl --fail -s -m 60 -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" "$API/api/items/refresh"
+          echo
+          echo "Waiting for the item and champion refresh to finish..."
+          sleep 240
+          status=$(curl --fail -s -m 60 "$API/api/metadata" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status'))")
+          echo "ETL status: ${status}"
+          [ "$status" = "success" ] || { echo "ETL did not finish cleanly"; exit 1; }
+          # The studies are cached per patch, so this is cheap when nothing changed.
+          curl --fail -s -m 60 -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" "$API/api/ai/refresh"

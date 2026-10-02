@@ -140,6 +140,35 @@ test("backend values stay authoritative and totals are additive", () => {
   const onlyBoots = optimizeBuild(boots, cheapest);
   expect(onlyBoots.length).toBe(1);
   expect(isTierTwoBoots(onlyBoots[0]!)).toBe(true);
+  // Malformed records are dropped or repaired, never thrown on.
+  const messy = normalizeItems({
+    version: "0.0.0",
+    data: {
+      "1": { name: "No cost" },
+      "2": { name: "", cost: 100 },
+      "3": null,
+      "4": {
+        name: "Repaired",
+        cost: 500,
+        description: 42,
+        tags: "Damage",
+        from: ["1036", 7],
+        stats: { FlatHPPoolMod: "lots", FlatArmorMod: 10 },
+        statBreakdown: {
+          FlatArmorMod: { amount: 10, goldValue: 200 },
+          Broken: { amount: "x", goldValue: null },
+          AlsoBroken: null,
+        },
+      },
+    },
+  } as unknown as Dataset);
+  expect(messy.map((i) => i.id)).toEqual(["4"]);
+  expect(messy[0]!.tags).toEqual([]);
+  expect(messy[0]!.from).toEqual(["1036"]);
+  expect(messy[0]!.text).toBe("");
+  expect(messy[0]!.breakdown.map((s) => s.key)).toEqual(["FlatArmorMod"]);
+  expect(messy[0]!.stats).toEqual({ FlatArmorMod: 10 });
+  expect(normalizeItems({ version: "0.0.0" } as unknown as Dataset)).toEqual([]);
 });
 test("search, build, undo, save, reload, and share", async ({ page }) => {
   await open(page, "/items");
@@ -264,6 +293,55 @@ test("network failure and broken storage do not block the explorer", async ({
   await expect(page.getByText("No items match.")).toBeVisible();
   await page.getByRole("button", { name: "Reset filters" }).click();
   await expect(page.locator(".catalog-item")).toHaveCount(15);
+});
+test("a failed refresh keeps stored items the bundled catalog does not know", async ({
+  page,
+}) => {
+  // 999999 stands for an item added in a patch newer than the snapshot.
+  await page.route("**/api/items", (r) => r.abort());
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "buildvalue.workspace.v2",
+      JSON.stringify({ build: ["1036", "999999"], compare: ["999999"] }),
+    ),
+  );
+  await open(page, "/builds");
+  await page.getByLabel("Build name").fill("Renamed while offline");
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const stored = JSON.parse(
+          localStorage.getItem("buildvalue.workspace.v2") || "{}",
+        );
+        return stored.name === "Renamed while offline" ? stored : null;
+      }),
+    )
+    .toMatchObject({ build: ["1036", "999999"], compare: ["999999"] });
+});
+test("a live catalog restores waiting items and drops the ones it does not know", async ({
+  page,
+}) => {
+  const liveOnly = { ...snapshot.data["1036"], id: "999999", name: "Newer Sword" };
+  await page.route("**/api/items", (r) =>
+    r.fulfill({ json: { items: [...Object.values(snapshot.data), liveOnly] } }),
+  );
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      "buildvalue.workspace.v2",
+      JSON.stringify({ build: ["1036", "999999", "888888"] }),
+    ),
+  );
+  await open(page, "/builds");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("buildvalue.workspace.v2") || "{}")
+            .build,
+      ),
+    )
+    .toEqual(["1036", "999999"]);
+  await expect(page.getByText("Newer Sword").first()).toBeVisible();
 });
 for (const width of [390, 768, 1440])
   test(`responsive routes and accessibility at ${width}`, async ({ page }) => {

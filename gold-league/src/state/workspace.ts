@@ -43,6 +43,21 @@ function createWorkspace() {
   const undoIds = shallowRef<string[] | null>(null),
     storageAvailable = shallowRef(true);
   const name = shallowRef("Untitled build");
+  // Ids from storage or a share link that the loaded catalog does not know.
+  // The bundled snapshot can be older than the live catalog, so "unknown here"
+  // is not proof an item is gone. These are kept, and persisted, until a live
+  // catalog either restores them or confirms they no longer exist.
+  const unresolved = ref<{ build: string[]; compare: string[] }>({
+    build: [],
+    compare: [],
+  });
+  function hydrate(target: "build" | "compare", ids: string[]) {
+    unresolved.value = {
+      ...unresolved.value,
+      [target]: ids.filter((id) => !byId.value.has(id)),
+    };
+    return ids.filter((id) => byId.value.has(id));
+  }
   const resolve = (ids: readonly string[]) =>
     ids.flatMap((id) => byId.value.get(id) || []);
   const build = computed(() => resolve(buildIds.value)),
@@ -73,6 +88,7 @@ function createWorkspace() {
   }
   function clear() {
     undoIds.value = [...buildIds.value];
+    unresolved.value = { ...unresolved.value, build: [] };
     buildIds.value = [];
     announce("Build cleared. Undo is available.");
   }
@@ -178,10 +194,17 @@ function createWorkspace() {
       if (!normalizeItems(data).length) throw new Error("Empty catalog");
       dataset.value = data;
       source.value = "BuildValue API";
-      const previous = buildIds.value.length;
-      buildIds.value = buildIds.value.filter((id) => byId.value.has(id));
-      compareIds.value = compareIds.value.filter((id) => byId.value.has(id));
-      if (previous !== buildIds.value.length)
+      // The live catalog is authoritative: restore waiting ids it knows,
+      // and only now drop the ones it does not.
+      const settle = (current: string[], waiting: string[]) =>
+        [...new Set([...current, ...waiting])]
+          .filter((id) => byId.value.has(id))
+          .slice(0, 6);
+      const expected = buildIds.value.length + unresolved.value.build.length;
+      buildIds.value = settle(buildIds.value, unresolved.value.build);
+      compareIds.value = settle(compareIds.value, unresolved.value.compare);
+      unresolved.value = { build: [], compare: [] };
+      if (expected !== buildIds.value.length)
         announce(
           "Patch updated. Unavailable items were removed from your draft.",
         );
@@ -192,6 +215,8 @@ function createWorkspace() {
       // still shows live data, not the bundled snapshot.
       if (source.value !== "BuildValue API")
         source.value = "Bundled snapshot · offline fallback";
+      // Nothing is dropped here. Ids the fallback catalog does not know stay
+      // in `unresolved` and in storage for the next successful load.
     } finally {
       loading.value = false;
     }
@@ -219,12 +244,8 @@ function createWorkspace() {
             patch: "legacy",
           }),
         );
-      buildIds.value = parseIds(stored.build).filter((id) =>
-        byId.value.has(id),
-      );
-      compareIds.value = parseIds(stored.compare).filter((id) =>
-        byId.value.has(id),
-      );
+      buildIds.value = hydrate("build", parseIds(stored.build));
+      compareIds.value = hydrate("compare", parseIds(stored.compare));
       if (typeof stored.name === "string")
         name.value = stored.name.slice(0, 80);
       if (Array.isArray(stored.saved))
@@ -249,20 +270,18 @@ function createWorkspace() {
       new URLSearchParams(location.search).get("items") ??
       new URLSearchParams(location.search).get("b");
     if (shared !== null) {
-      buildIds.value = parseIds(shared.split(",")).filter((id) =>
-        byId.value.has(id),
-      );
+      buildIds.value = hydrate("build", parseIds(shared.split(",")));
       announce("Shared build loaded. Stats use the displayed patch.");
     }
     watch(
-      [buildIds, compareIds, saved, name],
+      [buildIds, compareIds, saved, name, unresolved],
       () => {
         try {
           localStorage.setItem(
             "buildvalue.workspace.v2",
             JSON.stringify({
-              build: buildIds.value,
-              compare: compareIds.value,
+              build: [...buildIds.value, ...unresolved.value.build],
+              compare: [...compareIds.value, ...unresolved.value.compare],
               saved: saved.value,
               name: name.value,
             }),

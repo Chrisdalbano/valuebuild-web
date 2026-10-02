@@ -83,34 +83,76 @@ export function plainText(html: string): string {
     .replace(/[ \t]+/g, " ")
     .trim();
 }
+const strings = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
+const finite = (value: unknown): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : 0;
+const record = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+/**
+ * Adapt the API's records for the interface. Values come from the backend and
+ * are not recalculated, but their shape is not trusted: a record without a
+ * name or a positive cost is dropped, and malformed fields fall back to empty
+ * values so one bad record cannot break the catalog.
+ */
 export function normalizeItems(dataset: Dataset): Item[] {
-  return Object.entries(dataset.data)
+  return Object.entries(record(dataset?.data) as Record<string, RawItem>)
     .filter(
       ([, item]) =>
-        item.name && Number.isFinite(item.cost) && (item.cost || 0) > 0,
+        item &&
+        typeof item.name === "string" &&
+        item.name.length > 0 &&
+        finite(item.cost) > 0,
     )
     .map(([id, item]) => {
-      const breakdown = Object.entries(item.statBreakdown || {}).map(
-        ([key, stat]) => ({
-          key,
-          label: statDefinitions[key]?.label || key,
-          amount: stat.amount,
-          value: stat.goldValue,
-        }),
+      const breakdown = Object.entries(record(item.statBreakdown)).flatMap(
+        ([key, raw]) => {
+          const stat = record(raw);
+          if (
+            typeof stat.amount !== "number" ||
+            !Number.isFinite(stat.amount) ||
+            typeof stat.goldValue !== "number" ||
+            !Number.isFinite(stat.goldValue)
+          )
+            return [];
+          return [
+            {
+              key,
+              label: statDefinitions[key]?.label || key,
+              amount: stat.amount,
+              value: stat.goldValue,
+            },
+          ];
+        },
       );
-      const cost = item.cost || 0;
+      const description =
+        typeof item.description === "string" ? item.description : "";
+      const baseStats = Object.fromEntries(
+        Object.entries(record(item.stats)).filter(
+          (entry): entry is [string, number] =>
+            typeof entry[1] === "number" && Number.isFinite(entry[1]),
+        ),
+      );
       return {
         ...item,
         id,
-        cost,
-        value: item.totalGoldValue || 0,
-        efficiency: item.goldEfficiency || 0,
+        description,
+        tags: strings(item.tags),
+        from: strings(item.from),
+        into: strings(item.into),
+        cost: finite(item.cost),
+        value: finite(item.totalGoldValue),
+        efficiency: finite(item.goldEfficiency),
         breakdown,
         stats: {
-          ...item.stats,
+          ...baseStats,
           ...Object.fromEntries(breakdown.map((s) => [s.key, s.amount])),
         },
-        text: plainText(item.description),
+        text: plainText(description),
         imageUrl: `https://ddragon.leagueoflegends.com/cdn/${dataset.version}/img/item/${id}.png`,
       };
     })
