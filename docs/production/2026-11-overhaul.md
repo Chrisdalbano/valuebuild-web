@@ -161,7 +161,7 @@ For whoever promotes this branch. Nothing here has been done.
 
 Written 2026-11-23, when the work stopped.
 
-**What is on the branch** (`feature/tft-and-parity`, eight commits on top of `2b2c350`, local only, not pushed):
+**What is on the branch** (`feature/tft-and-parity`, commits listed by `git log 2b2c350..HEAD`, local only, not pushed):
 
 - The second parity repair: verdict bands and tier labels, drawer depth, per-item comparison detail, five SVG charts, portraits, the dropped research fields, table sorting, two filters, thumbnails, the rate table, page views. One pre-existing bug fixed (preview drawn over the drawer).
 - Teamfight Tactics: three keyless tools (roll odds, item ledger, trait prices) and a key-gated game review, with a backend that needs neither MongoDB nor a key for the static part.
