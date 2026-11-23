@@ -108,11 +108,84 @@ Features considered and dropped or deferred, with the reason. Added to as decisi
   - Set 18's Wisp mechanic (every other shop has four unit slots) is modelled as an option; Lux's nine variants are left out of the odds tool because Riot's own overview says her distribution rules were still being changed.
 - Parity work done and committed. Browser suite: **35 passed** (the 25 existing, untouched, plus 10 new in `parity.spec.ts`). Typecheck clean. Two of the new tests failed on first run because the test was wrong, not the app (a control queried by the wrong role; a stage-marker count); corrected and rerun.
 - Found while reviewing screenshots against the live API: (1) a quick click on a catalog card could leave the hover preview drawn over the drawer it had just opened (the hover timer fired after the click). Present before this work; fixed in `ItemPreview.vue`. (2) The live backend reports patch 16.23.1 and has no cached AI study for it, so on the public site the champion and item AI panels currently read "No cached analysis yet". That is the known open item from October (enrichment not run for the current patch). It means the restored AI presentation and champion charts can only be seen against test fixtures today; running enrichment costs Gemini quota and was not done.
+- TFT backend committed (`b412d77`). Backend tests: **120 passed** (94 existing + 26 new). One new test failed on first run because its fixture named a variable the item did not have; fixed in the fixture. Ran the real trim against today's Community Dragon file: set 18, 74 unit entries (65 pool units: 14 / 13 / 14 / 14 / 10 by cost, matching the bag counts from the research, plus 9 Lux variants), 35 traits, 39 craftable items, 69 kB.
+- Checked two of the research claims directly before relying on them: fetched Riot's `tft-shop-drop-rates-data.json` (the odds table in `economy.py` matches it) and the use-case list on `developer.riotgames.com/docs/tft` (self-stats tools are listed under production keys requiring RSO). Star scaling and the resistance formula were read from the League Wiki's TFT:Champion page.
+- TFT frontend committed (`c79f526`): roll odds, item ledger, trait prices, game review, a League / TFT switch in the header, a landing section and a method section. Browser suite: **51 passed** (25 original + 10 parity + 16 TFT). The roll model is tested against hand-worked cases and against a separately written simulation of the same rules (60,000 trials, agreement within 0.008).
+- Change of plan on trait tiers and item bands: the first draft named trait tiers (bronze, silver, gold) from a style number and coloured TFT items in bands. Riot's schema and Community Dragon use different style scales and there is no published basis for TFT efficiency bands, so both were removed rather than guessed.
+- Found during the build check: importing the TFT state from the header pulled the 68 kB snapshot into the main bundle and made every League page request `/api/tft/set`. Fixed: the TFT data is its own chunk, loaded on TFT pages and by the landing section, and only TFT pages ask the backend for it.
+- Ran the TFT routes for real, locally, without MongoDB (`scripts/serve_tft_only.py`): `GET /api/tft/set` answered 200 with 69,168 bytes in 0.60 s (5 ms from cache on the second call); `GET /api/tft/review` answered `needs_key` naming both variables. Pointed the frontend at it and confirmed the pages switch from "Bundled snapshot" to "BuildValue API" and the review page shows the needs-a-key state.
+- Motion pass committed (`523e289`). Ran the whole suite once with motion on (`BV_MOTION=1`): 44 passed, 7 failed. All seven are checks taken in the middle of an animation: six accessibility scans reporting colour contrast on fading elements (three of them the original seven-route scan hitting the landing page's existing GSAP intro, which predates this work) and one locator that matched a card still animating out. No interaction was blocked and no content stayed hidden. The suite's normal mode is reduced motion, as it was before; the motion-on run is a diagnostic, not a gate.
+- CI's smoke scripts, run locally against a preview of the production build: all nine passed, including the offline PWA check.
+- Bundle, measured with `npm run build` at `2b2c350` and at the branch tip: main script 461.3 kB (119.2 kB gzip) to 473.7 kB (123.9 kB gzip); stylesheet 59.9 kB (11.9 kB gzip) to 82.7 kB (16.0 kB gzip); precache 694 KiB to 860 KiB. The TFT data chunk is 67.6 kB (10.5 kB gzip) and is not on the League path.
+- Final run before stopping: backend **120 passed**; typecheck clean; production build clean; browser suite **51 passed**; PWA smoke passed. No Riot key value exists anywhere in the tree or the built files (the built review page contains the variable names, as text explaining what is missing).
 
 ## 5. Release checklist
 
-To be completed as the branch takes shape.
+For whoever promotes this branch. Nothing here has been done.
+
+### Before merging
+
+- [ ] Owner has looked at the branch locally (see "Run it" in the README, or the hand-off note).
+- [ ] `cd backend && python -m pytest -q` reports 120 passed, and `python -c "import app"` exits 0.
+- [ ] `cd gold-league && npm run typecheck && npm run build` are clean.
+- [ ] `npm run test:app` reports 51 passed.
+- [ ] CI is green on the pull request (it runs the three steps above plus nine smoke scripts against a production-build preview).
+- [ ] Decide the open items in section 6. In particular: `RIOT_API_KEY` and `TFT_REVIEW_RIOT_ID` are **not** to be set on the public Render service.
+- [ ] If set 19 is already live (expected about 2026-12-01), refresh the TFT snapshot and add its constants first (`docs/tft/RIOT-API-AND-POLICY.md`, last section). Otherwise the TFT pages ship with a "checked for a different set" warning, or with set 18 data for a set that has ended.
+
+### Deploy (two separate steps, as before)
+
+1. Merge to `main` and push. Render redeploys the backend from `main` on its own. This adds two routes and no new required environment variable; `requirements.txt` is unchanged.
+2. Frontend, by hand: `cd gold-league && npm run build`, then from the repo root `firebase deploy --only hosting --project buildvalue-b202d`.
+
+### Check on the live site
+
+- [ ] `curl https://valuebuild-web.onrender.com/api/health` is healthy (the first call after idle can take about 50 s).
+- [ ] `curl https://valuebuild-web.onrender.com/api/tft/set` returns the set with `"verified": true` in `economy`.
+- [ ] `curl https://valuebuild-web.onrender.com/api/tft/review` returns `"status":"needs_key"`. If it returns anything else, a key is set on the public service: remove it.
+- [ ] https://buildvalue.chrisdalbano.com loads a new bundle hash; the seven League routes open; the footer still reads "BuildValue is not endorsed by Riot Games."
+- [ ] `/items`: a card shows its tier, stat value and verdict; hovering shows the preview; opening an item shows value, combine cost and the cost breakdown; the preview does not sit on top of the drawer.
+- [ ] `/builds?items=3031,3072`: an old share link still loads; saved builds from before the deploy are still listed.
+- [ ] `/tft`: the headline shows a percentage, the data line reads "BuildValue API", and moving the gold slider moves the number.
+- [ ] `/tft/review`: shows "This needs a Riot API key".
+- [ ] Open the site once with the network off after a first visit: the workspace still opens (PWA).
+
+### Roll back
+
+- Frontend: Firebase keeps previous releases. Console → Hosting → release history → roll back to the release before this one (bundle `index-Dyii9-u3.js` was live after the October deploy), or `git checkout 2b2c350 -- gold-league && cd gold-league && npm run build && firebase deploy --only hosting --project buildvalue-b202d` from a clean checkout.
+- Backend: `git revert` the merge on `main` and push; Render redeploys. The new routes are additive and touch no collection, so there is no data to restore. Old frontend against new backend, and new frontend against old backend, both work: the TFT pages fall back to their bundled snapshot when `/api/tft/set` is missing.
+- Browser storage: this branch reads and writes the same `buildvalue.workspace.v2` key in the same shape. Rolling back needs no migration.
 
 ## 6. Closing note
 
-To be written when the work stops.
+Written 2026-11-23, when the work stopped.
+
+**What is on the branch** (`feature/tft-and-parity`, six commits on top of `2b2c350`, local only, not pushed):
+
+- The second parity repair: verdict bands and tier labels, drawer depth, per-item comparison detail, five SVG charts, portraits, the dropped research fields, table sorting, two filters, thumbnails, the rate table, page views. One pre-existing bug fixed (preview drawn over the drawer).
+- Teamfight Tactics: three keyless tools (roll odds, item ledger, trait prices) and a key-gated game review, with a backend that needs neither MongoDB nor a key for the static part.
+- Motion that reports state changes, off under reduced motion.
+- Tests: backend 94 → 120, browser 25 → 51. Nothing was removed from the original suite.
+
+**What did not ship, and why:**
+
+- The game review has never run against Riot's API. No key exists here, and Riot's rules put a public version behind a production key and Riot Sign On. It is tested against fixtures in the shape of Riot's schema; the first real run may show a field or an id format that differs.
+- No AI-written TFT research. It would have meant spending Gemini quota. The existing League AI panels were restored in presentation, but the live site has no cached studies for the current patch, so they show "pending" there until enrichment is run.
+- The items in the cut list.
+- Small things seen and left: on a phone the roll result sits below the controls, so changing a slider means scrolling to see the number; the trait and item pages have no hover previews like the League catalog; the `render.yaml` blueprint does not list the two optional TFT variables (changing hosting config was out of bounds).
+
+**For the owner to decide:**
+
+1. Register the TFT addition in Riot's Developer Portal (required for any change to a registered product), and whether to apply for a production key and RSO so the game review can be public.
+2. Whether to adopt Riot's full notice wording in the footer.
+3. Whether to restore the pre-migration defaults (efficiency-first sort, gold-income items hidden).
+4. Whether to run the Gemini enrichment for the current patch.
+5. When to redo the TFT constants for set 19.
+6. `ADMIN_TOKEN` is still unset on Render (open since October; unchanged by this work).
+
+**What would be done differently:**
+
+- Read Riot's use-case list before designing anything. The match review was sketched as a player lookup for about an hour of the session before the research showed that shape cannot be public; the single-account design came from the policy, and should have started there.
+- Ask for the baseline parity audit to include a browser pass. It was a source read, so the hover-over-drawer bug and the missing AI data on the live site were only found later from screenshots.
+- Check the bundle after the first TFT commit, not the last. The snapshot sat in the main chunk for one commit before the build output was read.
+- Settle the set-change question with the owner first. Building on a set with a week left was the right call for something to look at now, but it means the first maintenance task is already scheduled.

@@ -10,6 +10,17 @@ Frontend data remains backend-authoritative. A captured API response with patch 
 
 Current checks: `npm run typecheck`, `npm run test:app`, `npm run build`, production-preview screenshots, backend import, and `node ../scripts/pwa-smoke.mjs <preview-url>`. Preserve named-build migration and both share-link formats. `README.md` describes current routes and architecture.
 
+## November 2026: parity repair and Teamfight Tactics
+
+Branch `feature/tft-and-parity` (record: `docs/production/2026-11-overhaul.md`). Not merged or deployed at the time of writing; read the record's release checklist before promoting it.
+
+- **Parity.** `docs/design/FORZA-FEATURE-PARITY.md` lists what the September rebuild dropped and what was restored in November. Reading aids live in `src/domain/verdict.ts`; charts are inline SVG in `src/components/charts/` (no Chart.js). Do not remove a restored capability without recording it there.
+- **TFT.** Backend in `backend/tft/` (no MongoDB): `static_data.py` trims Community Dragon to the live set, `item_value.py` prices items in components, `economy.py` holds per-set constants with sources, `review.py` + `riot_api.py` are the key-gated match review. Frontend in `src/domain/tft/`, `src/state/tft.ts`, `src/views/tft/`, `src/components/tft/`. Snapshot: `cd backend && python -m scripts.sync_tft_snapshot`.
+- **Riot key.** Secret names `RIOT_API_KEY`, `TFT_REVIEW_RIOT_ID` (optional `TFT_REVIEW_REGION`), backend only. Never in the frontend, never committed, never printed. Do not set them on the public Render service until BuildValue has a production key and Riot Sign On: `docs/tft/RIOT-API-AND-POLICY.md` explains why. There is no player search and none may be added without that.
+- **Set changes.** TFT constants are per set. A new set needs a new entry in `economy.py` checked against the sources named there; never copy the previous set's numbers forward.
+- **Riot's TFT policy.** No scouting, no real-time or in-game advice, nothing that dictates a decision, no Legend or Legend-augment win rates. The tools are static, pre-game arithmetic; keep them that way.
+- Tests: `npm run test:app` now runs three spec files; `python -m pytest` includes `test_tft_*.py`.
+
 ## Historical map (see current migration above)
 
 - `gold-league/` — the **frontend** (Vue 3.5 `<script setup>`, Vite 7, Vue Router 4, Chart.js 4 via vue-chartjs, axios). Plain JS today; styling is custom CSS variables in `src/style.css` (dark-first, gold accent). 11 components, ~11.5k LOC, several monoliths (ItemTable, ItemCompare, BuildOptimizer).

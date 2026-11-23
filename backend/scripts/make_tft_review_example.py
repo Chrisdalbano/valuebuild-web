@@ -53,7 +53,7 @@ def main() -> None:
             {
                 "metadata": {"match_id": f"EXAMPLE_{index + 1}"},
                 "info": {
-                    "game_datetime": 1763856000000 - index * 3_600_000,
+                    "game_datetime": 1795392000000 - index * 3_600_000,
                     "queue_id": RANKED_QUEUE,
                     "tft_set_number": static["set"]["number"],
                     "participants": [

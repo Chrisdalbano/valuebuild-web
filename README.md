@@ -46,6 +46,23 @@ A Long Sword is 100% by definition. The full table is in [`efficiency.py`](backe
 
 Gold efficiency prices base stats only. It does not price passives, actives, penetration or champion interactions, simulate combat, or predict win rates. An effect-heavy item reads low because its effect is unpriced, not because it is bad. The budget planner maximizes this stat-value model, not in-game performance. AI-generated studies are labelled as speculative and kept separate from calculated totals.
 
+## Teamfight Tactics
+
+The same question on a different board. Three tools run on static set data and need no Riot API key; a fourth reads match history and stays off until a key is configured.
+
+| Tool | What it answers | Data |
+|---|---|---|
+| Roll odds (`/tft`) | The chance of hitting a unit for a level and a gold budget, the chance-against-gold curve, and whether buying a level first beats rolling now | Shop odds, pool sizes and XP per set, each with its source ([`tft/economy.py`](backend/tft/economy.py)) |
+| Item ledger (`/tft/items`) | What an item's listed stats are worth in components, and what a component or item changes on a unit you pick | Community Dragon set data, priced by [`tft/item_value.py`](backend/tft/item_value.py) |
+| Trait prices (`/tft/traits`) | The cheapest gold that reaches each trait breakpoint | Community Dragon set data |
+| Game review (`/tft/review`) | One configured player's own better games against their worse ones, decision by decision | Riot's tft-match-v1, **needs `RIOT_API_KEY` on the backend** |
+
+A shop slot shows your unit with probability `tier odds at your level x copies of it left / copies of that tier left`. The roll model follows from that line and is exact for its assumptions (you buy every copy you can afford; other boards do not change while you roll). It is tested against hand-worked cases and an independent simulation.
+
+Every completed item costs two components, so the component is the unit of account: `stat efficiency = sum(stat / what one component grants) / components spent`. The rates are read from the components in the set data. Item effects are not priced, as passives are not on the League side.
+
+None of these read a live game or tell you what to play. Riot's rules for TFT tools, the key types, and what is still needed before the game review could be public are in [`docs/tft/RIOT-API-AND-POLICY.md`](docs/tft/RIOT-API-AND-POLICY.md). TFT constants are set-specific: when a new set lands, refresh the snapshot and re-check `economy.py`, or the pages will say the constants were checked for a different set.
+
 ## Bugs that shaped the rules
 
 Each of these was a real defect in the tool and now has a regression test.
@@ -74,6 +91,13 @@ python app.py
 
 Set `VITE_API_BASE_URL` to point the front end at a local back end.
 
+The TFT pages work with no back end at all (they open on a bundled snapshot). To serve the TFT routes locally without MongoDB:
+
+```bash
+cd backend && python -m scripts.serve_tft_only      # http://127.0.0.1:8011
+cd gold-league && VITE_API_BASE_URL=http://127.0.0.1:8011 npm run dev
+```
+
 ## Tests
 
 ```bash
@@ -87,7 +111,9 @@ npx playwright install chromium   # once
 npm run test:app
 ```
 
-The back-end tests are pure unit tests: no network and no database. The browser suite drives the workspace end to end against mocked API responses: search, build, undo, save, share links, comparison, the budget planner, offline fallback, legacy data migration, and accessibility scans at three viewport widths. CI runs both, plus smoke checks against a preview of the production build.
+The back-end tests are pure unit tests: no network, no database and no Riot key. The browser suite drives the app end to end against mocked API responses, in three files: `workspace.spec.ts` (search, build, undo, save, share links, comparison, the budget planner, offline fallback, legacy data migration, accessibility scans at three widths), `parity.spec.ts` (the reading aids and charts restored after the Forza migration) and `tft.spec.ts` (the roll model, the item and trait arithmetic, and the four TFT pages at three widths). CI runs both, plus smoke checks against a preview of the production build.
+
+The suite runs with reduced motion so timing never decides a result. `BV_MOTION=1 npm run test:app` runs it with motion on as a diagnostic; accessibility scans taken mid-animation can report contrast failures there.
 
 ## API
 
@@ -98,6 +124,8 @@ The back-end tests are pure unit tests: no network and no database. The browser 
 | `GET /api/metadata` | Patch, last run, item counts, next scheduled run |
 | `GET /api/health` | Database and cache status |
 | `GET /api/champions`, `GET /api/research` | Cached champion and research studies |
+| `GET /api/tft/set` | Live TFT set, trimmed and priced. No Riot key, no database |
+| `GET /api/tft/review` | The configured player's own recent ranked games. Answers `needs_key` unless `RIOT_API_KEY` and `TFT_REVIEW_RIOT_ID` are set |
 | `POST /api/items/refresh` | Start the item and champion refresh in the background |
 | `POST /api/ai/refresh` | Start the AI enrichment in the background |
 
@@ -112,6 +140,7 @@ The two `POST` routes run one job at a time with a cooldown between runs. Set `A
 - `/champions`: cached champion itemization and progression.
 - `/research`: cached hypotheses and patterns across champion studies.
 - `/about`: data sources, formula boundaries, AI disclosure, and methodology.
+- `/tft`, `/tft/items`, `/tft/traits`, `/tft/review`: the Teamfight Tactics tools above.
 
 Share links contain item ids only. Older `?b=` links and `bv:saved-builds` records still load. Saved builds live in browser storage; there are no accounts.
 
@@ -124,15 +153,17 @@ backend/
   refresh_gate.py     token check, single-flight and cooldown for refresh routes
   etl/                Data Dragon pipeline, eligibility filters, scheduler
   ai/                 optional Gemini studies (cached per patch)
+  tft/                TFT set data, component pricing, economy constants, match review
   tests/              pytest suite
   scripts/            one-off diagnostics, not part of the test suite
 gold-league/
-  src/domain/         pure functions: item adapter, totals, optimizer, eligibility
+  src/domain/         pure functions: item adapter, totals, optimizer, eligibility, verdicts
+  src/domain/tft/     roll odds, unit worth, trait prices
   src/state/          shared catalog and draft state
-  src/components/     layout, landing, workspace, analysis
+  src/components/     layout, landing, workspace, analysis, charts, tft
   tests/app/          Playwright browser suite
 scripts/              headless smoke checks against a built preview
-docs/                 design notes, migration records, audits
+docs/                 design notes, migration records, audits, production records
 ```
 
 The interface uses the published [`@chrisdalbano/forza-ui`](https://github.com/Chrisdalbano/forza-ui) component library.
@@ -150,4 +181,4 @@ firebase deploy --only hosting --project buildvalue-b202d
 
 Independent work by Chrisdalbano, developed with AI assistance across implementation, research, visual iteration, and documentation. AI assistance includes generated code and copy. Review and test changes before relying on them.
 
-BuildValue is not endorsed by Riot Games. League of Legends and its game assets belong to Riot Games. Project code is MIT licensed; that license does not grant rights to Riot's assets.
+BuildValue is not endorsed by Riot Games. League of Legends, Teamfight Tactics and their game assets belong to Riot Games. Project code is MIT licensed; that license does not grant rights to Riot's assets.
