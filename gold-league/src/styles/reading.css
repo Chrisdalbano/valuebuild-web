@@ -325,3 +325,26 @@
   .donut-chart { grid-template-columns: 1fr; justify-items: start; }
   .cost-breakdown { grid-template-columns: 1fr; }
 }
+
+/* Motion that reports a state change */
+.nav-count {
+  display: inline-block;
+  animation: bv-bump var(--fz-motion-enter) var(--fz-ease-out);
+}
+@keyframes bv-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+.catalog-item {
+  transition:
+    border-color var(--fz-motion-fast) var(--fz-ease-out),
+    background var(--fz-motion-fast) var(--fz-ease-out),
+    transform var(--fz-motion-fast) var(--fz-ease-out);
+}
+.catalog-item:hover { transform: translateY(-2px); }
+.catalog-item.in-build { animation: bv-claim var(--fz-motion-enter) var(--fz-ease-out); }
+@keyframes bv-claim {
+  from { box-shadow: 0 0 0 3px color-mix(in srgb, var(--fz-accent) 55%, transparent); }
+  to { box-shadow: 0 0 0 0 transparent; }
+}

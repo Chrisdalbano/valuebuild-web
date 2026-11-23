@@ -8,6 +8,7 @@ import {
   FzPagination,
   FzCheckbox,
   FzSegmented,
+  useForzaMotion,
 } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
 import CatalogTable from "./CatalogTable.vue";
@@ -19,6 +20,9 @@ const props = withDefaults(defineProps<{ compact?: boolean }>(), {
   compact: false,
 });
 const { items, buildIds, compareIds, add, compare, inspect } = useWorkspace();
+// Cards move to their new place when a filter or sort changes, so it is
+// visible what stayed and what left. Off under reduced motion.
+const { parent: grid } = useForzaMotion();
 const search = shallowRef(""),
   category = shallowRef("all"),
   sort = shallowRef("cost-desc"),
@@ -162,7 +166,7 @@ function reset() {
       ><span class="muted">Efficiency = priced stats / cost</span>
     </div>
     <CatalogTable v-if="view === 'table'" :items="visible" :build-ids="buildIds" :compare-ids="compareIds" :sort="sort" @sort="sortBy" @inspect="inspect" @compare="compare" @add="add" />
-    <div v-else class="item-grid">
+    <div v-else ref="grid" class="item-grid">
       <CatalogItem
         v-for="item in visible"
         :key="item.id"

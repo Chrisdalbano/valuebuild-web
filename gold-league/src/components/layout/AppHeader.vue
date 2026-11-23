@@ -37,10 +37,14 @@ const tft = computed(() => route.meta.game === "tft");
       <RouterLink to="/items">Explore</RouterLink
       ><RouterLink to="/compare"
         >Compare
-        <span class="nav-count">{{ comparison.length }}</span></RouterLink
+        <span :key="comparison.length" class="nav-count">{{
+          comparison.length
+        }}</span></RouterLink
       ><RouterLink to="/builds"
         >Build lab
-        <span class="nav-count">{{ build.length }}/6</span></RouterLink
+        <span :key="build.length" class="nav-count"
+          >{{ build.length }}/6</span
+        ></RouterLink
       ><RouterLink to="/champions">Champions</RouterLink
       ><RouterLink to="/research">Research</RouterLink>
     </nav>

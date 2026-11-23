@@ -10,7 +10,10 @@ export default defineConfig({
       : {},
     browserName: "chromium",
     serviceWorkers: "block",
-    reducedMotion: "reduce",
+    // The suite runs with reduced motion so timing never decides a result.
+    // BV_MOTION=1 runs the same tests with motion on, as a check that no
+    // animation hides content or blocks an interaction.
+    reducedMotion: process.env.BV_MOTION ? "no-preference" : "reduce",
   },
   webServer: process.env.BV_BASE_URL
     ? undefined
