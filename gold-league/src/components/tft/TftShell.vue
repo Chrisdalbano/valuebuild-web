@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { FzAlert, FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useTft } from "../../state/tft";
+import { tftReviewEnabled } from "../../domain/features";
 /** Frame shared by the TFT pages: heading, tool links, data provenance. */
 defineProps<{ title: string; lead: string }>();
 const { data, source, loading, refresh } = useTft({ live: true });
@@ -8,7 +9,7 @@ const tools = [
   { to: "/tft", label: "Roll odds" },
   { to: "/tft/items", label: "Item ledger" },
   { to: "/tft/traits", label: "Trait prices" },
-  { to: "/tft/review", label: "Game review" },
+  ...(tftReviewEnabled ? [{ to: "/tft/review", label: "Game review" }] : []),
 ];
 </script>
 <template>

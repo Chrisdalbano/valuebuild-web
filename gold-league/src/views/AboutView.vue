@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { tftReviewEnabled } from "../domain/features";
 import { useWorkspace } from "../state/workspace";
 import { statDefinitions, number } from "../domain/items";
 import { computed } from "vue";
@@ -164,7 +165,7 @@ const rates = computed(() =>
         units that reach each breakpoint. None of the three tools reads a live
         game, and none tells you what to play.
       </p>
-      <p>
+      <p v-if="tftReviewEnabled">
         <strong>The game review</strong> is the only part that needs a Riot API
         key. It runs on the backend for one configured account, compares that
         player's own better and worse games, and never reads another player's

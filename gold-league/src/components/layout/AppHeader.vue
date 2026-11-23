@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { tftReviewEnabled } from "../../domain/features";
 import { useWorkspace } from "../../state/workspace";
 import BuildValueMark from "./BuildValueMark.vue";
 import { computed, defineAsyncComponent } from "vue";
@@ -31,7 +32,7 @@ const tft = computed(() => route.meta.game === "tft");
         >Roll odds</RouterLink
       ><RouterLink to="/tft/items">Item ledger</RouterLink
       ><RouterLink to="/tft/traits">Trait prices</RouterLink
-      ><RouterLink to="/tft/review">Game review</RouterLink>
+      ><RouterLink v-if="tftReviewEnabled" to="/tft/review">Game review</RouterLink>
     </nav>
     <nav v-else aria-label="Main navigation">
       <RouterLink to="/items">Explore</RouterLink

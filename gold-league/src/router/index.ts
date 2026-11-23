@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { tftReviewEnabled } from "../domain/features";
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -52,11 +53,15 @@ const router = createRouter({
       component: () => import("../views/tft/TftTraitsView.vue"),
       meta: { title: "TFT trait prices", game: "tft" },
     },
-    {
-      path: "/tft/review",
-      component: () => import("../views/tft/TftReviewView.vue"),
-      meta: { title: "TFT game review", game: "tft" },
-    },
+    ...(tftReviewEnabled
+      ? [
+          {
+            path: "/tft/review",
+            component: () => import("../views/tft/TftReviewView.vue"),
+            meta: { title: "TFT game review", game: "tft" },
+          },
+        ]
+      : [{ path: "/tft/review", redirect: "/tft" }]),
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
   scrollBehavior: () => ({ top: 0 }),
