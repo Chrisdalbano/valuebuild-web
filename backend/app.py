@@ -19,6 +19,7 @@ from ai.enrich import run_ai_enrichment
 from ai.gemini_client import is_configured as ai_is_configured
 from refresh_gate import RefreshGate, is_authorized, run_and_release
 from ai.cache_keys import current_sections
+from tft.routes import router as tft_router
 
 app = FastAPI(title="League Item Efficiency Tracker - Cached Edition")
 
@@ -43,6 +44,9 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+# Teamfight Tactics: static set data and the key-gated match review.
+app.include_router(tft_router)
 
 # MongoDB connection
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
