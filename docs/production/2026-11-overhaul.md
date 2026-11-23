@@ -118,6 +118,7 @@ Features considered and dropped or deferred, with the reason. Added to as decisi
 - CI's smoke scripts, run locally against a preview of the production build: all nine passed, including the offline PWA check.
 - Bundle, measured with `npm run build` at `2b2c350` and at the branch tip: main script 461.3 kB (119.2 kB gzip) to 473.7 kB (123.9 kB gzip); stylesheet 59.9 kB (11.9 kB gzip) to 82.7 kB (16.0 kB gzip); precache 694 KiB to 860 KiB. The TFT data chunk is 67.6 kB (10.5 kB gzip) and is not on the League path.
 - Final run before stopping: backend **120 passed**; typecheck clean; production build clean; browser suite **51 passed**; PWA smoke passed. No Riot key value exists anywhere in the tree or the built files (the built review page contains the variable names, as text explaining what is missing).
+- Correction to this record after a read-through: the closing note first said the review had been sketched as a lookup "for about an hour", which was not measured, and named a previous bundle hash that could not be confirmed as the live one. Both were removed.
 
 ## 5. Release checklist
 
@@ -125,7 +126,7 @@ For whoever promotes this branch. Nothing here has been done.
 
 ### Before merging
 
-- [ ] Owner has looked at the branch locally (see "Run it" in the README, or the hand-off note).
+- [ ] Owner has looked at the branch locally (see "Run locally" in the README).
 - [ ] `cd backend && python -m pytest -q` reports 120 passed, and `python -c "import app"` exits 0.
 - [ ] `cd gold-league && npm run typecheck && npm run build` are clean.
 - [ ] `npm run test:app` reports 51 passed.
@@ -152,7 +153,7 @@ For whoever promotes this branch. Nothing here has been done.
 
 ### Roll back
 
-- Frontend: Firebase keeps previous releases. Console → Hosting → release history → roll back to the release before this one (bundle `index-Dyii9-u3.js` was live after the October deploy), or `git checkout 2b2c350 -- gold-league && cd gold-league && npm run build && firebase deploy --only hosting --project buildvalue-b202d` from a clean checkout.
+- Frontend: Firebase keeps previous releases. Console → Hosting → release history → roll back to the release before this one, or `git checkout 2b2c350 -- gold-league && cd gold-league && npm run build && firebase deploy --only hosting --project buildvalue-b202d` from a clean checkout.
 - Backend: `git revert` the merge on `main` and push; Render redeploys. The new routes are additive and touch no collection, so there is no data to restore. Old frontend against new backend, and new frontend against old backend, both work: the TFT pages fall back to their bundled snapshot when `/api/tft/set` is missing.
 - Browser storage: this branch reads and writes the same `buildvalue.workspace.v2` key in the same shape. Rolling back needs no migration.
 
@@ -160,7 +161,7 @@ For whoever promotes this branch. Nothing here has been done.
 
 Written 2026-11-23, when the work stopped.
 
-**What is on the branch** (`feature/tft-and-parity`, six commits on top of `2b2c350`, local only, not pushed):
+**What is on the branch** (`feature/tft-and-parity`, eight commits on top of `2b2c350`, local only, not pushed):
 
 - The second parity repair: verdict bands and tier labels, drawer depth, per-item comparison detail, five SVG charts, portraits, the dropped research fields, table sorting, two filters, thumbnails, the rate table, page views. One pre-existing bug fixed (preview drawn over the drawer).
 - Teamfight Tactics: three keyless tools (roll odds, item ledger, trait prices) and a key-gated game review, with a backend that needs neither MongoDB nor a key for the static part.
@@ -185,7 +186,7 @@ Written 2026-11-23, when the work stopped.
 
 **What would be done differently:**
 
-- Read Riot's use-case list before designing anything. The match review was sketched as a player lookup for about an hour of the session before the research showed that shape cannot be public; the single-account design came from the policy, and should have started there.
+- Read Riot's use-case list before designing anything. The match review was first planned as a lookup by Riot ID, while the research was still running; the research then showed that shape cannot be public. The single-account design came from the policy and should have started there.
 - Ask for the baseline parity audit to include a browser pass. It was a source read, so the hover-over-drawer bug and the missing AI data on the live site were only found later from screenshots.
 - Check the bundle after the first TFT commit, not the last. The snapshot sat in the main chunk for one commit before the build output was read.
 - Settle the set-change question with the owner first. Building on a set with a week left was the right call for something to look at now, but it means the first maintenance task is already scheduled.
