@@ -3,6 +3,7 @@ import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../state/workspace";
 import ComparisonInsights from "../components/analysis/ComparisonInsights.vue";
 import ComparisonBoard from "../components/workspace/ComparisonBoard.vue";
+import ItemPicker from "../components/workspace/ItemPicker.vue";
 const { comparison, compareIds } = useWorkspace();
 </script>
 <template>
@@ -21,7 +22,7 @@ const { comparison, compareIds } = useWorkspace();
           variant="ghost"
           @click="compareIds = []"
           >Clear comparison</FzButton
-        ><RouterLink to="/items" class="button-link"
+        ><ItemPicker /><RouterLink to="/items" class="button-link"
           >Add items <FzIcon name="plus" :size="16"
         /></RouterLink>
       </div>
@@ -37,6 +38,9 @@ const { comparison, compareIds } = useWorkspace();
         >Explore items <FzIcon name="arrowRight"
       /></RouterLink>
     </div>
+    <p v-if="comparison.length === 1" class="single-item-note">
+      One item is selected. Add a second to see the differences.
+    </p>
     <ComparisonInsights :items="comparison" />
     <p class="method-note">
       A higher percentage is not a recommendation. Consider the item's effects

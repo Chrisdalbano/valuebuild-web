@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useCountUp } from "../../composables/useCountUp";
+import EfficiencyMark from "../shared/EfficiencyMark.vue";
 import {
   totals,
   number,
@@ -9,23 +11,23 @@ import {
 } from "../../domain/items";
 const props = defineProps<{ items: readonly Item[] }>();
 const summary = computed(() => totals(props.items));
+const cost = useCountUp(() => summary.value.cost),
+  value = useCountUp(() => summary.value.value);
 </script>
 <template>
   <div class="stat-summary">
     <div class="summary-numbers">
       <div>
         <span>Total cost</span
-        ><strong>{{ number(summary.cost) }}<small> G</small></strong>
+        ><strong>{{ number(cost) }}<small> G</small></strong>
       </div>
       <div>
         <span>Base-stat value</span
-        ><strong>{{ number(summary.value) }}<small> G</small></strong>
+        ><strong>{{ number(value) }}<small> G</small></strong>
       </div>
       <div>
         <span>Stat efficiency</span
-        ><strong class="mint"
-          >{{ number(summary.efficiency) }}<small>%</small></strong
-        >
+        ><EfficiencyMark :value="summary.efficiency" :verdict="items.length > 0" />
       </div>
     </div>
     <dl class="stat-lines">

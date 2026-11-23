@@ -8,6 +8,8 @@ import { number } from "../../domain/items";
 import RemoteState from "./RemoteState.vue";
 import ItemSet from "./ItemSet.vue";
 import BuildComposition from "./BuildComposition.vue";
+import BuildCharts from "./BuildCharts.vue";
+import BuildTimeline from "./BuildTimeline.vue";
 const props = defineProps<{ champion: Champion }>();
 const { data, loading, error, reload } = useRemote<Analysis>(
   () => `/champions/${encodeURIComponent(props.champion.id)}/ai`,
@@ -62,6 +64,7 @@ const stages = computed(() =>
           />
           <p>{{ data.coreBuild.rationale }}</p>
           <BuildComposition :items="core" />
+          <BuildCharts :items="core" />
         </section>
         <section v-if="stages.length">
           <h3>Purchase progression</h3>
@@ -72,10 +75,18 @@ const stages = computed(() =>
               <ItemSet :ids="stage.itemIds" />
               <p>{{ stage.note }}</p>
               <span class="fineprint"
-                >Listed item cost: {{ number(stage.cost) }} G</span
+                >Listed item cost: {{ number(stage.cost) }} G<template
+                  v-if="stage.gold"
+                >
+                  · study's gold mark: {{ stage.gold }}</template
+                ></span
               >
             </article>
           </div>
+          <h4>Build timeline</h4>
+          <BuildTimeline
+            :stages="stages.map((stage) => ({ name: stage.stage, gold: stage.cost }))"
+          />
           <div class="method-table">
             <table>
               <caption>
@@ -112,7 +123,10 @@ const stages = computed(() =>
           </div>
         </section>
         <section v-if="data.experimental">
-          <h3>{{ data.experimental.title }}</h3>
+          <h3>
+            {{ data.experimental.title }}
+            <FzBadge tone="warning">Off-meta experiment</FzBadge>
+          </h3>
           <ItemSet
             :ids="data.experimental.itemIds"
             :name="`${champion.name}: ${data.experimental.title}`"

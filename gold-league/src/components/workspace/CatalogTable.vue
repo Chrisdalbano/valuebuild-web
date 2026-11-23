@@ -3,15 +3,31 @@ import { FzButton } from "@chrisdalbano/forza-ui";
 import { number, type Item } from "../../domain/items";
 import ItemPreview from "./ItemPreview.vue";
 import ItemArtwork from "./ItemArtwork.vue";
+import EfficiencyMark from "../shared/EfficiencyMark.vue";
+import { itemTier } from "../../domain/verdict";
 defineProps<{
   items: readonly Item[];
   buildIds: readonly string[];
   compareIds: readonly string[];
+  sort?: string;
 }>();
+const columns = [
+  { key: "name", label: "Item" },
+  { key: "cost", label: "Cost" },
+  { key: "value", label: "Stat value" },
+  { key: "efficiency", label: "Efficiency" },
+];
+const direction = (sort: string | undefined, key: string) =>
+  sort === `${key}-asc` || (key === "name" && sort === "name")
+    ? "ascending"
+    : sort === `${key}-desc` || (key === "efficiency" && sort === "efficiency")
+      ? "descending"
+      : "none";
 defineEmits<{
   inspect: [item: Item];
   compare: [item: Item];
   add: [item: Item];
+  sort: [key: string];
 }>();
 </script>
 <template>
@@ -26,10 +42,24 @@ defineEmits<{
       </caption>
       <thead>
         <tr>
-          <th scope="col">Item</th>
-          <th scope="col">Cost</th>
-          <th scope="col">Stat value</th>
-          <th scope="col">Efficiency</th>
+          <th
+            v-for="column in columns"
+            :key="column.key"
+            scope="col"
+            :aria-sort="direction(sort, column.key)"
+          >
+            <button class="sort-header" @click="$emit('sort', column.key)">
+              {{ column.label
+              }}<span aria-hidden="true">{{
+                direction(sort, column.key) === "ascending"
+                  ? "↑"
+                  : direction(sort, column.key) === "descending"
+                    ? "↓"
+                    : "↕"
+              }}</span>
+            </button>
+          </th>
+          <th scope="col">Rating</th>
           <th scope="col">Actions</th>
         </tr>
       </thead>
@@ -42,15 +72,19 @@ defineEmits<{
                 :aria-label="`Inspect ${item.name}`"
                 @click="$emit('inspect', item)"
               >
-                <ItemArtwork :name="item.name" :src="item.imageUrl" /><strong>{{
-                  item.name
-                }}</strong>
+                <ItemArtwork :name="item.name" :src="item.imageUrl" /><span
+                  ><strong>{{ item.name }}</strong
+                  ><small>{{ itemTier(item).label }}</small></span
+                >
               </button></ItemPreview
             >
           </td>
           <td>{{ number(item.cost) }} G</td>
           <td>{{ number(item.value) }} G</td>
-          <td>{{ number(item.efficiency) }}%</td>
+          <td><EfficiencyMark :value="item.efficiency" /></td>
+          <td>
+            <EfficiencyMark :value="item.efficiency" verdict class="verdict-only" />
+          </td>
           <td>
             <div class="inline-actions">
               <FzButton

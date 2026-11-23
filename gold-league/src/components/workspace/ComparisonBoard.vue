@@ -6,7 +6,17 @@ import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { useWorkspace } from "../../state/workspace";
 import { number, statDefinitions, statAmount } from "../../domain/items";
 import ItemArtwork from "./ItemArtwork.vue";
-const { comparison, compare, add, inspect, buildIds } = useWorkspace();
+import EfficiencyMark from "../shared/EfficiencyMark.vue";
+import StatValueBars from "../shared/StatValueBars.vue";
+import ItemAnalysis from "../analysis/ItemAnalysis.vue";
+import { combineCost, componentsOf } from "../../domain/verdict";
+import { ref } from "vue";
+const { comparison, compare, add, inspect, buildIds, items } = useWorkspace();
+// AI studies are requested per item, and only when asked for.
+const analysed = ref<string[]>([]);
+const scale = computed(() =>
+  Math.max(1, ...comparison.value.flatMap((item) => item.breakdown.map((s) => s.value))),
+);
 const rows = computed(() =>
   Object.keys(statDefinitions).filter((key) =>
     comparison.value.some((item) => item.stats[key]),
@@ -62,16 +72,66 @@ const baseline = computed(() => comparison.value[0]);
         <tr>
           <th scope="row">Base-stat efficiency</th>
           <td v-for="item in comparison" :key="item.id">
-            <strong class="mint">{{ number(item.efficiency) }}%</strong
-            ><small v-if="item !== baseline && baseline"
+            <EfficiencyMark :value="item.efficiency" verdict /><small
+              v-if="item !== baseline && baseline"
               >{{ item.efficiency - baseline.efficiency >= 0 ? "+" : ""
               }}{{ number(item.efficiency - baseline.efficiency) }} pts</small
             >
-            <div class="stat-bar">
+            <div class="stat-bar" :data-band="item.efficiency >= 120 ? 'excellent' : item.efficiency >= 100 ? 'good' : item.efficiency >= 80 ? 'fair' : 'low'">
               <span
                 :style="{ width: `${Math.min(item.efficiency / 2, 100)}%` }"
               />
             </div>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Stat value</th>
+          <td v-for="item in comparison" :key="item.id">
+            <strong>{{ number(item.value) }} G</strong
+            ><small
+              >{{ item.value - item.cost >= 0 ? "+" : ""
+              }}{{ number(item.value - item.cost) }} G against cost</small
+            >
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Where the value comes from</th>
+          <td v-for="item in comparison" :key="item.id">
+            <StatValueBars
+              v-if="item.breakdown.length"
+              :item="item"
+              :scale="scale"
+            /><span v-else class="muted">No priced stats</span>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">Recipe</th>
+          <td v-for="item in comparison" :key="item.id">
+            <template v-if="componentsOf(item, items).length">
+              <div class="compare-recipe">
+                <ItemPreview
+                  v-for="part in componentsOf(item, items)"
+                  :key="part.id"
+                  :item="part"
+                  ><button
+                    :aria-label="`Inspect ${part.name}, component of ${item.name}`"
+                    @click="inspect(part)"
+                  >
+                    <ItemArtwork :name="part.name" :src="part.imageUrl" />
+                  </button></ItemPreview
+                >
+              </div>
+              <small
+                >{{
+                  number(
+                    componentsOf(item, items).reduce((s, part) => s + part.cost, 0),
+                  )
+                }}
+                G in components + {{ number(combineCost(item)) }} G to
+                combine</small
+              >
+            </template>
+            <span v-else class="muted">Bought whole</span>
           </td>
         </tr>
         <tr v-for="key in rows" :key="key">
@@ -88,6 +148,20 @@ const baseline = computed(() => comparison.value[0]);
             class="compare-description"
           >
             {{ item.text }}
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">AI effect analysis</th>
+          <td v-for="item in comparison" :key="item.id" class="compare-analysis">
+            <ItemAnalysis v-if="analysed.includes(item.id)" :id="item.id" />
+            <FzButton
+              v-else
+              size="sm"
+              variant="ghost"
+              :aria-label="`Show AI analysis for ${item.name}`"
+              @click="analysed.push(item.id)"
+              >Show cached analysis</FzButton
+            >
           </td>
         </tr>
         <tr>

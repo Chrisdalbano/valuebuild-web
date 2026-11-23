@@ -38,3 +38,26 @@ Read-only checks on September 17 returned current-patch effect and champion esti
 ## Regression coverage
 
 Tests cover hover stability and no AI request on hover; keyboard/Escape; one-tap mobile inspection; effect equivalents, confidence and champion estimates; pending/error/retry/empty states; table/stat search actions; swap/undo; saved rename persistence; role suggestions; comparison-to-build handoff; and populated mobile geometry. The existing seven-route responsive/accessibility checks remain. Production-preview screenshots include actual cached AI, hover, table, and build surfaces.
+
+## November 23, 2026: second repair
+
+A file-by-file audit of `ebb1f49` against the current tree found that the September repair had restored the hover preview and the AI text, but not three larger groups. This pass restores them. Calculations are unchanged; every number still comes from the backend response.
+
+| Previous capability | Now |
+| --- | --- |
+| EfficiencyBadge, TierPill (four bands at 120 / 100 / 80, tier labels, count-up) | `domain/verdict.ts` and `shared/EfficiencyMark.vue`, used on catalog cards, table rows, the hover preview, the drawer, the comparison and build totals. The lowest band is labelled "Low" instead of "Poor": a low base-stat number means unpriced effects, not a bad item. |
+| ItemStatsCard header and sections | Hover preview shows the tier label, the banded efficiency, and Stats and Effects headings. It no longer opens on top of the drawer after a quick click. |
+| ItemBreakdownModal, BreakdownRecipe, BreakdownStatAnalysis | Drawer shows stat value, combine cost, per-stat bars with share, a share ring, component efficiency, a components / combine / final cost breakdown, and Passive / Active labels kept from Data Dragon's markup. |
+| CompareItemCard, StatBreakdownBars, RecipeSection, WinnerCard, AddItemCard, CompareSingleItemNotice | Comparison has stat value and gain, "where the value comes from" bars on one scale, the recipe with its cost split, the lead in points, an in-page item picker, a one-item prompt, and the AI study per item on request (no request until asked). |
+| CompareCharts, ChampionBuildCharts, ChampionTimelineChart, ResearchEfficiencyChart | Inline SVG charts in `components/charts/` (ring, bars with a 100% reference line, line chart with keyboard and pointer readout). Chart.js was not brought back. |
+| ItemBestOnPanel portraits, ResearchExperimentalBuilds champion | Champion portraits next to AI output that names a champion; the roster is fetched once and only when needed. |
+| ResearchOutliers, ResearchEffectSpotlights | The page reads `efficiency`, `estimatedEffectGold`, `effectName` and `forChampion` again, and no longer cuts the lists to 8 and 6. |
+| ItemTableView sorting, SortControls, TypeFilter | Table headers sort both ways; sort by stat value; Tank and Starter categories. |
+| SavedBuildsPanel thumbnails, BuildSlot efficiency | Restored. |
+| AboutStatValuesTable | Rate table on the method page, read from the reference items in the loaded catalog. |
+| Mouseflow page views on route change | Restored in the router. |
+| FlashCompare winner | The quick comparison names the highest of the three and its lead; the stray `?` separator is fixed. |
+
+Not restored, by decision (reasons in `docs/production/2026-11-overhaul.md`): the pre-migration default sort and default support filter, the search suggestions dropdown, page-size choice and infinite scroll, the floating selection tray, the particle hero and card beam, the hamburger menu and the long footer.
+
+Coverage: `gold-league/tests/app/parity.spec.ts`, ten tests, each named after the component it stands in for.

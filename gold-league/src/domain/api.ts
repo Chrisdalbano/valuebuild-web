@@ -47,12 +47,14 @@ export interface Analysis {
     effectName: string;
     insight: string;
     analysis?: string;
+    estimatedEffectGold?: number;
   }[];
   experimentalBuilds?: {
     title: string;
     itemIds: string[];
     rationale: string;
     champion?: string;
+    forChampion?: string;
   }[];
   effects?: {
     name: string;

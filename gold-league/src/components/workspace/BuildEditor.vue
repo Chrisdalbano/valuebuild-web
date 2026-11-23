@@ -73,7 +73,10 @@ async function copy() {
               :src="item.imageUrl"
               large
             /><strong>{{ item.name }}</strong
-            ><span class="gold">{{ number(item.cost) }} G</span></button
+            ><span class="gold">{{ number(item.cost) }} G</span
+            ><span class="slot-efficiency"
+              >{{ number(item.efficiency) }}% stats</span
+            ></button
           ></ItemPreview><ItemSwap :item="item" target="build" /><FzButton
             size="sm"
             variant="ghost"

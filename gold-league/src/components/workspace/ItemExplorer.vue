@@ -12,6 +12,8 @@ import {
 import { useWorkspace } from "../../state/workspace";
 import CatalogTable from "./CatalogTable.vue";
 import { matchesQuery, matchesTier } from "../../domain/discovery";
+import { isStarterItem, isTankItem } from "../../domain/verdict";
+import type { Item } from "../../domain/items";
 import CatalogItem from "./CatalogItem.vue";
 const props = withDefaults(defineProps<{ compact?: boolean }>(), {
   compact: false,
@@ -31,6 +33,8 @@ const categories = [
   { value: "SpellDamage", label: "Magic" },
   { value: "Armor", label: "Defense" },
   { value: "Health", label: "Health" },
+  { value: "tank", label: "Tank" },
+  { value: "starter", label: "Starter" },
   { value: "Boots", label: "Boots" },
   { value: "GoldPer", label: "Support" },
   { value: "SpellBlock", label: "Magic resist" },
@@ -46,8 +50,26 @@ const sorts = [
   { value: "cost-desc", label: "Cost: high to low" },
   { value: "cost-asc", label: "Cost: low to high" },
   { value: "efficiency", label: "Stat efficiency" },
+  { value: "efficiency-asc", label: "Stat efficiency: low to high" },
+  { value: "value-desc", label: "Stat value: high to low" },
+  { value: "value-asc", label: "Stat value: low to high" },
   { value: "name", label: "Name: A to Z" },
+  { value: "name-desc", label: "Name: Z to A" },
 ];
+const inCategory = (item: Item, value: string) =>
+  value === "all" ||
+  (value === "tank"
+    ? isTankItem(item)
+    : value === "starter"
+      ? isStarterItem(item)
+      : item.tags.includes(value));
+/** A table header toggles its column: first click sorts down, second up. */
+function sortBy(key: string) {
+  const down =
+    key === "efficiency" ? "efficiency" : key === "name" ? "name" : `${key}-desc`;
+  const up = key === "name" ? "name-desc" : `${key}-asc`;
+  sort.value = sort.value === down ? up : down;
+}
 const budgets = [
   { value: "all", label: "Any price" },
   { value: "500", label: "Up to 500 G" },
@@ -62,7 +84,7 @@ const filtered = computed(() =>
       return (
         matchesQuery(item, query) && matchesTier(item, tier.value) &&
         (!hideSupport.value || !item.tags.includes("GoldPer") || category.value === "GoldPer") &&
-        (category.value === "all" || item.tags.includes(category.value)) &&
+        inCategory(item, category.value) &&
         (maxCost.value === "all" || item.cost <= Number(maxCost.value)) &&
         (!completed.value ||
           !item.into?.some((id) =>
@@ -73,11 +95,19 @@ const filtered = computed(() =>
     .sort((a, b) =>
       sort.value === "name"
         ? a.name.localeCompare(b.name)
-        : sort.value === "efficiency"
-          ? b.efficiency - a.efficiency
-          : sort.value === "cost-asc"
-            ? a.cost - b.cost
-            : b.cost - a.cost,
+        : sort.value === "name-desc"
+          ? b.name.localeCompare(a.name)
+          : sort.value === "efficiency"
+            ? b.efficiency - a.efficiency
+            : sort.value === "efficiency-asc"
+              ? a.efficiency - b.efficiency
+              : sort.value === "value-desc"
+                ? b.value - a.value
+                : sort.value === "value-asc"
+                  ? a.value - b.value
+                  : sort.value === "cost-asc"
+                    ? a.cost - b.cost
+                    : b.cost - a.cost,
     ),
 );
 const pageSize = computed(() => (props.compact ? 8 : 15));
@@ -131,7 +161,7 @@ function reset() {
         <span class="muted">/ Summoner's Rift</span></span
       ><span class="muted">Efficiency = priced stats / cost</span>
     </div>
-    <CatalogTable v-if="view === 'table'" :items="visible" :build-ids="buildIds" :compare-ids="compareIds" @inspect="inspect" @compare="compare" @add="add" />
+    <CatalogTable v-if="view === 'table'" :items="visible" :build-ids="buildIds" :compare-ids="compareIds" :sort="sort" @sort="sortBy" @inspect="inspect" @compare="compare" @add="add" />
     <div v-else class="item-grid">
       <CatalogItem
         v-for="item in visible"

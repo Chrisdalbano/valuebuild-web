@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, useId } from "vue";
+import { computed, ref, useId } from "vue";
+import { useWorkspace } from "../../state/workspace";
 import {
   HoverCardRoot,
   HoverCardTrigger,
@@ -8,8 +9,17 @@ import {
 } from "reka-ui";
 import { number, statAmount, type Item } from "../../domain/items";
 import ItemArtwork from "./ItemArtwork.vue";
+import EfficiencyMark from "../shared/EfficiencyMark.vue";
+import { itemTier } from "../../domain/verdict";
 defineProps<{ item: Item }>();
-const open = ref(false);
+const { detailOpen } = useWorkspace();
+const wanted = ref(false);
+// A quick click starts the hover timer and opens the drawer in the same
+// gesture; the preview must not then appear on top of the drawer it led to.
+const open = computed({
+  get: () => wanted.value && !detailOpen.value,
+  set: (value) => (wanted.value = value && !detailOpen.value),
+});
 const id = useId();
 </script>
 <template>
@@ -38,8 +48,13 @@ const id = useId();
           <ItemArtwork :name="item.name" :src="item.imageUrl" />
           <div>
             <strong>{{ item.name }}</strong
-            ><span>{{ number(item.efficiency) }}% base-stat efficiency</span>
+            ><span class="preview-tier">{{ itemTier(item).label }}</span>
           </div>
+          <span class="preview-efficiency"
+            ><EfficiencyMark :value="item.efficiency" verdict /><small
+              >base-stat efficiency</small
+            ></span
+          >
         </header>
         <dl class="preview-values">
           <div>
@@ -51,12 +66,14 @@ const id = useId();
             <dd>{{ number(item.value) }} G</dd>
           </div>
         </dl>
+        <h4 v-if="item.breakdown.length" class="preview-section">Stats</h4>
         <dl class="preview-stats">
           <div v-for="stat in item.breakdown" :key="stat.key">
             <dt>{{ stat.label }}</dt>
             <dd>{{ statAmount(stat.key, stat.amount) }}</dd>
           </div>
         </dl>
+        <h4 v-if="item.text" class="preview-section">Effects</h4>
         <p v-if="item.text" class="preview-effects">{{ item.text }}</p>
         <p class="fineprint">
           Open the item for recipes, AI effect estimates, and champion
@@ -94,8 +111,27 @@ const id = useId();
   display: block;
   font-size: 16px;
 }
-.preview-heading span {
-  color: var(--fz-positive);
+.preview-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.preview-tier {
+  font: 11px var(--fz-font-mono);
+  color: var(--fz-warning);
+}
+.preview-efficiency {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+.preview-efficiency small {
+  color: var(--fz-muted);
+  font-size: 11px;
+}
+.preview-section {
+  margin: 14px 0 6px;
+  font: 600 12px var(--fz-font-body);
+  color: var(--fz-muted);
 }
 .preview-values {
   display: grid;
@@ -122,7 +158,9 @@ const id = useId();
 }
 .preview-effects {
   white-space: pre-line;
-  margin: 16px 0;
+  margin: 0 0 16px;
+  max-height: 132px;
+  overflow: auto;
 }
 .item-preview .fineprint {
   margin-bottom: 0;

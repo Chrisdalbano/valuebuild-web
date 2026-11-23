@@ -3,6 +3,8 @@ import ItemPreview from "./ItemPreview.vue";
 import { FzButton, FzIcon } from "@chrisdalbano/forza-ui";
 import { number, type Item } from "../../domain/items";
 import ItemArtwork from "./ItemArtwork.vue";
+import EfficiencyMark from "../shared/EfficiencyMark.vue";
+import { itemTier } from "../../domain/verdict";
 defineProps<{
   item: Item;
   inBuild: boolean;
@@ -29,15 +31,19 @@ defineEmits<{
       ><span class="item-arrow"><FzIcon name="arrowUpRight" :size="16" /></span>
     </button>
     <p class="item-subtitle">
-      {{
+      <span class="tier-pill" :data-tier="itemTier(item).key">{{
+        itemTier(item).label
+      }}</span
+      >{{
         item.plaintext || item.tags.slice(0, 2).join(" / ") || "Utility item"
       }}
     </p>
     <div class="item-metrics">
+      <span>Stat value</span><span>{{ number(item.value) }} G</span>
+    </div>
+    <div class="item-metrics">
       <span>Base-stat efficiency</span
-      ><strong :class="item.efficiency >= 100 ? 'mint' : ''"
-        >{{ number(item.efficiency) }}%</strong
-      >
+      ><EfficiencyMark :value="item.efficiency" verdict />
     </div>
     <div class="item-actions">
       <FzButton

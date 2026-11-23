@@ -43,5 +43,11 @@ const router = createRouter({
 });
 router.afterEach((to) => {
   document.title = `${to.meta.title} · BuildValue`;
+  // The Mouseflow snippet in index.html only records the first load; tell it
+  // about client-side navigations as the pre-migration router did.
+  (window as unknown as { _mfq?: unknown[][] })._mfq?.push([
+    "newPageView",
+    to.fullPath,
+  ]);
 });
 export default router;

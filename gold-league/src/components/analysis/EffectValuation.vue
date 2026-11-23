@@ -3,15 +3,19 @@ import { FzBadge } from "@chrisdalbano/forza-ui";
 import type { Analysis } from "../../domain/api";
 import { number } from "../../domain/items";
 defineProps<{ effect: NonNullable<Analysis["effects"]>[number] }>();
+const tone = (confidence?: string) =>
+  confidence === "high" ? "positive" : confidence === "medium" ? "warning" : "neutral";
 </script>
 <template>
   <article class="effect-valuation">
     <div class="panel-heading">
       <h4>{{ effect.name }}</h4>
-      <FzBadge>{{ effect.confidence || "Unspecified" }} confidence</FzBadge>
+      <FzBadge :tone="tone(effect.confidence)"
+        >{{ effect.confidence || "Unspecified" }} confidence</FzBadge
+      >
     </div>
     <p v-if="typeof effect.estimatedGoldValue === 'number'" class="effect-gold">
-      Estimated effect value:
+      <span class="estimate-chip">Est.</span> Estimated effect value:
       <strong>{{ number(effect.estimatedGoldValue) }} G</strong>
     </p>
     <p v-if="effect.baseStatEquivalence">{{ effect.baseStatEquivalence }}</p>

@@ -1,7 +1,30 @@
 <script setup lang="ts">
 import { useWorkspace } from "../state/workspace";
 import { statDefinitions, number } from "../domain/items";
-const { dataset, source } = useWorkspace();
+import { computed } from "vue";
+const { dataset, source, items } = useWorkspace();
+/** Gold per point, read back from each reference item's priced stat. */
+const rates = computed(() =>
+  Object.entries(statDefinitions).flatMap(([key, definition]) => {
+    const reference = items.value.find((item) => item.id === definition.reference);
+    const stat = reference?.breakdown.find((entry) => entry.key === key);
+    if (!reference || !stat || !stat.amount) return [];
+    const per = stat.value / (definition.percent ? stat.amount * 100 : stat.amount);
+    return [
+      {
+        key,
+        label: definition.label,
+        reference: reference.name,
+        cost: reference.cost,
+        amount: definition.percent
+          ? `${number(stat.amount * 100)}%`
+          : number(stat.amount),
+        per: per >= 10 ? number(per) : per.toFixed(2),
+        unit: definition.percent ? "per 1%" : "per point",
+      },
+    ];
+  }),
+);
 </script>
 <template>
   <article class="method-page">
@@ -46,6 +69,31 @@ const { dataset, source } = useWorkspace();
         patch. The item drawer shows each stat's contribution so the total can
         be inspected.
       </p>
+      <div v-if="rates.length" class="method-table">
+        <table>
+          <caption>
+            Reference rates in the current catalog (patch
+            {{ dataset.version }}), read from each reference item.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Stat</th>
+              <th scope="col">Reference item</th>
+              <th scope="col">Gold</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="rate in rates" :key="rate.key">
+              <th scope="row">{{ rate.label }}</th>
+              <td>
+                {{ rate.reference }} ({{ rate.amount }}, {{ number(rate.cost) }}
+                G)
+              </td>
+              <td>{{ rate.per }} G {{ rate.unit }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <p>
         Supported values include attack damage, ability power, health, mana,
         resistances, attack speed, critical chance, movement speed,

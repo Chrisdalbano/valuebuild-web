@@ -3,10 +3,21 @@ import { FzButton, FzBadge } from "@chrisdalbano/forza-ui";
 import { useRemote } from "../../composables/useRemote";
 import type { Analysis } from "../../domain/api";
 import EffectValuation from "./EffectValuation.vue";
+import { watch } from "vue";
+import { useChampions } from "../../composables/useChampions";
 const props = defineProps<{ id: string }>();
 const { data, loading, error, reload } = useRemote<Analysis>(
   () => `/items/${encodeURIComponent(props.id)}/ai`,
 );
+const { ensure, portrait } = useChampions();
+// Portraits need the roster; ask for it only once an analysis names champions.
+watch(
+  () => data.value?.bestOn?.champions?.length,
+  (count) => count && ensure(),
+  { immediate: true },
+);
+const tone = (confidence?: string) =>
+  confidence === "high" ? "positive" : confidence === "medium" ? "warning" : "neutral";
 </script>
 <template>
   <section class="item-ai" aria-label="AI item analysis">
@@ -18,7 +29,10 @@ const { data, loading, error, reload } = useRemote<Analysis>(
       Effect values and champion synergies are AI estimates. Your base-stat
       efficiency and build totals remain formula-based.
     </p>
-    <p v-if="loading" role="status">Loading this item's cached analysis...</p>
+    <div v-if="loading" role="status">
+      Loading this item's cached analysis...
+      <div class="loading-lines" aria-hidden="true"><i /><i /><i /></div>
+    </div>
     <div v-else-if="error">
       <p role="alert">{{ error }}</p>
       <FzButton size="sm" variant="secondary" @click="reload"
@@ -67,8 +81,17 @@ const { data, loading, error, reload } = useRemote<Analysis>(
         class="champion-synergy"
       >
         <div class="panel-heading">
+          <img
+            v-if="portrait(champion.name)"
+            class="champion-portrait"
+            :src="portrait(champion.name)!"
+            alt=""
+            width="40"
+            height="40"
+            loading="lazy"
+          />
           <h4>{{ champion.name }}</h4>
-          <FzBadge v-if="champion.confidence"
+          <FzBadge v-if="champion.confidence" :tone="tone(champion.confidence)"
             >{{ champion.confidence }} confidence</FzBadge
           >
         </div>
