@@ -13,8 +13,8 @@
     </div>
     <p>
       Independent work by Chrisdalbano, developed with AI assistance. BuildValue
-      is not endorsed by Riot Games. League of Legends and its assets belong to
-      Riot Games.
+      is not endorsed by Riot Games. League of Legends, Teamfight Tactics and
+      their assets belong to Riot Games.
     </p>
   </footer>
 </template>

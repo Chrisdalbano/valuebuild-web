@@ -8,6 +8,7 @@ import "@fontsource/ibm-plex-mono/latin-400.css";
 import "@chrisdalbano/forza-ui/style.css";
 import "./app.css";
 import "./styles/reading.css";
+import "./styles/tft.css";
 import App from "./App.vue";
 import router from "./router";
 createApp(App).use(router).mount("#app");

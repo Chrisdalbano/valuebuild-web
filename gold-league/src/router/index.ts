@@ -37,6 +37,26 @@ const router = createRouter({
       component: () => import("../views/AboutView.vue"),
       meta: { title: "Method & sources" },
     },
+    {
+      path: "/tft",
+      component: () => import("../views/tft/TftRollView.vue"),
+      meta: { title: "TFT roll odds", game: "tft" },
+    },
+    {
+      path: "/tft/items",
+      component: () => import("../views/tft/TftItemsView.vue"),
+      meta: { title: "TFT item ledger", game: "tft" },
+    },
+    {
+      path: "/tft/traits",
+      component: () => import("../views/tft/TftTraitsView.vue"),
+      meta: { title: "TFT trait prices", game: "tft" },
+    },
+    {
+      path: "/tft/review",
+      component: () => import("../views/tft/TftReviewView.vue"),
+      meta: { title: "TFT game review", game: "tft" },
+    },
     { path: "/:pathMatch(.*)*", redirect: "/" },
   ],
   scrollBehavior: () => ({ top: 0 }),

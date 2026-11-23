@@ -12,7 +12,12 @@ const workspace = provideWorkspace();
     ><div class="fz-theme bv-app">
       <a class="skip-link" href="#main">Skip to content</a>
       <AppHeader />
-      <main id="main" tabindex="-1"><RouterView /></main>
+      <main id="main" tabindex="-1">
+        <RouterView v-slot="{ Component, route }"
+          ><Transition name="fz-state" mode="out-in"
+            ><component :is="Component" :key="route.path" /></Transition
+        ></RouterView>
+      </main>
       <AppFooter />
       <ItemDetails />
       <div

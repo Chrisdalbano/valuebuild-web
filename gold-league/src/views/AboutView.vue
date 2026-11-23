@@ -128,6 +128,50 @@ const rates = computed(() =>
       </p>
     </section>
     <section>
+      <h2>Teamfight Tactics: the same idea, three tools.</h2>
+      <p>
+        Unit, trait and item data come from
+        <a href="https://www.communitydragon.org/">Community Dragon</a>'s
+        export of the game files. BuildValue's backend trims it to the live set
+        and the pages run on a bundled copy when the service is asleep. No Riot
+        API key is involved in any of this.
+      </p>
+      <div class="method-equation">
+        Chance a shop slot shows your unit = tier odds at your level × copies of
+        it left ÷ copies of that tier left
+      </div>
+      <p>
+        <strong>Roll odds</strong> follow from that line. The result is exact
+        for the model, not a random simulation; it assumes you buy every copy
+        you can afford and that other boards do not change while you roll. Shop
+        odds are Riot's published table, pool sizes come from the game data, and
+        the XP and price constants are listed with their sources on the page.
+        They are checked per set; a set they were not checked for is flagged.
+      </p>
+      <div class="method-equation">
+        Stat efficiency = listed stats ÷ what one component grants ÷ components
+        spent × 100
+      </div>
+      <p>
+        <strong>The item ledger</strong> prices an item's listed stats in
+        components, with each rate read from the component itself. On a unit,
+        attack output is attack damage × attacks per second × average crit, and
+        effective health is health × (1 + resistance ÷ 100). Item effects,
+        abilities, ability power and mana are not priced or modelled.
+      </p>
+      <p>
+        <strong>Trait prices</strong> are the one-star cost of the cheapest
+        units that reach each breakpoint. None of the three tools reads a live
+        game, and none tells you what to play.
+      </p>
+      <p>
+        <strong>The game review</strong> is the only part that needs a Riot API
+        key. It runs on the backend for one configured account, compares that
+        player's own better and worse games, and never reads another player's
+        board. It is off unless the key is set.
+      </p>
+    </section>
+    <section>
       <h2>A working application of Forza UI.</h2>
       <p>
         The interface uses the published Forza UI package for inputs, selectors,
@@ -142,7 +186,8 @@ const rates = computed(() =>
         assistance across research, code, design iteration, and documentation.
         The project repository and checks are on
         <a href="https://github.com/Chrisdalbano/valuebuild-web">GitHub</a>.
-        This project is independent and not endorsed by Riot Games.
+        This project is independent and not endorsed by Riot Games. League of
+        Legends, Teamfight Tactics and their assets belong to Riot Games.
       </p>
     </section>
   </article>

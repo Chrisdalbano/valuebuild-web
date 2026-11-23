@@ -85,6 +85,8 @@ function set(x: number) {
   emit("update:cursor", bounded);
 }
 function pointer(event: PointerEvent) {
+  if (props.cursor !== null && event.type === "pointermove" && !event.buttons)
+    return;
   const box = (event.currentTarget as SVGElement).getBoundingClientRect();
   const x = ((event.clientX - box.left) / box.width) * W;
   set(((x - pad.left) / plotW) * props.xMax);

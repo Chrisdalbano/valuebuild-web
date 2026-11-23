@@ -46,6 +46,16 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern:
+              /^https:\/\/raw\.communitydragon\.org\/latest\/game\/.*\.png$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "buildvalue-tft-images-v1",
+              expiration: { maxEntries: 300, maxAgeSeconds: 604800 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern:
               /^https:\/\/ddragon\.leagueoflegends\.com\/.*\.(png|jpg)$/,
             handler: "CacheFirst",
             options: {
